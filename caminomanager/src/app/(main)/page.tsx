@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { BrandLogo } from "@/components/ui/brand-logo";
@@ -15,6 +17,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { routes } from "@/lib/routes";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSidebarVisibility } from "@/lib/permissions";
 
 const quickAccess = [
   {
@@ -86,7 +90,54 @@ const secondaryAccess = [
   },
 ];
 
+// Map quick access cards to visibility keys for filtering
+const quickAccessVisibility: Record<string, keyof ReturnType<typeof getSidebarVisibility>> = {
+  [routes.comunidades]: 'comunidades',
+  [routes.parroquias]: 'parroquias',
+  [routes.personas]: 'personas',
+  [routes.reportes]: 'reportes',
+};
+
 export default function Home() {
+  const { userScope, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect community_responsible to their community
+  useEffect(() => {
+    if (loading || !userScope) return;
+    if (userScope.role === 'community_responsible' && userScope.community_id) {
+      router.replace(routes.comunidad(userScope.community_id));
+    }
+  }, [userScope, loading, router]);
+
+  // While redirecting, show nothing
+  if (userScope?.role === 'community_responsible' && userScope.community_id) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+      </div>
+    );
+  }
+
+  const visibility = getSidebarVisibility(userScope);
+
+  const filteredQuickAccess = quickAccess.filter((item) => {
+    const key = quickAccessVisibility[item.href];
+    return key ? visibility[key] : true;
+  });
+
+  const showSecondary = visibility.organizacion || visibility.ubicaciones;
+
+  const filteredSecondaryAccess = secondaryAccess.filter((item) => {
+    // Diocesis, Equipo Nacional, Etapas → organizacion
+    if ([routes.diocesis, routes.equipoNacional, routes.etapas].includes(item.href as any)) {
+      return visibility.organizacion;
+    }
+    // Paises → ubicaciones
+    if (item.href === routes.paises) return visibility.ubicaciones;
+    return true;
+  });
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Welcome section */}
@@ -101,7 +152,7 @@ export default function Home() {
 
       {/* Primary quick access - large cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {quickAccess.map((item) => {
+        {filteredQuickAccess.map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href}>
@@ -128,33 +179,35 @@ export default function Home() {
       </div>
 
       {/* Secondary access - smaller cards */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Otras secciones
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {secondaryAccess.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.href} href={item.href}>
-                <Card className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 hover:border-gray-300 group">
-                  <div className="flex flex-col items-center gap-2">
-                    <div
-                      className={`p-2.5 rounded-lg ${item.bg} transition-colors`}
-                    >
-                      <Icon className={`w-5 h-5 ${item.iconColor}`} />
+      {showSecondary && filteredSecondaryAccess.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Otras secciones
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {filteredSecondaryAccess.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Card className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 hover:border-gray-300 group">
+                    <div className="flex flex-col items-center gap-2">
+                      <div
+                        className={`p-2.5 rounded-lg ${item.bg} transition-colors`}
+                      >
+                        <Icon className={`w-5 h-5 ${item.iconColor}`} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 text-center">
+                        {item.title}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700 text-center">
-                      {item.title}
-                    </span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors mx-auto mt-2" />
-                </Card>
-              </Link>
-            );
-          })}
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors mx-auto mt-2" />
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
