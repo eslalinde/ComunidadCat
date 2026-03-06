@@ -6,17 +6,13 @@
 -- Create authorization helper functions.
 -- ==============================================
 
--- ==============================================
--- 1. EVOLVE app_role ENUM
--- ==============================================
--- Add new role values to the existing enum.
--- Existing values (viewer, contributor, admin) are preserved.
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'zone_leader';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'zone_contributor';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'community_responsible';
+-- NOTE: The new enum values (zone_leader, zone_contributor, community_responsible)
+-- are added in the preceding migration 20260305000000_add_role_enum_values.sql
+-- because PostgreSQL requires ALTER TYPE ADD VALUE to commit before the new
+-- values can be referenced.
 
 -- ==============================================
--- 2. ADD SCOPE COLUMNS TO PROFILES
+-- 1. ADD SCOPE COLUMNS TO PROFILES
 -- ==============================================
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS person_id bigint REFERENCES public.people(id) ON DELETE SET NULL,

@@ -5,6 +5,8 @@
 -- ==============================================
 -- 1. UPDATE set_user_role TO HANDLE SCOPE FIELDS
 -- ==============================================
+-- Drop old 2-arg signature so the new 5-arg version replaces it cleanly.
+DROP FUNCTION IF EXISTS public.set_user_role(uuid, public.app_role);
 CREATE OR REPLACE FUNCTION public.set_user_role(
   target_user_id uuid,
   new_role public.app_role,
@@ -65,6 +67,8 @@ GRANT EXECUTE ON FUNCTION public.set_user_role(uuid, public.app_role, bigint, bi
 -- ==============================================
 -- 2. UPDATE get_admin_users_list TO INCLUDE SCOPE
 -- ==============================================
+-- Must DROP first because the return type changes (new columns added).
+DROP FUNCTION IF EXISTS public.get_admin_users_list();
 CREATE OR REPLACE FUNCTION public.get_admin_users_list()
 RETURNS TABLE (
   id uuid,

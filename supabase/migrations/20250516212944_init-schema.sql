@@ -45,34 +45,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Set up Storage (only if the storage schema exists, e.g. on hosted Supabase)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage') THEN
-    INSERT INTO storage.buckets (id, name)
-      VALUES ('avatars', 'avatars')
-      ON CONFLICT (id) DO NOTHING;
-
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_policies WHERE policyname = 'Avatar images are publicly accessible.' AND tablename = 'objects'
-    ) THEN
-      EXECUTE 'CREATE POLICY "Avatar images are publicly accessible." ON storage.objects FOR SELECT USING (bucket_id = ''avatars'')';
-    END IF;
-
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can upload an avatar.' AND tablename = 'objects'
-    ) THEN
-      EXECUTE 'CREATE POLICY "Anyone can upload an avatar." ON storage.objects FOR INSERT WITH CHECK (bucket_id = ''avatars'')';
-    END IF;
-
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can update their own avatar.' AND tablename = 'objects'
-    ) THEN
-      EXECUTE 'CREATE POLICY "Anyone can update their own avatar." ON storage.objects FOR UPDATE USING ((SELECT auth.uid()) = owner) WITH CHECK (bucket_id = ''avatars'')';
-    END IF;
-  END IF;
-END
-$$;
+-- Storage bucket "avatars" is now declared in supabase/config.toml.
+-- Policies for the bucket are managed via the Supabase dashboard on hosted instances.
 
 -- ==============================================
 -- BUSINESS TABLES
