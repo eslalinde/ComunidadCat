@@ -121,6 +121,56 @@ export function canWriteMasterData(scope: UserScope | null): boolean {
   return ['admin', 'contributor'].includes(scope.role);
 }
 
+// --- Route access checks ---
+
+// Returns true if the user can access a given pathname.
+// Used by the protected layout to block direct URL navigation.
+export function canAccessRoute(scope: UserScope | null, pathname: string): boolean {
+  if (!scope) return false;
+
+  const vis = getSidebarVisibility(scope);
+
+  // /cuenta is always accessible to authenticated users
+  if (pathname === '/cuenta') return true;
+
+  // Admin panel
+  if (pathname.startsWith('/admin')) return vis.admin;
+
+  // Reports
+  if (pathname.startsWith('/reportes')) return vis.reportes;
+
+  // Organization routes
+  if (
+    pathname.startsWith('/diocesis') ||
+    pathname.startsWith('/equipo-nacional') ||
+    pathname.startsWith('/etapas') ||
+    pathname.startsWith('/tipos-equipo')
+  ) return vis.organizacion;
+
+  // Location routes
+  if (
+    pathname.startsWith('/paises') ||
+    pathname.startsWith('/departamentos') ||
+    pathname.startsWith('/ciudades') ||
+    pathname.startsWith('/zonas')
+  ) return vis.ubicaciones;
+
+  // Personas
+  if (pathname.startsWith('/personas')) return vis.personas;
+
+  // Parroquias
+  if (pathname.startsWith('/parroquias')) return vis.parroquias;
+
+  // Comunidades
+  if (pathname.startsWith('/comunidades')) return vis.comunidades;
+
+  // Home page: always accessible
+  if (pathname === '/') return true;
+
+  // Unknown route: allow (don't block 404 pages)
+  return true;
+}
+
 // Sidebar visibility
 export interface SidebarVisibility {
   principal: boolean;      // Inicio, Comunidades, Parroquias, Personas
