@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { queryKeys } from "@/lib/queryKeys";
+import type { AppRole } from "@/lib/permissions";
 
 export interface AdminUser {
   id: string;
@@ -8,7 +9,10 @@ export interface AdminUser {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
-  role: "viewer" | "contributor" | "admin";
+  role: AppRole;
+  person_id: number | null;
+  zone_id: number | null;
+  community_id: number | null;
   created_at: string;
   last_sign_in_at: string | null;
 }
@@ -19,6 +23,14 @@ async function fetchAdminUsers(): Promise<AdminUser[]> {
 
   if (error) throw error;
   return (data as AdminUser[]) ?? [];
+}
+
+export interface UpdateRoleParams {
+  targetUserId: string;
+  newRole: AppRole;
+  personId?: number | null;
+  zoneId?: number | null;
+  communityId?: number | null;
 }
 
 export function useAdminUsers(enabled = true) {
@@ -35,17 +47,14 @@ export function useAdminUsers(enabled = true) {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({
-      targetUserId,
-      newRole,
-    }: {
-      targetUserId: string;
-      newRole: "viewer" | "contributor" | "admin";
-    }) => {
+    mutationFn: async (params: UpdateRoleParams) => {
       const supabase = createClient();
       const { error } = await supabase.rpc("set_user_role", {
-        target_user_id: targetUserId,
-        new_role: newRole,
+        target_user_id: params.targetUserId,
+        new_role: params.newRole,
+        new_person_id: params.personId ?? null,
+        new_zone_id: params.zoneId ?? null,
+        new_community_id: params.communityId ?? null,
       });
       if (error) throw error;
     },

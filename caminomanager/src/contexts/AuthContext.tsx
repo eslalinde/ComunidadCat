@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { publicRoutes } from '@/lib/routes';
+import type { AppRole, UserScope } from '@/lib/permissions';
 
 interface Profile {
   full_name: string | null;
@@ -13,18 +14,21 @@ interface Profile {
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  userScope: UserScope | null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
+  userScope: null,
   loading: true,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userScope, setUserScope] = useState<UserScope | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const routerRef = useRef(router);
@@ -48,6 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    async function fetchUserScope() {
+      try {
+        const { data, error } = await supabase.rpc('get_user_scope');
+        if (error) throw error;
+        if (active && data && data.length > 0) {
+          const row = data[0];
+          setUserScope({
+            role: row.role as AppRole,
+            person_id: row.person_id,
+            zone_id: row.zone_id,
+            community_id: row.community_id,
+          });
+        }
+      } catch {
+        // scope fetch is non-critical; default to null (no permissions)
+      }
+    }
+
     // Use onAuthStateChange as the single source of truth.
     // It fires INITIAL_SESSION when the client finishes restoring
     // the session from storage, avoiding getSession() lock issues.
@@ -61,8 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (currentUser) {
           fetchProfile(currentUser.id);
+          fetchUserScope();
         } else {
           setProfile(null);
+          setUserScope(null);
         }
 
         if (event === 'SIGNED_OUT') {
@@ -95,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, userScope, loading }}>
       {children}
     </AuthContext.Provider>
   );
