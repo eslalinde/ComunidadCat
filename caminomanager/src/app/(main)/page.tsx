@@ -102,16 +102,22 @@ export default function Home() {
   const { userScope, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect community_responsible to their community
+  // Redirect community-scoped users to their community
+  // (community_responsible or viewer with community_id)
+  const shouldRedirectToCommunity =
+    userScope?.community_id != null &&
+    userScope.zone_id == null &&
+    (userScope.role === 'community_responsible' || userScope.role === 'viewer');
+
   useEffect(() => {
     if (loading || !userScope) return;
-    if (userScope.role === 'community_responsible' && userScope.community_id) {
-      router.replace(routes.comunidad(userScope.community_id));
+    if (shouldRedirectToCommunity) {
+      router.replace(routes.comunidad(userScope.community_id!));
     }
-  }, [userScope, loading, router]);
+  }, [userScope, loading, router, shouldRedirectToCommunity]);
 
-  // While redirecting, show nothing
-  if (userScope?.role === 'community_responsible' && userScope.community_id) {
+  // While redirecting, show spinner
+  if (shouldRedirectToCommunity) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>

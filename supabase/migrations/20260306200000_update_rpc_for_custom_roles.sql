@@ -34,8 +34,12 @@ BEGIN
   END IF;
 
   -- Clear scope fields that don't apply to the new role
-  IF new_role IN ('admin', 'contributor', 'viewer') THEN
+  IF new_role IN ('admin', 'contributor') THEN
     new_zone_id := NULL;
+    new_community_id := NULL;
+  END IF;
+  -- Viewer accepts optional zone OR community (not both)
+  IF new_role = 'viewer' AND new_zone_id IS NOT NULL THEN
     new_community_id := NULL;
   END IF;
   IF new_role = 'community_responsible' THEN

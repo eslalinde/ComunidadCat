@@ -38,6 +38,7 @@ import {
   getRoleBadgeClass,
   roleRequiresZone,
   roleRequiresCommunity,
+  roleAcceptsScope,
 } from "@/lib/permissions";
 import { useQuery } from "@tanstack/react-query";
 
@@ -185,8 +186,8 @@ export default function AdminPage() {
       targetUserId: confirmDialog.user.id,
       newRole,
       personId,
-      zoneId: roleRequiresZone(newRole) ? zoneId : null,
-      communityId: roleRequiresCommunity(newRole) ? communityId : null,
+      zoneId: (roleRequiresZone(newRole) || roleAcceptsScope(newRole)) ? zoneId : null,
+      communityId: (roleRequiresCommunity(newRole) || roleAcceptsScope(newRole)) ? communityId : null,
     };
 
     updateRole(params, {
@@ -381,14 +382,16 @@ export default function AdminPage() {
           </DialogHeader>
 
           {/* Scope assignment fields */}
-          {confirmDialog && roleRequiresZone(confirmDialog.newRole) && (
+          {confirmDialog && (roleRequiresZone(confirmDialog.newRole) || roleAcceptsScope(confirmDialog.newRole)) && (
             <div className="space-y-2">
-              <Label>Zona asignada *</Label>
+              <Label>
+                Zona asignada {roleRequiresZone(confirmDialog.newRole) ? "*" : "(opcional)"}
+              </Label>
               <Select
-                value={confirmDialog.zoneId?.toString() ?? ""}
+                value={confirmDialog.zoneId?.toString() ?? "none"}
                 onValueChange={(val) =>
                   setConfirmDialog((prev) =>
-                    prev ? { ...prev, zoneId: parseInt(val) } : null
+                    prev ? { ...prev, zoneId: val === "none" ? null : parseInt(val), communityId: val !== "none" ? null : prev.communityId } : null
                   )
                 }
               >
@@ -396,6 +399,9 @@ export default function AdminPage() {
                   <SelectValue placeholder="Seleccionar zona..." />
                 </SelectTrigger>
                 <SelectContent>
+                  {roleAcceptsScope(confirmDialog.newRole) && (
+                    <SelectItem value="none">Sin zona</SelectItem>
+                  )}
                   {zones?.map((z) => (
                     <SelectItem key={z.id} value={z.id.toString()}>
                       {z.name}
@@ -407,14 +413,16 @@ export default function AdminPage() {
             </div>
           )}
 
-          {confirmDialog && roleRequiresCommunity(confirmDialog.newRole) && (
+          {confirmDialog && (roleRequiresCommunity(confirmDialog.newRole) || (roleAcceptsScope(confirmDialog.newRole) && !confirmDialog.zoneId)) && (
             <div className="space-y-2">
-              <Label>Comunidad asignada *</Label>
+              <Label>
+                Comunidad asignada {roleRequiresCommunity(confirmDialog.newRole) ? "*" : "(opcional)"}
+              </Label>
               <Select
-                value={confirmDialog.communityId?.toString() ?? ""}
+                value={confirmDialog.communityId?.toString() ?? "none"}
                 onValueChange={(val) =>
                   setConfirmDialog((prev) =>
-                    prev ? { ...prev, communityId: parseInt(val) } : null
+                    prev ? { ...prev, communityId: val === "none" ? null : parseInt(val) } : null
                   )
                 }
               >
@@ -422,6 +430,9 @@ export default function AdminPage() {
                   <SelectValue placeholder="Seleccionar comunidad..." />
                 </SelectTrigger>
                 <SelectContent>
+                  {roleAcceptsScope(confirmDialog.newRole) && (
+                    <SelectItem value="none">Sin comunidad</SelectItem>
+                  )}
                   {communities?.map((c) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
                       Comunidad {c.number}

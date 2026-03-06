@@ -49,6 +49,21 @@ export function roleRequiresCommunity(role: AppRole): boolean {
   return role === 'community_responsible';
 }
 
+// Does this role optionally accept scope (zone or community)?
+export function roleAcceptsScope(role: AppRole): boolean {
+  return role === 'viewer';
+}
+
+// Helper: does the viewer have any scope assigned?
+function viewerHasScope(scope: UserScope): boolean {
+  return scope.role === 'viewer' && (scope.zone_id !== null || scope.community_id !== null);
+}
+
+// Helper: is viewer scoped to a single community (not a zone)?
+function viewerIsCommunityScoped(scope: UserScope): boolean {
+  return scope.role === 'viewer' && scope.community_id !== null && scope.zone_id === null;
+}
+
 // --- Permission checks ---
 
 export function canAccessAdmin(scope: UserScope | null): boolean {
@@ -82,27 +97,31 @@ export function canManageTeams(scope: UserScope | null): boolean {
 
 export function canViewAuditLog(scope: UserScope | null): boolean {
   if (!scope) return false;
-  // community_responsible cannot see audit log (except their own events, handled by RLS)
-  return scope.role !== 'community_responsible' && scope.role !== 'viewer';
+  return ['admin', 'contributor', 'zone_leader', 'zone_contributor'].includes(scope.role);
 }
 
 export function canViewStepLog(scope: UserScope | null): boolean {
   if (!scope) return false;
+  // viewer with scope can see step logs; community_responsible cannot
+  if (scope.role === 'viewer') return viewerHasScope(scope);
   return scope.role !== 'community_responsible';
 }
 
 export function canPrintFicha(scope: UserScope | null): boolean {
   if (!scope) return false;
+  if (scope.role === 'viewer') return viewerHasScope(scope);
   return scope.role !== 'community_responsible';
 }
 
 export function canPrintHermanos(scope: UserScope | null): boolean {
   if (!scope) return false;
-  return true; // all roles can print brothers list
+  if (scope.role === 'viewer') return viewerHasScope(scope);
+  return true;
 }
 
 export function canPrintTodo(scope: UserScope | null): boolean {
   if (!scope) return false;
+  if (scope.role === 'viewer') return viewerHasScope(scope);
   return scope.role !== 'community_responsible';
 }
 
@@ -193,6 +212,48 @@ export function getSidebarVisibility(scope: UserScope | null): SidebarVisibility
 
   const { role } = scope;
 
+  // Viewer without scope: sees nothing (new user waiting for admin assignment)
+  if (role === 'viewer' && !viewerHasScope(scope)) {
+    return {
+      principal: true,
+      comunidades: false,
+      parroquias: false,
+      personas: false,
+      organizacion: false,
+      ubicaciones: false,
+      reportes: false,
+      admin: false,
+    };
+  }
+
+  // Viewer with community scope: like community_responsible but read-only
+  if (role === 'viewer' && viewerIsCommunityScoped(scope)) {
+    return {
+      principal: true,
+      comunidades: true,
+      parroquias: false,
+      personas: false,
+      organizacion: false,
+      ubicaciones: false,
+      reportes: false,
+      admin: false,
+    };
+  }
+
+  // Viewer with zone scope: can see communities and parroquias in their zone
+  if (role === 'viewer') {
+    return {
+      principal: true,
+      comunidades: true,
+      parroquias: true,
+      personas: false,
+      organizacion: false,
+      ubicaciones: false,
+      reportes: false,
+      admin: false,
+    };
+  }
+
   if (role === 'community_responsible') {
     return {
       principal: true,
@@ -227,19 +288,6 @@ export function getSidebarVisibility(scope: UserScope | null): SidebarVisibility
       personas: true,
       organizacion: false,
       ubicaciones: false,
-      reportes: true,
-      admin: false,
-    };
-  }
-
-  if (role === 'viewer') {
-    return {
-      principal: true,
-      comunidades: true,
-      parroquias: true,
-      personas: true,
-      organizacion: true,
-      ubicaciones: true,
       reportes: true,
       admin: false,
     };
