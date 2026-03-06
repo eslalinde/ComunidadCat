@@ -45,19 +45,34 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Set up Storage!
-insert into storage.buckets (id, name)
-  values ('avatars', 'avatars');
+-- Set up Storage (only if the storage schema exists, e.g. on hosted Supabase)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage') THEN
+    INSERT INTO storage.buckets (id, name)
+      VALUES ('avatars', 'avatars')
+      ON CONFLICT (id) DO NOTHING;
 
--- Set up access controls for storage.
-create policy "Avatar images are publicly accessible." on storage.objects
-  for select using (bucket_id = 'avatars');
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policies WHERE policyname = 'Avatar images are publicly accessible.' AND tablename = 'objects'
+    ) THEN
+      EXECUTE 'CREATE POLICY "Avatar images are publicly accessible." ON storage.objects FOR SELECT USING (bucket_id = ''avatars'')';
+    END IF;
 
-create policy "Anyone can upload an avatar." on storage.objects
-  for insert with check (bucket_id = 'avatars');
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can upload an avatar.' AND tablename = 'objects'
+    ) THEN
+      EXECUTE 'CREATE POLICY "Anyone can upload an avatar." ON storage.objects FOR INSERT WITH CHECK (bucket_id = ''avatars'')';
+    END IF;
 
-create policy "Anyone can update their own avatar." on storage.objects
-  for update using ((select auth.uid()) = owner) with check (bucket_id = 'avatars');
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can update their own avatar.' AND tablename = 'objects'
+    ) THEN
+      EXECUTE 'CREATE POLICY "Anyone can update their own avatar." ON storage.objects FOR UPDATE USING ((SELECT auth.uid()) = owner) WITH CHECK (bucket_id = ''avatars'')';
+    END IF;
+  END IF;
+END
+$$;
 
 -- ==============================================
 -- BUSINESS TABLES
