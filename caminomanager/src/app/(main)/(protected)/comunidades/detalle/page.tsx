@@ -30,6 +30,19 @@ import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
 import { Community } from '@/types/database';
 import { routes } from '@/lib/routes';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  canEditCommunity,
+  canDeleteCommunity,
+  canMergeCommunity,
+  canManageBrothers,
+  canManageTeams,
+  canViewAuditLog,
+  canViewStepLog,
+  canPrintFicha,
+  canPrintHermanos,
+  canPrintTodo,
+} from '@/lib/permissions';
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -43,6 +56,21 @@ function CommunityDetailContent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [printMode, setPrintMode] = useState<PrintMode>('todo');
+
+  const { userScope } = useAuth();
+
+  // Permission flags
+  const showEdit = canEditCommunity(userScope);
+  const showDelete = canDeleteCommunity(userScope);
+  const showMerge = canMergeCommunity(userScope);
+  const showManageBrothers = canManageBrothers(userScope);
+  const showManageTeams = canManageTeams(userScope);
+  const showAuditLog = canViewAuditLog(userScope);
+  const showStepLog = canViewStepLog(userScope);
+  const showPrintFicha = canPrintFicha(userScope);
+  const showPrintHermanos = canPrintHermanos(userScope);
+  const showPrintTodo = canPrintTodo(userScope);
+  const showAnyPrint = showPrintFicha || showPrintHermanos || showPrintTodo;
 
   const handlePrint = (mode: PrintMode) => {
     setPrintMode(mode);
@@ -306,27 +334,35 @@ function CommunityDetailContent() {
               <ArrowLeft className="h-4 w-4" />
               Regresar a Comunidades
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Printer className="h-4 w-4" />
-                  Imprimir
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => handlePrint('ficha')}>
-                  Ficha completa
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlePrint('hermanos')}>
-                  Lista de hermanos
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlePrint('todo')}>
-                  Todo
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {community?.parish_id && (
+            {showAnyPrint && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Printer className="h-4 w-4" />
+                    Imprimir
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {showPrintFicha && (
+                    <DropdownMenuItem onClick={() => handlePrint('ficha')}>
+                      Ficha completa
+                    </DropdownMenuItem>
+                  )}
+                  {showPrintHermanos && (
+                    <DropdownMenuItem onClick={() => handlePrint('hermanos')}>
+                      Lista de hermanos
+                    </DropdownMenuItem>
+                  )}
+                  {showPrintTodo && (
+                    <DropdownMenuItem onClick={() => handlePrint('todo')}>
+                      Todo
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {showMerge && community?.parish_id && (
               <Button
                 variant="outline"
                 onClick={() => setIsMergeModalOpen(true)}
@@ -336,16 +372,20 @@ function CommunityDetailContent() {
                 Fusionar
               </Button>
             )}
-            <AuditLogSheet communityId={communityId} />
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="flex items-center gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
-              disabled={loading}
-            >
-              <Trash2 className="h-4 w-4" />
-              Eliminar
-            </Button>
+            {showAuditLog && (
+              <AuditLogSheet communityId={communityId} />
+            )}
+            {showDelete && (
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="flex items-center gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
+                disabled={loading}
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar
+              </Button>
+            )}
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
             Comunidad {community?.number || 'Cargando...'}
@@ -359,7 +399,7 @@ function CommunityDetailContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left: Community Info + Teams */}
           <div className="space-y-6">
-            <CommunityInfo community={community} loading={loading} onEdit={handleEdit} />
+            <CommunityInfo community={community} loading={loading} onEdit={showEdit ? handleEdit : undefined} />
 
             {/* Responsables Team */}
             <div>
@@ -372,12 +412,12 @@ function CommunityDetailContent() {
                       parishes={team.id ? teamParishes[team.id] || [] : []}
                       loading={loading}
                       communityId={communityId}
-                      onDelete={async () => { await invalidateTeams(); await invalidateTeamMembers(); }}
-                      onAddMember={() => setAddToTeamId(team.id!)}
+                      onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
+                      onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
                     />
                   </div>
                 ))
-              ) : (
+              ) : showManageTeams ? (
                 <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <div className="text-center space-y-4">
                     <p className="text-gray-500 text-lg">No hay equipo de responsables</p>
@@ -392,6 +432,10 @@ function CommunityDetailContent() {
                       Crear Equipo de Responsables
                     </Button>
                   </div>
+                </div>
+              ) : (
+                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <p className="text-gray-500">No hay equipo de responsables</p>
                 </div>
               )}
             </div>
@@ -409,24 +453,26 @@ function CommunityDetailContent() {
                         loading={loading}
                         teamNumber={index + 1}
                         communityId={communityId}
-                        onDelete={async () => { await invalidateTeams(); await invalidateTeamMembers(); }}
-                        onAddMember={() => setAddToTeamId(team.id!)}
+                        onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
+                        onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
                       />
                     </div>
                   ))}
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      onClick={handleCreateCatequistasTeam}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      disabled={loading}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Agregar Equipo de Catequistas
-                    </Button>
-                  </div>
+                  {showManageTeams && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        onClick={handleCreateCatequistasTeam}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        disabled={loading}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Agregar Equipo de Catequistas
+                      </Button>
+                    </div>
+                  )}
                 </>
-              ) : (
+              ) : showManageTeams ? (
                 <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <div className="text-center space-y-4">
                     <p className="text-gray-500 text-lg">No hay equipos de catequistas</p>
@@ -442,30 +488,36 @@ function CommunityDetailContent() {
                     </Button>
                   </div>
                 </div>
+              ) : (
+                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <p className="text-gray-500">No hay equipos de catequistas</p>
+                </div>
               )}
             </div>
           </div>
 
           {/* Right: Step Log + Brothers List (unified) */}
           <div className="space-y-6">
-            <CommunityStepLogCompact
-              communityId={communityId}
-              communityNumber={community?.number || ''}
-              stepLogs={stepLogs}
-              loading={loading}
-              onStepLogAdded={async () => { await invalidateStepLogs(); await invalidateDetail(); }}
-              onStepLogDeleted={invalidateStepLogs}
-              defaultCatechistName={defaultCatechistName}
-              actualBrothers={community?.actual_brothers}
-            />
+            {showStepLog && (
+              <CommunityStepLogCompact
+                communityId={communityId}
+                communityNumber={community?.number || ''}
+                stepLogs={stepLogs}
+                loading={loading}
+                onStepLogAdded={async () => { await invalidateStepLogs(); await invalidateDetail(); }}
+                onStepLogDeleted={invalidateStepLogs}
+                defaultCatechistName={defaultCatechistName}
+                actualBrothers={community?.actual_brothers}
+              />
+            )}
 
             <BrothersList
               brothers={mergedBrothers}
               loading={loading}
               communityId={communityId}
               teamMembers={teamMembers}
-              onDelete={invalidateBrothers}
-              onAdd={invalidateBrothers}
+              onDelete={showManageBrothers ? invalidateBrothers : undefined}
+              onAdd={showManageBrothers ? invalidateBrothers : undefined}
             />
           </div>
         </div>
@@ -485,44 +537,50 @@ function CommunityDetailContent() {
       />
 
       {/* Modal de edición */}
-      <DynamicEntityModal
-        key={`community-edit-${community?.id ?? 'none'}-${isEditModalOpen ? 'open' : 'closed'}`}
-        open={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleSave}
-        initial={communityEditInitial}
-        fields={communityConfig.fields}
-        title="Editar Comunidad"
-        loading={isSaving}
-      />
+      {showEdit && (
+        <DynamicEntityModal
+          key={`community-edit-${community?.id ?? 'none'}-${isEditModalOpen ? 'open' : 'closed'}`}
+          open={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleSave}
+          initial={communityEditInitial}
+          fields={communityConfig.fields}
+          title="Editar Comunidad"
+          loading={isSaving}
+        />
+      )}
 
       {/* Modal para agregar hermano a equipo */}
-      <SelectBrotherForTeamModal
-        open={addToTeamId !== null}
-        onClose={() => setAddToTeamId(null)}
-        onSelect={handleAddBrotherToTeam}
-        brothers={mergedBrothers}
-        teamMembers={addToTeamId ? teamMembers[addToTeamId] || [] : []}
-      />
+      {showManageTeams && (
+        <SelectBrotherForTeamModal
+          open={addToTeamId !== null}
+          onClose={() => setAddToTeamId(null)}
+          onSelect={handleAddBrotherToTeam}
+          brothers={mergedBrothers}
+          teamMembers={addToTeamId ? teamMembers[addToTeamId] || [] : []}
+        />
+      )}
 
       {/* Diálogo de confirmación de eliminación */}
-      <ConfirmDeleteDialog
-        open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDeleteCommunity}
-        title="¿Eliminar comunidad?"
-        itemName={`Comunidad ${community?.number || ''}`}
-        description="¿Estás seguro de que deseas eliminar esta comunidad? Se eliminarán todos los datos asociados."
-        preview={[
-          `${mergedBrothers.length} hermano(s)`,
-          `${teams.responsables.length + teams.catequistas.length} equipo(s)`,
-          `${stepLogs.length} registro(s) de bitácora`,
-        ]}
-        loading={isDeleting}
-      />
+      {showDelete && (
+        <ConfirmDeleteDialog
+          open={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={handleDeleteCommunity}
+          title="¿Eliminar comunidad?"
+          itemName={`Comunidad ${community?.number || ''}`}
+          description="¿Estás seguro de que deseas eliminar esta comunidad? Se eliminarán todos los datos asociados."
+          preview={[
+            `${mergedBrothers.length} hermano(s)`,
+            `${teams.responsables.length + teams.catequistas.length} equipo(s)`,
+            `${stepLogs.length} registro(s) de bitácora`,
+          ]}
+          loading={isDeleting}
+        />
+      )}
 
       {/* Modal de fusión de comunidades */}
-      {community?.parish_id && (
+      {showMerge && community?.parish_id && (
         <MergeCommunityModal
           open={isMergeModalOpen}
           onClose={() => setIsMergeModalOpen(false)}

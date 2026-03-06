@@ -235,50 +235,52 @@ export function BrothersList({ brothers, loading, communityId, teamMembers, onDe
                 Total: {brothers.length} {brothers.length === 1 ? 'hermano' : 'hermanos'}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsSelectModalOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <UserPlus className="h-4 w-4" />
-                Agregar Existente
-              </Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Agregar Nuevo
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  align="end"
-                  sideOffset={4}
-                  className="min-w-[180px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
+            {onAdd && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsSelectModalOpen(true)}
+                  className="flex items-center gap-2"
                 >
-                  <DropdownMenu.Item
-                    className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                    onSelect={() => setIsCreateModalOpen(true)}
+                  <UserPlus className="h-4 w-4" />
+                  Agregar Existente
+                </Button>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Agregar Nuevo
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    align="end"
+                    sideOffset={4}
+                    className="min-w-[180px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
                   >
-                    <User className="h-4 w-4" />
-                    Hermano individual
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                    onSelect={() => setIsMarriageModalOpen(true)}
-                  >
-                    <Heart className="h-4 w-4" />
-                    Matrimonio
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Root>
-            </div>
+                    <DropdownMenu.Item
+                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
+                      onSelect={() => setIsCreateModalOpen(true)}
+                    >
+                      <User className="h-4 w-4" />
+                      Hermano individual
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
+                      onSelect={() => setIsMarriageModalOpen(true)}
+                    >
+                      <Heart className="h-4 w-4" />
+                      Matrimonio
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              </div>
+            )}
           </div>
         </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
@@ -288,7 +290,7 @@ export function BrothersList({ brothers, loading, communityId, teamMembers, onDe
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Celular</TableHead>
-                <TableHead></TableHead>
+                {onDelete && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -341,17 +343,19 @@ export function BrothersList({ brothers, loading, communityId, teamMembers, onDe
                               )}
                             </TableCell>
                             <TableCell>{brother.celular || '-'}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant={isInTeam ? "secondary" : "outline"}
-                                className={!isInTeam ? "text-destructive border-destructive/50 hover:bg-destructive/10" : ""}
-                                onClick={() => handleRequestDelete(brother)}
-                                disabled={isInTeam || isDeleting}
-                                title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                            {onDelete && (
+                              <TableCell>
+                                <Button
+                                  variant={isInTeam ? "secondary" : "outline"}
+                                  className={!isInTeam ? "text-destructive border-destructive/50 hover:bg-destructive/10" : ""}
+                                  onClick={() => handleRequestDelete(brother)}
+                                  disabled={isInTeam || isDeleting}
+                                  title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            )}
                           </TableRow>
                         );
                       })}

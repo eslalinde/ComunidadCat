@@ -40,6 +40,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { DownloadApp } from "@/components/DownloadApp";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSidebarVisibility } from "@/lib/permissions";
+import { useMemo } from "react";
 
 interface NavItem {
   label: string;
@@ -49,12 +52,14 @@ interface NavItem {
 
 interface NavGroup {
   title: string;
+  key: string;
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
+const allNavGroups: NavGroup[] = [
   {
     title: "Principal",
+    key: "principal",
     items: [
       { label: "Inicio", href: routes.home, icon: Home },
       { label: "Comunidades", href: routes.comunidades, icon: Users2 },
@@ -64,6 +69,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Organización",
+    key: "organizacion",
     items: [
       { label: "Diócesis", href: routes.diocesis, icon: Cross },
       { label: "Equipo Nacional", href: routes.equipoNacional, icon: Shield },
@@ -73,6 +79,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Ubicaciones",
+    key: "ubicaciones",
     items: [
       { label: "Países", href: routes.paises, icon: Globe },
       { label: "Departamentos", href: routes.departamentos, icon: MapPinned },
@@ -82,17 +89,26 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Reportes",
+    key: "reportes",
     items: [
       { label: "Reportes", href: routes.reportes, icon: BarChart3 },
     ],
   },
   {
     title: "Administración",
+    key: "admin",
     items: [
       { label: "Usuarios", href: routes.admin, icon: ShieldCheck },
     ],
   },
 ];
+
+// Items within "Principal" that have individual visibility keys
+const principalItemVisibility: Record<string, keyof ReturnType<typeof getSidebarVisibility>> = {
+  [routes.comunidades]: 'comunidades',
+  [routes.parroquias]: 'parroquias',
+  [routes.personas]: 'personas',
+};
 
 export function AppSidebar({
   userName,
@@ -103,6 +119,29 @@ export function AppSidebar({
   userEmail?: string;
 }) {
   const pathname = usePathname();
+  const { userScope } = useAuth();
+  const visibility = useMemo(() => getSidebarVisibility(userScope), [userScope]);
+
+  const filteredGroups = useMemo(() => {
+    return allNavGroups
+      .filter((group) => {
+        const key = group.key as keyof typeof visibility;
+        return visibility[key] !== false;
+      })
+      .map((group) => {
+        if (group.key === 'principal') {
+          return {
+            ...group,
+            items: group.items.filter((item) => {
+              const visKey = principalItemVisibility[item.href];
+              if (visKey) return visibility[visKey] !== false;
+              return true; // Inicio is always visible
+            }),
+          };
+        }
+        return group;
+      });
+  }, [visibility]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -136,7 +175,7 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        {navGroups.map((group) => (
+        {filteredGroups.map((group) => (
           <Collapsible
             key={group.title}
             defaultOpen
