@@ -318,16 +318,18 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                 Agregar
               </Button>
             )}
-            <Button
-              variant="outline"
-              className="text-destructive border-destructive/50 hover:bg-destructive/10"
-              onClick={() => setShowDeleteTeamDialog(true)}
-              disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
-              title="Eliminar equipo completo"
-            >
-              <Trash2 className="h-4 w-4" />
-              {deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}
-            </Button>
+            {onDelete && (
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                onClick={() => setShowDeleteTeamDialog(true)}
+                disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
+                title="Eliminar equipo completo"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}
+              </Button>
+            )}
           </div>
         </div>
         {team.team_type_id === 3 && parishes.length > 0 && (
@@ -349,7 +351,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Celular</TableHead>
-                <TableHead className="print-hidden">Acciones</TableHead>
+                {onDelete && <TableHead className="print-hidden">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -394,50 +396,52 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                     <TableCell>
                       {member.mobile || '-'}
                     </TableCell>
-                    <TableCell className="print-hidden">
-                      <div className="flex gap-2">
-                        {onEditMember && (
+                    {onDelete && (
+                      <TableCell className="print-hidden">
+                        <div className="flex gap-2">
+                          {onEditMember && (
+                            <Button
+                              variant="outline"
+                              onClick={() => onEditMember(member.personIds[0])}
+                              disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
+                              title="Editar persona"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {member.isResponsible ? (
+                            <Button
+                              variant="outline"
+                              className="text-orange-500 border-orange-300 hover:bg-orange-50"
+                              onClick={() => setMemberToRemoveResponsible(member)}
+                              disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
+                              title="Quitar responsabilidad (la persona permanecerá en el equipo)"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              className="text-green-600 border-green-300 hover:bg-green-50"
+                              onClick={() => setMemberToAssignResponsible(member)}
+                              disabled={hasResponsible || assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
+                              title={hasResponsible ? "Ya existe un responsable en el equipo. Quita la responsabilidad del actual para asignar a otro." : "Asignar responsabilidad"}
+                            >
+                              <Crown className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
-                            onClick={() => onEditMember(member.personIds[0])}
+                            className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                            onClick={() => setMemberToDelete(member)}
                             disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                            title="Editar persona"
+                            title="Eliminar miembro del equipo"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        {member.isResponsible ? (
-                          <Button
-                            variant="outline"
-                            className="text-orange-500 border-orange-300 hover:bg-orange-50"
-                            onClick={() => setMemberToRemoveResponsible(member)}
-                            disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
-                            title="Quitar responsabilidad (la persona permanecerá en el equipo)"
-                          >
-                            <UserMinus className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            className="text-green-600 border-green-300 hover:bg-green-50"
-                            onClick={() => setMemberToAssignResponsible(member)}
-                            disabled={hasResponsible || assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
-                            title={hasResponsible ? "Ya existe un responsable en el equipo. Quita la responsabilidad del actual para asignar a otro." : "Asignar responsabilidad"}
-                          >
-                            <Crown className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                          onClick={() => setMemberToDelete(member)}
-                          disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                          title="Eliminar miembro del equipo"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

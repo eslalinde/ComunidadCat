@@ -22,9 +22,10 @@ interface CommunityStepLogCompactProps {
   onStepLogDeleted?: () => void;
   defaultCatechistName?: string;
   actualBrothers?: number;
+  readOnly?: boolean;
 }
 
-export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs, loading, onStepLogAdded, onStepLogDeleted, defaultCatechistName, actualBrothers }: CommunityStepLogCompactProps) {
+export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs, loading, onStepLogAdded, onStepLogDeleted, defaultCatechistName, actualBrothers, readOnly }: CommunityStepLogCompactProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -180,13 +181,15 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Bitácora</CardTitle>
           <div className="flex items-center gap-2 print-hidden">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Agregar
-            </Button>
+            {!readOnly && (
+              <Button
+                variant="outline"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Agregar
+              </Button>
+            )}
             {count > itemsPerPage && (
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
@@ -226,16 +229,18 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                                 <p className="text-sm text-gray-500 mt-1 whitespace-pre-wrap">{entry.notes}</p>
                               )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                              onClick={() => handleDeleteClick(entry)}
-                              disabled={entryToDelete?.id === entry.id}
-                              title="Eliminar evento"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            {!readOnly && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                                onClick={() => handleDeleteClick(entry)}
+                                disabled={entryToDelete?.id === entry.id}
+                                title="Eliminar evento"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -279,16 +284,18 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                           <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{entry.notes}</p>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                        onClick={() => handleDeleteClick(entry)}
-                        disabled={entryToDelete?.id === entry.id}
-                        title="Eliminar evento"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      {!readOnly && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                          onClick={() => handleDeleteClick(entry)}
+                          disabled={entryToDelete?.id === entry.id}
+                          title="Eliminar evento"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

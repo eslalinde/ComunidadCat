@@ -57,4 +57,11 @@ export const queryKeys = {
     all: ['admin'] as const,
     users: () => ['admin', 'users'] as const,
   },
+
+  // User community access
+  communityAccess: {
+    all: ['communityAccess'] as const,
+    community: (communityId: number) => ['communityAccess', 'community', communityId] as const,
+    mine: () => ['communityAccess', 'mine'] as const,
+  },
 };

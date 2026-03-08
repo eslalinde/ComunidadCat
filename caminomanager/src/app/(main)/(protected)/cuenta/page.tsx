@@ -1,21 +1,21 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-type AppRole = 'viewer' | 'contributor' | 'admin';
-
-const roleLabels: Record<AppRole, string> = {
-  viewer: '👁️ Visualizador (solo lectura)',
-  contributor: '✏️ Colaborador (lectura y escritura)',
-  admin: '🔐 Administrador (acceso completo)',
-};
+import { Badge } from "@/components/ui/badge";
+import { type AppRole, getRoleLabel, getRoleBadgeClass } from "@/lib/permissions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMyCommunitiesAccess } from "@/hooks/useCommunityAccess";
+import { routes } from "@/lib/routes";
 
 export default function AccountPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { userScope } = useAuth();
+  const { communities: accessCommunities, loading: loadingAccess } = useMyCommunitiesAccess();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -130,14 +130,43 @@ export default function AccountPage() {
         
         {/* Mostrar rol del usuario */}
         {role && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-[#1B3A6F]">Tu rol actual:</p>
-            <p className="text-lg text-[#15305C]">{roleLabels[role]}</p>
-            {role === 'viewer' && (
-              <p className="text-xs text-blue-700 mt-1">
-                Solo puedes ver los datos. Contacta a un administrador para obtener permisos de edición.
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[#1B3A6F]">Tu rol:</span>
+              <Badge className={getRoleBadgeClass(role)}>{getRoleLabel(role)}</Badge>
+            </div>
+            {userScope?.zone_id && (
+              <p className="text-xs text-blue-700">Alcance: Zona asignada</p>
+            )}
+            {userScope?.community_id && !userScope?.zone_id && (
+              <p className="text-xs text-blue-700">Alcance: Comunidad asignada</p>
+            )}
+            {role === 'viewer' && !userScope?.zone_id && !userScope?.community_id && accessCommunities.length === 0 && (
+              <p className="text-xs text-blue-700">
+                Sin acceso asignado. Contacta a un administrador para que te otorgue permisos.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Comunidades con acceso explícito */}
+        {!loadingAccess && accessCommunities.length > 0 && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <p className="text-sm font-medium text-emerald-800 mb-2">
+              Comunidades con acceso otorgado:
+            </p>
+            <div className="space-y-1">
+              {accessCommunities.map((c) => (
+                <Link
+                  key={c.community_id}
+                  href={routes.comunidad(c.community_id)}
+                  className="block text-sm text-emerald-700 hover:text-emerald-900 hover:underline"
+                >
+                  Comunidad {c.community_number}
+                  {c.parish_name && ` - ${c.parish_name}`}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
         

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { useAdminUsers, type AdminUser } from "@/hooks/useAdminUsers";
+import { useAdminUsers, type AdminUser, type UpdateRoleParams, type CreateUserParams } from "@/hooks/useAdminUsers";
 import {
   Table,
   TableHeader,
@@ -30,21 +30,28 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, Search, RefreshCw } from "lucide-react";
+import { Shield, Search, RefreshCw, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import {
+  type AppRole,
+  getRoleLabel,
+  getRoleBadgeClass,
+  roleRequiresZone,
+  roleRequiresCommunity,
+  roleAcceptsScope,
+} from "@/lib/permissions";
+import { useQuery } from "@tanstack/react-query";
 
-type AppRole = "viewer" | "contributor" | "admin";
-
-const ROLE_LABELS: Record<AppRole, string> = {
-  viewer: "Viewer",
-  contributor: "Contributor",
-  admin: "Admin",
-};
-
-const ROLE_BADGE_CLASSES: Record<AppRole, string> = {
-  viewer: "bg-gray-100 text-gray-700 border-gray-300",
-  contributor: "bg-blue-100 text-blue-700 border-blue-300",
-  admin: "bg-blue-100 text-[#1B3A6F] border-blue-300",
-};
+const ALL_ROLES: AppRole[] = [
+  "viewer",
+  "contributor",
+  "admin",
+  "zone_leader",
+  "zone_contributor",
+  "community_responsible",
+];
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -52,6 +59,48 @@ function formatDate(dateStr: string | null): string {
     year: "numeric",
     month: "short",
     day: "numeric",
+  });
+}
+
+interface ZoneOption {
+  id: number;
+  name: string;
+  city?: { name: string } | { name: string }[];
+}
+
+interface CommunityOption {
+  id: number;
+  number: string;
+  parish?: { name: string } | { name: string }[];
+}
+
+function useZones() {
+  const supabase = useMemo(() => createClient(), []);
+  return useQuery<ZoneOption[]>({
+    queryKey: ["admin", "zones"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("city_zones")
+        .select("id, name, city:cities(name)")
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as ZoneOption[];
+    },
+  });
+}
+
+function useCommunities() {
+  const supabase = useMemo(() => createClient(), []);
+  return useQuery<CommunityOption[]>({
+    queryKey: ["admin", "communities"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("communities")
+        .select("id, number, parish:parishes(name)")
+        .order("number");
+      if (error) throw error;
+      return (data ?? []) as CommunityOption[];
+    },
   });
 }
 
@@ -64,10 +113,26 @@ export default function AdminPage() {
   const [confirmDialog, setConfirmDialog] = useState<{
     user: AdminUser;
     newRole: AppRole;
+    zoneId: number | null;
+    communityId: number | null;
+    personId: number | null;
   } | null>(null);
 
-  const { users, loading, error, updateRole, isUpdatingRole } =
+  const [createDialog, setCreateDialog] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    role: "viewer" as AppRole,
+    zoneId: null as number | null,
+    communityId: null as number | null,
+  });
+
+  const { users, loading, error, updateRole, isUpdatingRole, createUser, isCreatingUser } =
     useAdminUsers(authorized);
+
+  const { data: zones } = useZones();
+  const { data: communities } = useCommunities();
 
   // Check admin authorization
   useEffect(() => {
@@ -112,20 +177,79 @@ export default function AdminPage() {
 
   function handleRoleChange(user: AdminUser, newRole: string) {
     if (newRole === user.role) return;
-    setConfirmDialog({ user, newRole: newRole as AppRole });
+    setConfirmDialog({
+      user,
+      newRole: newRole as AppRole,
+      zoneId: user.zone_id,
+      communityId: user.community_id,
+      personId: user.person_id,
+    });
   }
 
   function confirmRoleChange() {
     if (!confirmDialog) return;
-    updateRole(
-      {
-        targetUserId: confirmDialog.user.id,
-        newRole: confirmDialog.newRole,
-      },
-      {
-        onSettled: () => setConfirmDialog(null),
+    const { newRole, zoneId, communityId, personId } = confirmDialog;
+
+    // Validate required scope
+    if (roleRequiresZone(newRole) && !zoneId) return;
+    if (roleRequiresCommunity(newRole) && !communityId) return;
+
+    const params: UpdateRoleParams = {
+      targetUserId: confirmDialog.user.id,
+      newRole,
+      personId,
+      zoneId: (roleRequiresZone(newRole) || roleAcceptsScope(newRole)) ? zoneId : null,
+      communityId: (roleRequiresCommunity(newRole) || roleAcceptsScope(newRole)) ? communityId : null,
+    };
+
+    updateRole(params, {
+      onSettled: () => setConfirmDialog(null),
+    });
+  }
+
+  function getScopeLabel(user: AdminUser): string {
+    if (user.zone_id && zones) {
+      const zone = zones.find((z) => z.id === user.zone_id);
+      if (zone) return `Zona: ${zone.name}`;
+    }
+    if (user.community_id && communities) {
+      const comm = communities.find((c) => c.id === user.community_id);
+      if (comm) {
+        const parish = comm.parish as any;
+        return `Com. ${comm.number} (${parish?.name ?? "?"})`;
       }
-    );
+    }
+    return "";
+  }
+
+  function openCreateDialog() {
+    setNewUser({ email: "", password: "", fullName: "", role: "viewer", zoneId: null, communityId: null });
+    setCreateDialog(true);
+  }
+
+  function handleCreateUser() {
+    if (!newUser.email.trim() || !newUser.password) return;
+    if (roleRequiresZone(newUser.role) && !newUser.zoneId) return;
+    if (roleRequiresCommunity(newUser.role) && !newUser.communityId) return;
+
+    const params: CreateUserParams = {
+      email: newUser.email.trim(),
+      password: newUser.password,
+      fullName: newUser.fullName.trim() || undefined,
+      role: newUser.role,
+      zoneId: (roleRequiresZone(newUser.role) || roleAcceptsScope(newUser.role)) ? newUser.zoneId : null,
+      communityId: (roleRequiresCommunity(newUser.role) || roleAcceptsScope(newUser.role)) ? newUser.communityId : null,
+    };
+
+    createUser(params, {
+      onSuccess: () => {
+        toast.success("Usuario creado exitosamente");
+        setCreateDialog(false);
+      },
+      onError: (err: any) => {
+        toast.error(err?.message ?? "Error al crear usuario");
+      },
+    });
   }
 
   if (authLoading || !authorized) {
@@ -139,11 +263,17 @@ export default function AdminPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Shield className="w-7 h-7 text-[#1B3A6F]" />
-        <h1 className="text-2xl font-bold text-gray-800">
-          Administración de Usuarios
-        </h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="w-7 h-7 text-[#1B3A6F]" />
+          <h1 className="text-2xl font-bold text-gray-800">
+            Administración de Usuarios
+          </h1>
+        </div>
+        <Button onClick={openCreateDialog} className="flex items-center gap-2">
+          <UserPlus className="w-4 h-4" />
+          Crear usuario
+        </Button>
       </div>
 
       <Card>
@@ -190,8 +320,8 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Usuario</TableHead>
                   <TableHead>Rol</TableHead>
+                  <TableHead>Alcance</TableHead>
                   <TableHead>Último acceso</TableHead>
                 </TableRow>
               </TableHeader>
@@ -220,17 +350,12 @@ export default function AdminPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {user.username || "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
                           {isCurrentUser ? (
                             <Badge
-                              className={`${ROLE_BADGE_CLASSES[user.role]} cursor-not-allowed`}
+                              className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
                               title="No puedes cambiar tu propio rol"
                             >
-                              {ROLE_LABELS[user.role]}
+                              {getRoleLabel(user.role)}
                             </Badge>
                           ) : (
                             <Select
@@ -239,18 +364,23 @@ export default function AdminPage() {
                                 handleRoleChange(user, val)
                               }
                             >
-                              <SelectTrigger className="h-7 text-xs border-none shadow-none">
+                              <SelectTrigger className="h-7 text-xs border-none shadow-none w-[180px]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="viewer">Viewer</SelectItem>
-                                <SelectItem value="contributor">
-                                  Contributor
-                                </SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
+                                {ALL_ROLES.map((r) => (
+                                  <SelectItem key={r} value={r}>
+                                    {getRoleLabel(r)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600">
+                            {getScopeLabel(user) || "—"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-gray-500">
@@ -267,38 +397,101 @@ export default function AdminPage() {
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog with scope assignment */}
       <Dialog
         open={confirmDialog !== null}
         onOpenChange={(open) => !open && setConfirmDialog(null)}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar cambio de rol</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas cambiar el rol de{" "}
+              Cambiar el rol de{" "}
               <strong>
                 {confirmDialog?.user.full_name || confirmDialog?.user.email}
               </strong>{" "}
               de{" "}
               <Badge
                 className={
-                  ROLE_BADGE_CLASSES[confirmDialog?.user.role ?? "viewer"]
+                  getRoleBadgeClass(confirmDialog?.user.role ?? "viewer")
                 }
               >
-                {ROLE_LABELS[confirmDialog?.user.role ?? "viewer"]}
+                {getRoleLabel(confirmDialog?.user.role ?? "viewer")}
               </Badge>{" "}
               a{" "}
               <Badge
                 className={
-                  ROLE_BADGE_CLASSES[confirmDialog?.newRole ?? "viewer"]
+                  getRoleBadgeClass(confirmDialog?.newRole ?? "viewer")
                 }
               >
-                {ROLE_LABELS[confirmDialog?.newRole ?? "viewer"]}
+                {getRoleLabel(confirmDialog?.newRole ?? "viewer")}
               </Badge>
-              ?
             </DialogDescription>
           </DialogHeader>
+
+          {/* Scope assignment fields */}
+          {confirmDialog && (roleRequiresZone(confirmDialog.newRole) || roleAcceptsScope(confirmDialog.newRole)) && (
+            <div className="space-y-2">
+              <Label>
+                Zona asignada {roleRequiresZone(confirmDialog.newRole) ? "*" : "(opcional)"}
+              </Label>
+              <Select
+                value={confirmDialog.zoneId?.toString() ?? "none"}
+                onValueChange={(val) =>
+                  setConfirmDialog((prev) =>
+                    prev ? { ...prev, zoneId: val === "none" ? null : parseInt(val), communityId: val !== "none" ? null : prev.communityId } : null
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar zona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleAcceptsScope(confirmDialog.newRole) && (
+                    <SelectItem value="none">Sin zona</SelectItem>
+                  )}
+                  {zones?.map((z) => (
+                    <SelectItem key={z.id} value={z.id.toString()}>
+                      {z.name}
+                      {z.city && ` (${(z.city as any).name})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {confirmDialog && (roleRequiresCommunity(confirmDialog.newRole) || (roleAcceptsScope(confirmDialog.newRole) && !confirmDialog.zoneId)) && (
+            <div className="space-y-2">
+              <Label>
+                Comunidad asignada {roleRequiresCommunity(confirmDialog.newRole) ? "*" : "(opcional)"}
+              </Label>
+              <Select
+                value={confirmDialog.communityId?.toString() ?? "none"}
+                onValueChange={(val) =>
+                  setConfirmDialog((prev) =>
+                    prev ? { ...prev, communityId: val === "none" ? null : parseInt(val) } : null
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar comunidad..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleAcceptsScope(confirmDialog.newRole) && (
+                    <SelectItem value="none">Sin comunidad</SelectItem>
+                  )}
+                  {communities?.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      Comunidad {c.number}
+                      {c.parish && ` - ${(c.parish as any).name}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               variant="secondary"
@@ -309,7 +502,15 @@ export default function AdminPage() {
             </Button>
             <Button
               onClick={confirmRoleChange}
-              disabled={isUpdatingRole}
+              disabled={
+                isUpdatingRole ||
+                (confirmDialog !== null &&
+                  roleRequiresZone(confirmDialog.newRole) &&
+                  !confirmDialog.zoneId) ||
+                (confirmDialog !== null &&
+                  roleRequiresCommunity(confirmDialog.newRole) &&
+                  !confirmDialog.communityId)
+              }
             >
               {isUpdatingRole ? (
                 <>
@@ -318,6 +519,167 @@ export default function AdminPage() {
                 </>
               ) : (
                 "Confirmar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={createDialog} onOpenChange={(open) => !open && setCreateDialog(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crear nuevo usuario</DialogTitle>
+            <DialogDescription>
+              El usuario podrá iniciar sesión inmediatamente con el email y contraseña asignados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={newUser.email}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contraseña *</Label>
+              <Input
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newUser.password}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nombre completo</Label>
+              <Input
+                type="text"
+                placeholder="Nombre del usuario"
+                value={newUser.fullName}
+                onChange={(e) => setNewUser((prev) => ({ ...prev, fullName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Rol *</Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(val) =>
+                  setNewUser((prev) => ({
+                    ...prev,
+                    role: val as AppRole,
+                    zoneId: null,
+                    communityId: null,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {getRoleLabel(r)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Zone selector */}
+            {(roleRequiresZone(newUser.role) || roleAcceptsScope(newUser.role)) && (
+              <div className="space-y-2">
+                <Label>
+                  Zona {roleRequiresZone(newUser.role) ? "*" : "(opcional)"}
+                </Label>
+                <Select
+                  value={newUser.zoneId?.toString() ?? "none"}
+                  onValueChange={(val) =>
+                    setNewUser((prev) => ({
+                      ...prev,
+                      zoneId: val === "none" ? null : parseInt(val),
+                      communityId: val !== "none" ? null : prev.communityId,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar zona..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleAcceptsScope(newUser.role) && (
+                      <SelectItem value="none">Sin zona</SelectItem>
+                    )}
+                    {zones?.map((z) => (
+                      <SelectItem key={z.id} value={z.id.toString()}>
+                        {z.name}
+                        {z.city && ` (${(z.city as any).name})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Community selector */}
+            {(roleRequiresCommunity(newUser.role) || (roleAcceptsScope(newUser.role) && !newUser.zoneId)) && (
+              <div className="space-y-2">
+                <Label>
+                  Comunidad {roleRequiresCommunity(newUser.role) ? "*" : "(opcional)"}
+                </Label>
+                <Select
+                  value={newUser.communityId?.toString() ?? "none"}
+                  onValueChange={(val) =>
+                    setNewUser((prev) => ({
+                      ...prev,
+                      communityId: val === "none" ? null : parseInt(val),
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar comunidad..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleAcceptsScope(newUser.role) && (
+                      <SelectItem value="none">Sin comunidad</SelectItem>
+                    )}
+                    {communities?.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        Comunidad {c.number}
+                        {c.parish && ` - ${(c.parish as any).name}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setCreateDialog(false)}
+              disabled={isCreatingUser}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateUser}
+              disabled={
+                isCreatingUser ||
+                !newUser.email.trim() ||
+                newUser.password.length < 6 ||
+                (roleRequiresZone(newUser.role) && !newUser.zoneId) ||
+                (roleRequiresCommunity(newUser.role) && !newUser.communityId)
+              }
+            >
+              {isCreatingUser ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                "Crear usuario"
               )}
             </Button>
           </DialogFooter>
