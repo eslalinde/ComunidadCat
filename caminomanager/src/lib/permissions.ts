@@ -11,6 +11,7 @@ export interface UserScope {
   person_id: number | null;
   zone_id: number | null;
   community_id: number | null;
+  has_community_grants: boolean;
 }
 
 const ROLE_LABELS: Record<AppRole, string> = {
@@ -54,9 +55,9 @@ export function roleAcceptsScope(role: AppRole): boolean {
   return role === 'viewer';
 }
 
-// Helper: does the viewer have any scope assigned?
+// Helper: does the viewer have any scope assigned (profile or grants)?
 function viewerHasScope(scope: UserScope): boolean {
-  return scope.role === 'viewer' && (scope.zone_id !== null || scope.community_id !== null);
+  return scope.role === 'viewer' && (scope.zone_id !== null || scope.community_id !== null || scope.has_community_grants);
 }
 
 // Helper: is viewer scoped to a single community (not a zone)?
@@ -107,6 +108,11 @@ export function canViewStepLog(scope: UserScope | null): boolean {
   return scope.role !== 'community_responsible';
 }
 
+export function canEditStepLog(scope: UserScope | null): boolean {
+  if (!scope) return false;
+  return ['admin', 'contributor', 'zone_leader', 'zone_contributor'].includes(scope.role);
+}
+
 export function canPrintFicha(scope: UserScope | null): boolean {
   if (!scope) return false;
   if (scope.role === 'viewer') return viewerHasScope(scope);
@@ -138,6 +144,11 @@ export function canManagePriests(scope: UserScope | null): boolean {
 export function canWriteMasterData(scope: UserScope | null): boolean {
   if (!scope) return false;
   return ['admin', 'contributor'].includes(scope.role);
+}
+
+export function canManageCommunityAccess(scope: UserScope | null): boolean {
+  if (!scope) return false;
+  return ['admin', 'contributor', 'zone_leader'].includes(scope.role);
 }
 
 // --- Route access checks ---
@@ -217,6 +228,20 @@ export function getSidebarVisibility(scope: UserScope | null): SidebarVisibility
     return {
       principal: true,
       comunidades: false,
+      parroquias: false,
+      personas: false,
+      organizacion: false,
+      ubicaciones: false,
+      reportes: false,
+      admin: false,
+    };
+  }
+
+  // Viewer with only community grants (no profile-level scope): can see communities
+  if (role === 'viewer' && scope.zone_id === null && scope.community_id === null && scope.has_community_grants) {
+    return {
+      principal: true,
+      comunidades: true,
       parroquias: false,
       personas: false,
       organizacion: false,

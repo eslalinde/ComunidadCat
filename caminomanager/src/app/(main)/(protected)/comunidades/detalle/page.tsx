@@ -42,7 +42,10 @@ import {
   canPrintFicha,
   canPrintHermanos,
   canPrintTodo,
+  canManageCommunityAccess,
+  canEditStepLog,
 } from '@/lib/permissions';
+import { CommunityAccessSection } from '@/components/crud/CommunityAccessSection';
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -71,6 +74,7 @@ function CommunityDetailContent() {
   const showPrintHermanos = canPrintHermanos(userScope);
   const showPrintTodo = canPrintTodo(userScope);
   const showAnyPrint = showPrintFicha || showPrintHermanos || showPrintTodo;
+  const showCommunityAccess = canManageCommunityAccess(userScope);
 
   const handlePrint = (mode: PrintMode) => {
     setPrintMode(mode);
@@ -372,6 +376,9 @@ function CommunityDetailContent() {
                 Fusionar
               </Button>
             )}
+            {showCommunityAccess && (
+              <CommunityAccessSection communityId={communityId} />
+            )}
             {showAuditLog && (
               <AuditLogSheet communityId={communityId} />
             )}
@@ -508,6 +515,7 @@ function CommunityDetailContent() {
                 onStepLogDeleted={invalidateStepLogs}
                 defaultCatechistName={defaultCatechistName}
                 actualBrothers={community?.actual_brothers}
+                readOnly={!canEditStepLog(userScope)}
               />
             )}
 

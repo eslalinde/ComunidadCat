@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, User as UserIcon, ChevronsUpDown } from "lucide-react";
+import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
 import { createClient } from "@/utils/supabase/client";
+import { useAppVersion, DOWNLOAD_URL } from "@/hooks/useAppVersion";
 
 function getInitials(email?: string) {
   if (!email) return "U";
@@ -39,6 +40,7 @@ export function NavUser({
   userEmail?: string;
 }) {
   const { isMobile } = useSidebar();
+  const { showDownload, hasUpdate, latestVersion, currentVersion } = useAppVersion();
 
   return (
     <SidebarMenu>
@@ -49,11 +51,19 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg bg-[#E8EDF5] text-[#1B3A6F] font-bold">
-                  {getInitials(userEmail)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarFallback className="rounded-lg bg-[#E8EDF5] text-[#1B3A6F] font-bold">
+                    {getInitials(userEmail)}
+                  </AvatarFallback>
+                </Avatar>
+                {hasUpdate && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border-2 border-white" />
+                  </span>
+                )}
+              </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {userName || "Usuario"}
@@ -97,6 +107,40 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            {showDownload && (
+              <>
+                <DropdownMenuSeparator />
+                {hasUpdate ? (
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={DOWNLOAD_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-amber-700 focus:text-amber-700 focus:bg-amber-50"
+                    >
+                      <ArrowUpCircle className="h-4 w-4 text-amber-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Actualizar a {latestVersion}</span>
+                        <span className="text-xs text-amber-600">Actual: {currentVersion}</span>
+                      </div>
+                    </a>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={DOWNLOAD_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download />
+                      Descargar app de escritorio
+                    </a>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={async () => {

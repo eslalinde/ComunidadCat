@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             person_id: row.person_id,
             zone_id: row.zone_id,
             community_id: row.community_id,
+            has_community_grants: row.has_community_grants ?? false,
           });
         }
       } catch {

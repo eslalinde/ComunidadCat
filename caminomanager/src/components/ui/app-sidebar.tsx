@@ -39,7 +39,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { DownloadApp } from "@/components/DownloadApp";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { getSidebarVisibility } from "@/lib/permissions";
 import { useMemo } from "react";
@@ -225,7 +225,6 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        <DownloadApp />
         <NavUser userName={userName} userEmail={userEmail} />
       </SidebarFooter>
 
