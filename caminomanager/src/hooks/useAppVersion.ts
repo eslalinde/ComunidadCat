@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 
 const GITHUB_REPO = 'eslalinde/VibeCaminoManager';
 export const DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
@@ -27,16 +27,16 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+const subscribeNoop = () => () => {};
+const getIsElectron = () => !!window.electronAPI;
+const getIsElectronServer = () => true; // assume electron on server to avoid flash
+
 export function useAppVersion() {
-  const [isElectron, setIsElectron] = useState(true);
+  const isElectron = useSyncExternalStore(subscribeNoop, getIsElectron, getIsElectronServer);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsElectron(!!window.electronAPI);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.electronAPI) return;
+    if (window.electronAPI) return;
 
     fetch(RELEASES_API)
       .then(res => res.ok ? res.json() : null)
