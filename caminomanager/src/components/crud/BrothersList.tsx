@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User } from 'lucide-react';
+import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -16,11 +16,13 @@ import { personConfig } from '@/config/entities';
 import { CARISMA_GROUP_ORDER } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { DropdownMenu } from 'radix-ui';
+import { BulkUploadWizard } from '@/components/bulk-upload/BulkUploadWizard';
 
 interface BrothersListProps {
   brothers: MergedBrother[];
   loading?: boolean;
   communityId: number;
+  communityNumber?: string;
   teamMembers: Record<number, Belongs[]>;
   onDelete?: () => void;
   onAdd?: () => void;
@@ -31,11 +33,12 @@ interface CarismaGroup {
   brothers: MergedBrother[];
 }
 
-export function BrothersList({ brothers, loading, communityId, teamMembers, onDelete, onAdd }: BrothersListProps) {
+export function BrothersList({ brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd }: BrothersListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMarriageModalOpen, setIsMarriageModalOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [brotherToDelete, setBrotherToDelete] = useState<MergedBrother | null>(null);
@@ -239,6 +242,15 @@ export function BrothersList({ brothers, loading, communityId, teamMembers, onDe
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  onClick={() => setIsBulkUploadOpen(true)}
+                  className="flex items-center gap-2"
+                  title="Carga masiva desde archivo CSV"
+                >
+                  <FileUp className="h-4 w-4" />
+                  Carga Masiva
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => setIsSelectModalOpen(true)}
                   className="flex items-center gap-2"
                 >
@@ -405,6 +417,17 @@ export function BrothersList({ brothers, loading, communityId, teamMembers, onDe
       itemName={brotherToDelete?.name}
       description="¿Estás seguro de que deseas eliminar a este hermano de la comunidad?"
       loading={deletingId !== null}
+    />
+
+    {/* Wizard de carga masiva */}
+    <BulkUploadWizard
+      open={isBulkUploadOpen}
+      onClose={() => setIsBulkUploadOpen(false)}
+      communityId={communityId}
+      communityNumber={communityNumber || ''}
+      onComplete={() => {
+        if (onAdd) onAdd();
+      }}
     />
   </>
   );

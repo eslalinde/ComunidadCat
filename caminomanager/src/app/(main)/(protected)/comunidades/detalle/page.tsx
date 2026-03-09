@@ -523,6 +523,7 @@ function CommunityDetailContent() {
               brothers={mergedBrothers}
               loading={loading}
               communityId={communityId}
+              communityNumber={community?.number || ''}
               teamMembers={teamMembers}
               onDelete={showManageBrothers ? invalidateBrothers : undefined}
               onAdd={showManageBrothers ? invalidateBrothers : undefined}
