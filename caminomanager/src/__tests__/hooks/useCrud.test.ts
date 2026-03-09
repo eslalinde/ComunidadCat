@@ -150,7 +150,7 @@ describe('useCrud - select field building', () => {
   });
 
   it('should use tableName as alias when alias is not provided', () => {
-    const foreignKeys = [
+    const foreignKeys: { foreignKey: string; tableName: string; displayField: string; alias?: string }[] = [
       { foreignKey: 'country_id', tableName: 'countries', displayField: 'name' },
     ];
 
