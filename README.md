@@ -12,12 +12,14 @@ A web application for managing Neocatechumenal Way communities, coordinating par
 - **Authentication & authorization** - Email-based auth with role-based access control
 - **Admin panel** - User management and administrative tools
 
+
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **UI**: Tailwind CSS, Radix UI (shadcn/ui)
 - **Data**: TanStack React Query, TanStack React Table
 - **Backend**: Supabase (PostgreSQL, Auth, Row-Level Security)
+- **Unit test**: Unit test for the front-end
 
 ## Getting Started
 

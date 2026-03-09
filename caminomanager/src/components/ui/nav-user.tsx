@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle } from "lucide-react";
+import { useState } from "react";
+import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle, ToggleLeft } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -21,6 +22,8 @@ import {
 import { routes } from "@/lib/routes";
 import { createClient } from "@/utils/supabase/client";
 import { useAppVersion, DOWNLOAD_URL } from "@/hooks/useAppVersion";
+import { FeatureFlagsDialog } from "@/components/ui/FeatureFlagsDialog";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 function getInitials(email?: string) {
   if (!email) return "U";
@@ -41,6 +44,8 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const { showDownload, hasUpdate, latestVersion, currentVersion } = useAppVersion();
+  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
+  const { availableFlags } = useFeatureFlags();
 
   return (
     <SidebarMenu>
@@ -106,6 +111,12 @@ export function NavUser({
                   Mi Perfil
                 </Link>
               </DropdownMenuItem>
+              {availableFlags.length > 0 && (
+                <DropdownMenuItem onClick={() => setFeatureFlagsOpen(true)}>
+                  <ToggleLeft />
+                  Funcionalidades
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
 
             {showDownload && (
@@ -160,6 +171,7 @@ export function NavUser({
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      <FeatureFlagsDialog open={featureFlagsOpen} onOpenChange={setFeatureFlagsOpen} />
     </SidebarMenu>
   );
 }

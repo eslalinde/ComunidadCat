@@ -11,10 +11,14 @@ interface Profile {
   full_name: string | null;
 }
 
+type FeatureFlags = Record<string, boolean>;
+
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   userScope: UserScope | null;
+  featureFlags: FeatureFlags;
+  setFeatureFlags: (flags: FeatureFlags) => void;
   loading: boolean;
 }
 
@@ -22,6 +26,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   userScope: null,
+  featureFlags: {},
+  setFeatureFlags: () => {},
   loading: true,
 });
 
@@ -29,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userScope, setUserScope] = useState<UserScope | null>(null);
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const routerRef = useRef(router);
@@ -43,10 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, feature_flags')
           .eq('id', userId)
           .single();
-        if (active) setProfile(data);
+        if (active) {
+          setProfile(data ? { full_name: data.full_name } : null);
+          setFeatureFlags((data?.feature_flags as FeatureFlags) || {});
+        }
       } catch {
         // profile fetch is non-critical
       }
@@ -88,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setUserScope(null);
+          setFeatureFlags({});
         }
 
         if (event === 'SIGNED_OUT') {
@@ -121,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, userScope, loading }}>
+    <AuthContext.Provider value={{ user, profile, userScope, featureFlags, setFeatureFlags, loading }}>
       {children}
     </AuthContext.Provider>
   );

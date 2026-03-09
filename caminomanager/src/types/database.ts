@@ -141,6 +141,15 @@ export interface CommunityStepLog extends BaseEntity {
   step_way?: StepWay;
 }
 
+export interface CommunityVisit extends BaseEntity {
+  community_id: number;
+  visit_date: string;
+  description: string;
+  topics_discussed?: string;
+  visitor_name?: string;
+  created_by?: string;
+}
+
 // Audit log
 export interface AuditLog extends BaseEntity {
   user_id: string;
