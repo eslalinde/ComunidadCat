@@ -25,14 +25,15 @@ vi.mock('@/components/ui/table', () => ({
   ),
 }));
 
-vi.mock('@/components/ui/tooltip', () => ({
-  Tooltip: ({ children }: any) => <>{children}</>,
-  TooltipContent: ({ children }: any) => <span>{children}</span>,
-  TooltipProvider: ({ children }: any) => <>{children}</>,
-  TooltipTrigger: React.forwardRef(({ children, asChild, ...props }: any, ref: any) =>
-    asChild ? React.cloneElement(children, { ref, ...props }) : <span ref={ref} {...props}>{children}</span>
-  ),
-}));
+vi.mock('@/components/ui/tooltip', () => {
+  function Tooltip({ children }: any) { return <>{children}</>; }
+  function TooltipContent({ children }: any) { return <span>{children}</span>; }
+  function TooltipProvider({ children }: any) { return <>{children}</>; }
+  function TooltipTrigger({ children, asChild }: any) {
+    return asChild ? children : <span>{children}</span>;
+  }
+  return { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
+});
 
 vi.mock('lucide-react', () => ({
   Pencil: () => <span data-testid="pencil-icon">✏️</span>,
