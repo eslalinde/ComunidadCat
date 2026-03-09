@@ -45,7 +45,7 @@ async function fetchCommunity(supabase: SupabaseClient, communityId: number) {
         *,
         belongs(
           is_responsible_for_the_team,
-          person:people(person_name)
+          person:people(person_name, spouse:people!spouse_id(person_name))
         ),
         parish_teams(
           parish:parishes(name)

@@ -46,6 +46,8 @@ import {
   canEditStepLog,
 } from '@/lib/permissions';
 import { CommunityAccessSection } from '@/components/crud/CommunityAccessSection';
+import { CommunityVisits } from '@/components/crud/CommunityVisits';
+import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -75,6 +77,7 @@ function CommunityDetailContent() {
   const showPrintTodo = canPrintTodo(userScope);
   const showAnyPrint = showPrintFicha || showPrintHermanos || showPrintTodo;
   const showCommunityAccess = canManageCommunityAccess(userScope);
+  const showVisits = useFeatureFlag('community_visits');
 
   const handlePrint = (mode: PrintMode) => {
     setPrintMode(mode);
@@ -101,13 +104,26 @@ function CommunityDetailContent() {
   } = useCommunityData(communityId);
 
   // Construir nombre de catequistas responsables del equipo por defecto
+  // Incluye el nombre del responsable y su cónyuge si aplica
   const defaultCatechistName = useMemo(() => {
     const team = community?.cathechist_team as any;
     if (!team?.belongs) return '';
-    const names = team.belongs
+    const names: string[] = [];
+    const seen = new Set<string>();
+    team.belongs
       .filter((b: any) => b.is_responsible_for_the_team)
-      .map((b: any) => b.person?.person_name)
-      .filter(Boolean);
+      .forEach((b: any) => {
+        const name = b.person?.person_name;
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          names.push(name);
+        }
+        const spouseName = b.person?.spouse?.person_name;
+        if (spouseName && !seen.has(spouseName)) {
+          seen.add(spouseName);
+          names.push(spouseName);
+        }
+      });
     return names.join(' y ');
   }, [community?.cathechist_team]);
 
@@ -503,8 +519,16 @@ function CommunityDetailContent() {
             </div>
           </div>
 
-          {/* Right: Step Log + Brothers List (unified) */}
+          {/* Right: Visits + Step Log + Brothers List */}
           <div className="space-y-6">
+            {showVisits && (
+              <CommunityVisits
+                communityId={communityId}
+                communityNumber={community?.number || ''}
+                defaultVisitorName={defaultCatechistName}
+              />
+            )}
+
             {showStepLog && (
               <CommunityStepLogCompact
                 communityId={communityId}
