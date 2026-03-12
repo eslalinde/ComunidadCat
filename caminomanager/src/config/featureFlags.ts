@@ -1,4 +1,4 @@
-export type EligibilityCheck = 'catechist_team_responsible';
+export type EligibilityCheck = 'catechist_team_responsible' | 'community_responsible_or_catechist';
 
 export interface FeatureFlagDefinition {
   key: string;
@@ -17,5 +17,13 @@ export const FEATURE_FLAGS: FeatureFlagDefinition[] = [
       'Permite registrar visitas a la comunidad con descripciones y temas tratados. Disponible para responsables de equipos de catequistas.',
     defaultEnabled: false,
     eligibility: 'catechist_team_responsible',
+  },
+  {
+    key: 'community_inventory',
+    label: 'Inventario de la Comunidad',
+    description:
+      'Permite gestionar el inventario de elementos litúrgicos y otros objetos de la comunidad. Disponible para responsables de comunidad y catequistas.',
+    defaultEnabled: false,
+    eligibility: 'community_responsible_or_catechist',
   },
 ];

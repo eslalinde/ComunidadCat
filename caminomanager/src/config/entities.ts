@@ -1,6 +1,6 @@
 import React from 'react';
 import { EntityConfig } from '@/types/database';
-import { Country, State, City, CityZone, Diocese, Parish, StepWay, TeamType, Person, Community, CommunityStepLog, ParishCatechesis } from '@/types/database';
+import { Country, State, City, CityZone, Diocese, Parish, StepWay, TeamType, Person, Community, CommunityStepLog, ParishCatechesis, InventoryItemType } from '@/types/database';
 import { CARISMA_OPTIONS } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 
@@ -727,6 +727,32 @@ export const parishCatechesisConfig: EntityConfig<ParishCatechesis> = {
   defaultSort: { field: 'id', asc: false }
 };
 
+// Configuración para Tipos de Inventario
+export const inventoryItemTypeConfig: EntityConfig<InventoryItemType> = {
+  tableName: 'inventory_item_types',
+  displayName: 'Tipo de Elemento de Inventario',
+  fields: [
+    {
+      name: 'name',
+      label: 'Nombre',
+      type: 'text',
+      required: true,
+      maxLength: 256,
+      placeholder: 'Ingrese el nombre del elemento (ej: Cáliz, Patena, Biblia)',
+    },
+    {
+      name: 'description',
+      label: 'Descripción',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Descripción opcional del elemento',
+    },
+  ],
+  searchFields: ['name'],
+  sortableFields: ['name'],
+  defaultSort: { field: 'name', asc: true },
+};
+
 // Exportar todas las configuraciones
 export const entityConfigs = {
   countries: countryConfig,
@@ -740,5 +766,6 @@ export const entityConfigs = {
   people: personConfig,
   communities: communityConfig,
   communityStepLog: communityStepLogConfig,
-  parishCatechesis: parishCatechesisConfig
+  parishCatechesis: parishCatechesisConfig,
+  inventoryItemTypes: inventoryItemTypeConfig
 }; 

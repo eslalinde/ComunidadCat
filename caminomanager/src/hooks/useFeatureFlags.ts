@@ -43,12 +43,14 @@ export function useFeatureFlags() {
 
   const { userScope } = useAuth();
   const isPrivilegedRole = userScope?.role === 'admin' || userScope?.role === 'contributor';
+  const isCommunityResponsible = userScope?.role === 'community_responsible';
 
   const eligibilityMap: Record<string, boolean> = useMemo(
     () => ({
       catechist_team_responsible: isPrivilegedRole || isCatechistResponsible,
+      community_responsible_or_catechist: isPrivilegedRole || isCommunityResponsible || isCatechistResponsible,
     }),
-    [isPrivilegedRole, isCatechistResponsible]
+    [isPrivilegedRole, isCatechistResponsible, isCommunityResponsible]
   );
 
   const checkEligibility = useCallback(

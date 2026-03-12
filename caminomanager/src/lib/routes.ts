@@ -11,6 +11,7 @@ export const routes = {
   parroquia: (id: string | number) => `/parroquias/detalle?id=${id}`,
   etapas: '/etapas',
   tiposEquipo: '/tipos-equipo',
+  tiposInventario: '/tipos-inventario',
   personas: '/personas',
   comunidades: '/comunidades',
   comunidad: (id: string | number) => `/comunidades/detalle?id=${id}`,
