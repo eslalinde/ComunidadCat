@@ -144,7 +144,7 @@ export function EntityPage<T extends BaseEntity>({
   );
 
   return (
-    <div className="w-full bg-white rounded-lg border shadow-sm p-6">
+    <div className="w-full bg-white rounded-lg border shadow-sm p-3 sm:p-6">
       {/* Error Display */}
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -153,8 +153,8 @@ export function EntityPage<T extends BaseEntity>({
       )}
 
       {/* Search and Add Button */}
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <div className="relative w-full max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             placeholder={
@@ -173,7 +173,7 @@ export function EntityPage<T extends BaseEntity>({
             <button
               type="button"
               onClick={() => { setSearch(''); setPage(1); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Limpiar búsqueda"
             >
               <X className="w-4 h-4 text-gray-400" />
@@ -186,6 +186,7 @@ export function EntityPage<T extends BaseEntity>({
             <Button
               variant="outline"
               onClick={handleAddNew}
+              className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               Agregar {config.displayName.toLowerCase()}

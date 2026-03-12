@@ -92,10 +92,11 @@ export function CommunityAccessSection({ communityId }: Props) {
         <SheetTrigger asChild>
           <Button
             variant="outline"
+            size="sm"
             className="flex items-center gap-2"
           >
             <Users className="h-4 w-4" />
-            Usuarios
+            <span className="hidden sm:inline">Usuarios</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="sm:max-w-md w-full flex flex-col">
@@ -158,13 +159,13 @@ export function CommunityAccessSection({ communityId }: Props) {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50"
                           onClick={() => setRevokeTarget(user)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       ) : (
-                        <div className="w-7" /> /* spacer for alignment */
+                        <div className="w-9" /> /* spacer for alignment */
                       )}
                     </div>
                   </div>

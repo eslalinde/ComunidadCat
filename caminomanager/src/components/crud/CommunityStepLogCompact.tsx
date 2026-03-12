@@ -233,7 +233,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
                                 onClick={() => handleDeleteClick(entry)}
                                 disabled={entryToDelete?.id === entry.id}
                                 title="Eliminar evento"
@@ -288,7 +288,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                          className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
                           onClick={() => handleDeleteClick(entry)}
                           disabled={entryToDelete?.id === entry.id}
                           title="Eliminar evento"

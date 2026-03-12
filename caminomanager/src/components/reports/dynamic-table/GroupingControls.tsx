@@ -52,9 +52,9 @@ export function GroupingControls<TData>({
             {label}
             <button
               onClick={() => removeGrouping(columnId)}
-              className="ml-0.5 rounded-full hover:bg-blue-200 p-0.5"
+              className="ml-0.5 rounded-full hover:bg-blue-200 p-1.5"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </span>
         );

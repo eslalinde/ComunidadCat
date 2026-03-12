@@ -216,7 +216,7 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                            className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
                             onClick={() => setEntryToDelete(visit)}
                             title="Eliminar visita"
                           >
@@ -265,7 +265,7 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                    className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
                     onClick={() => setEntryToDelete(visit)}
                     title="Eliminar visita"
                   >

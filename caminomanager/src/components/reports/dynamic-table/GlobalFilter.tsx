@@ -28,7 +28,7 @@ export function GlobalFilter({
   }, [localValue, onChange]);
 
   return (
-    <div className="relative" style={{ width: "28rem" }}>
+    <div className="relative w-full sm:w-[28rem]">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
       <Input
         value={localValue}
@@ -40,7 +40,7 @@ export function GlobalFilter({
         <button
           type="button"
           onClick={() => setLocalValue("")}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
           aria-label="Limpiar búsqueda"
         >
           <X className="h-4 w-4 text-gray-400" />

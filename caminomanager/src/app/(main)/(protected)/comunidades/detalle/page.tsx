@@ -345,22 +345,24 @@ function CommunityDetailContent() {
       <div className="print:hidden">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
             <Button
               variant="outline"
               onClick={() => router.push(routes.comunidades)}
               className="flex items-center gap-2"
+              size="sm"
             >
               <ArrowLeft className="h-4 w-4" />
-              Regresar a Comunidades
+              <span className="hidden sm:inline">Regresar a Comunidades</span>
+              <span className="sm:hidden">Volver</span>
             </Button>
             {showAnyPrint && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" className="flex items-center gap-2" size="sm">
                     <Printer className="h-4 w-4" />
-                    Imprimir
-                    <ChevronDown className="h-3 w-3 ml-1" />
+                    <span className="hidden sm:inline">Imprimir</span>
+                    <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -387,9 +389,10 @@ function CommunityDetailContent() {
                 variant="outline"
                 onClick={() => setIsMergeModalOpen(true)}
                 className="flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                size="sm"
               >
                 <Merge className="h-4 w-4" />
-                Fusionar
+                <span className="hidden sm:inline">Fusionar</span>
               </Button>
             )}
             {showCommunityAccess && (
@@ -404,9 +407,10 @@ function CommunityDetailContent() {
                 onClick={() => setIsDeleteDialogOpen(true)}
                 className="flex items-center gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
                 disabled={loading}
+                size="sm"
               >
                 <Trash2 className="h-4 w-4" />
-                Eliminar
+                <span className="hidden sm:inline">Eliminar</span>
               </Button>
             )}
           </div>

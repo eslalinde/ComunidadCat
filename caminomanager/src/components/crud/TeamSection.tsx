@@ -304,30 +304,32 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg">{getTeamTitle()}</CardTitle>
           <div className="flex items-center gap-2 print-hidden">
             {onAddMember && (
               <Button
                 variant="outline"
+                size="sm"
                 onClick={onAddMember}
                 disabled={deletingTeam || deletingId !== null}
                 title="Agregar miembro al equipo"
               >
                 <UserPlus className="h-4 w-4" />
-                Agregar
+                <span className="hidden sm:inline">Agregar</span>
               </Button>
             )}
             {onDelete && (
               <Button
                 variant="outline"
+                size="sm"
                 className="text-destructive border-destructive/50 hover:bg-destructive/10"
                 onClick={() => setShowDeleteTeamDialog(true)}
                 disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
                 title="Eliminar equipo completo"
               >
                 <Trash2 className="h-4 w-4" />
-                {deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}
+                <span className="hidden sm:inline">{deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}</span>
               </Button>
             )}
           </div>
@@ -398,10 +400,11 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                     </TableCell>
                     {onDelete && (
                       <TableCell className="print-hidden">
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           {onEditMember && (
                             <Button
-                              variant="outline"
+                              variant="ghost"
+                              size="icon"
                               onClick={() => onEditMember(member.personIds[0])}
                               disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
                               title="Editar persona"
@@ -411,8 +414,9 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                           )}
                           {member.isResponsible ? (
                             <Button
-                              variant="outline"
-                              className="text-orange-500 border-orange-300 hover:bg-orange-50"
+                              variant="ghost"
+                              size="icon"
+                              className="text-orange-500 hover:bg-orange-50"
                               onClick={() => setMemberToRemoveResponsible(member)}
                               disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
                               title="Quitar responsabilidad (la persona permanecerá en el equipo)"
@@ -421,8 +425,9 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             </Button>
                           ) : (
                             <Button
-                              variant="outline"
-                              className="text-green-600 border-green-300 hover:bg-green-50"
+                              variant="ghost"
+                              size="icon"
+                              className="text-green-600 hover:bg-green-50"
                               onClick={() => setMemberToAssignResponsible(member)}
                               disabled={hasResponsible || assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
                               title={hasResponsible ? "Ya existe un responsable en el equipo. Quita la responsabilidad del actual para asignar a otro." : "Asignar responsabilidad"}
@@ -431,8 +436,9 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             </Button>
                           )}
                           <Button
-                            variant="outline"
-                            className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:bg-destructive/10"
                             onClick={() => setMemberToDelete(member)}
                             disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
                             title="Eliminar miembro del equipo"
