@@ -174,7 +174,8 @@ export function canAccessRoute(scope: UserScope | null, pathname: string): boole
     pathname.startsWith('/diocesis') ||
     pathname.startsWith('/equipo-nacional') ||
     pathname.startsWith('/etapas') ||
-    pathname.startsWith('/tipos-equipo')
+    pathname.startsWith('/tipos-equipo') ||
+    pathname.startsWith('/tipos-inventario')
   ) return vis.organizacion;
 
   // Location routes

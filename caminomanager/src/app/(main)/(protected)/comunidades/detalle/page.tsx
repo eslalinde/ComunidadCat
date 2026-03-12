@@ -47,6 +47,7 @@ import {
 } from '@/lib/permissions';
 import { CommunityAccessSection } from '@/components/crud/CommunityAccessSection';
 import { CommunityVisits } from '@/components/crud/CommunityVisits';
+import { CommunityInventory } from '@/components/crud/CommunityInventory';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 
 function CommunityDetailContent() {
@@ -78,6 +79,7 @@ function CommunityDetailContent() {
   const showAnyPrint = showPrintFicha || showPrintHermanos || showPrintTodo;
   const showCommunityAccess = canManageCommunityAccess(userScope);
   const showVisits = useFeatureFlag('community_visits');
+  const showInventory = useFeatureFlag('community_inventory');
 
   const handlePrint = (mode: PrintMode) => {
     setPrintMode(mode);
@@ -530,6 +532,13 @@ function CommunityDetailContent() {
                 communityId={communityId}
                 communityNumber={community?.number || ''}
                 defaultVisitorName={defaultCatechistName}
+              />
+            )}
+
+            {showInventory && (
+              <CommunityInventory
+                communityId={communityId}
+                communityNumber={community?.number || ''}
               />
             )}
 

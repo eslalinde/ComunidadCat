@@ -19,6 +19,7 @@ export const queryKeys = {
       ['community', 'teamParishes', communityId] as const,
     stepLogs: (id: number) => ['community', 'stepLogs', id] as const,
     visits: (id: number) => ['community', 'visits', id] as const,
+    inventory: (id: number) => ['community', 'inventory', id] as const,
     parishPriest: (parishId: number) =>
       ['community', 'parishPriest', parishId] as const,
   },

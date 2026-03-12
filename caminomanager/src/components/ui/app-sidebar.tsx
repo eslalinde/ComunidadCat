@@ -75,6 +75,7 @@ const allNavGroups: NavGroup[] = [
       { label: "Equipo Nacional", href: routes.equipoNacional, icon: Shield },
       { label: "Etapas del Camino", href: routes.etapas, icon: Route },
       { label: "Tipos de Equipo", href: routes.tiposEquipo, icon: Users2 },
+      { label: "Tipos de Inventario", href: routes.tiposInventario, icon: Layers },
     ],
   },
   {

@@ -15,6 +15,7 @@ const routeLabels: Record<string, string> = {
   "/parroquias": "Parroquias",
   "/etapas": "Etapas del Camino",
   "/tipos-equipo": "Tipos de Equipo",
+  "/tipos-inventario": "Tipos de Inventario",
   "/personas": "Personas",
   "/comunidades": "Comunidades",
   "/equipo-nacional": "Equipo Nacional",

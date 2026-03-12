@@ -150,6 +150,22 @@ export interface CommunityVisit extends BaseEntity {
   created_by?: string;
 }
 
+export interface InventoryItemType extends BaseEntity {
+  name: string;
+  description?: string;
+}
+
+export interface CommunityInventoryItem extends BaseEntity {
+  community_id: number;
+  item_type_id?: number;
+  custom_name?: string;
+  quantity: number;
+  condition?: string;
+  notes?: string;
+  created_by?: string;
+  item_type?: InventoryItemType;
+}
+
 // Audit log
 export interface AuditLog extends BaseEntity {
   user_id: string;
