@@ -231,7 +231,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
     <>
       <Card className="h-full flex flex-col">
         <CardHeader className="flex-shrink-0">
-          <div className="flex justify-between items-start">
+          <div className="flex flex-wrap justify-between items-start gap-2">
             <div>
               <CardTitle className="text-lg">Hermanos de la Comunidad</CardTitle>
               <p className="text-sm text-gray-600">
@@ -239,33 +239,36 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
               </p>
             </div>
             {onAdd && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setIsBulkUploadOpen(true)}
                   className="flex items-center gap-2"
                   title="Carga masiva desde archivo CSV"
                 >
                   <FileUp className="h-4 w-4" />
-                  Carga Masiva
+                  <span className="hidden sm:inline">Carga Masiva</span>
                 </Button>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setIsSelectModalOpen(true)}
                   className="flex items-center gap-2"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Agregar Existente
+                  <span className="hidden sm:inline">Agregar Existente</span>
                 </Button>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
                     <Button
                       variant="outline"
+                      size="sm"
                       className="flex items-center gap-2"
                     >
                       <Plus className="h-4 w-4" />
-                      Agregar Nuevo
-                      <ChevronDown className="h-3 w-3 ml-1" />
+                      <span className="hidden sm:inline">Agregar Nuevo</span>
+                      <ChevronDown className="h-3 w-3" />
                     </Button>
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>

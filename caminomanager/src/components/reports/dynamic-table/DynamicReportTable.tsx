@@ -115,7 +115,7 @@ export function DynamicReportTable<TData>({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href={routes.reportes}>
             <Button variant="outline" size="sm">
@@ -124,26 +124,28 @@ export function DynamicReportTable<TData>({
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
               {config.title}
             </h1>
-            <p className="text-gray-600">{config.description}</p>
+            <p className="text-sm sm:text-base text-gray-600">{config.description}</p>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onRefresh} disabled={loading}>
+          <Button variant="outline" onClick={onRefresh} disabled={loading} size="sm" className="sm:size-default">
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              className={`w-4 h-4 sm:mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            Actualizar
+            <span className="hidden sm:inline">Actualizar</span>
           </Button>
           <Button
             onClick={handleExport}
             disabled={loading || isExporting || data.length === 0}
+            size="sm"
+            className="sm:size-default"
           >
-            <Download className="w-4 h-4 mr-2" />
-            {isExporting ? "Exportando..." : "Exportar CSV"}
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">{isExporting ? "Exportando..." : "Exportar CSV"}</span>
           </Button>
         </div>
       </div>
@@ -167,7 +169,7 @@ export function DynamicReportTable<TData>({
       </div>
 
       {/* Table */}
-      <Card className="p-6">
+      <Card className="p-2 sm:p-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />

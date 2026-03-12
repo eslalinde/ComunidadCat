@@ -249,10 +249,11 @@ export function AuditLogSheet({ communityId }: { communityId: number }) {
       <SheetTrigger asChild>
         <Button
           variant="outline"
+          size="sm"
           className="flex items-center gap-2"
         >
           <History className="h-4 w-4" />
-          Historial
+          <span className="hidden sm:inline">Historial</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="sm:max-w-lg w-full flex flex-col">

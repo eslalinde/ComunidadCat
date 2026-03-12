@@ -62,7 +62,7 @@ export function EntityModal<T extends BaseEntity>({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
         {/* Close button */}
         <button
           type="button"
@@ -148,7 +148,7 @@ export function EntityModal<T extends BaseEntity>({
               />
             ))}
 
-            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end mt-6 pt-4 border-t border-gray-100">
               <Button
                 type="button"
                 variant="outline"

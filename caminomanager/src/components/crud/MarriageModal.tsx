@@ -124,7 +124,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
         <h2 className="text-lg font-bold mb-4">Crear Matrimonio</h2>
 
         {form.formState.errors.root && (

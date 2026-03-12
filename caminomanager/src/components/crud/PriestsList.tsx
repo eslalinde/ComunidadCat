@@ -312,10 +312,10 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
-                        className="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                         onClick={() => openEditForm(priest)}
                         title="Editar sacerdote"
                       >
@@ -323,7 +323,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                       </button>
                       <button
                         type="button"
-                        className="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                         onClick={() => setPriestToDelete(priest)}
                         disabled={isDeleting}
                         title="Remover sacerdote"
