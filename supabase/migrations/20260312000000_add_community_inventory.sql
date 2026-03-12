@@ -35,7 +35,6 @@ INSERT INTO public.inventory_item_types (name) VALUES
   ('Cruz'),
   ('Mantel'),
   ('Ambón'),
-  ('Micrófono'),
   ('Cirio Pascual'),
   ('Icono');
 
