@@ -30,6 +30,7 @@ export interface MergedBrother {
   isPresbitero: boolean;
   isItinerante: boolean;
   personIds: number[];
+  createdAt: string | null;
 }
 
 // --- Fetcher functions ---
@@ -299,6 +300,11 @@ export function useCommunityData(communityId: number): CommunityData & {
             const husband = person.gender_id === 1 ? person : spouseBrother.person;
             const wife = person.gender_id === 2 ? person : spouseBrother.person;
 
+            // Use the most recent created_at between the two spouses
+            const marriageCreatedAt = brother.created_at && spouseBrother.created_at
+              ? (new Date(brother.created_at) > new Date(spouseBrother.created_at) ? brother.created_at : spouseBrother.created_at)
+              : brother.created_at || spouseBrother.created_at || null;
+
             merged.push({
               id: `marriage-${person.id}-${spouseBrother.person_id}`,
               name: `${husband.person_name} y ${wife.person_name}`,
@@ -307,7 +313,8 @@ export function useCommunityData(communityId: number): CommunityData & {
               isMarriage: true,
               isPresbitero: false,
               isItinerante: person.is_itinerante === true || spouseBrother.person?.is_itinerante === true,
-              personIds: [person.id!, spouseBrother.person_id]
+              personIds: [person.id!, spouseBrother.person_id],
+              createdAt: marriageCreatedAt ?? null,
             });
 
             processedIds.add(person.id!);
@@ -327,7 +334,8 @@ export function useCommunityData(communityId: number): CommunityData & {
         isMarriage: false,
         isPresbitero: person.person_type_id === 3,
         isItinerante: person.is_itinerante === true,
-        personIds: [person.id!]
+        personIds: [person.id!],
+        createdAt: brother.created_at ?? null,
       });
 
       processedIds.add(person.id!);

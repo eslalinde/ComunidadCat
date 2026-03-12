@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp } from 'lucide-react';
+import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -42,6 +42,11 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
   const [isSaving, setIsSaving] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [brotherToDelete, setBrotherToDelete] = useState<MergedBrother | null>(null);
+
+  const isNew = (createdAt: string | null) => {
+    if (!createdAt) return false;
+    return Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
+  };
 
   const toggleGroup = (carisma: string) => {
     setCollapsedGroups((prev) => {
@@ -348,6 +353,12 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                           <TableRow key={brother.id}>
                             <TableCell className="font-medium pl-8">
                               {brother.name}
+                              {isNew(brother.createdAt) && (
+                                <span className="ml-2 text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3" />
+                                  Nuevo
+                                </span>
+                              )}
                               {brother.isItinerante && (
                                 <CarismaBadge carisma="Itinerante" size="sm" className="ml-2" />
                               )}
