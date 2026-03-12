@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Team, Belongs, Parish } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, Crown, UserPlus, Pencil } from 'lucide-react';
+import { Trash2, UserMinus, Crown, UserPlus, Pencil, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { getCarismaLabel } from '@/config/carisma';
@@ -41,7 +41,13 @@ interface MergedMember {
   isPresbitero: boolean;
   personIds: number[];
   belongsIds: number[];
+  createdAt: string | null;
 }
+
+const isNew = (createdAt: string | null) => {
+  if (!createdAt) return false;
+  return Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
+};
 
 export function TeamSection({ team, members, parishes, loading, teamNumber, communityId: _communityId, onDelete, onAddMember, onEditMember }: TeamSectionProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -93,6 +99,11 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
           const husband = person.gender_id === 1 ? person : spouseMember.person;
           const wife = person.gender_id === 2 ? person : spouseMember.person;
 
+          // Use the most recent created_at between the two spouses
+          const marriageCreatedAt = member.created_at && spouseMember.created_at
+            ? (new Date(member.created_at) > new Date(spouseMember.created_at) ? member.created_at : spouseMember.created_at)
+            : member.created_at || spouseMember.created_at || null;
+
           merged.push({
             id: `marriage-${person.id}-${spouseMember.person_id}`,
             name: `${husband.person_name} y ${wife.person_name}`,
@@ -105,7 +116,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
             belongsIds: [
               ...(member.id ? [member.id] : []),
               ...(spouseMember.id ? [spouseMember.id] : [])
-            ]
+            ],
+            createdAt: marriageCreatedAt ?? null,
           });
 
           if (person.id) processedIds.add(person.id);
@@ -125,7 +137,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         isMarriage: false,
         isPresbitero: person.person_type_id === 3, // person_type_id 3 = Presbítero
         personIds: [person.id!],
-        belongsIds: member.id ? [member.id] : []
+        belongsIds: member.id ? [member.id] : [],
+        createdAt: member.created_at ?? null,
       });
 
       if (person.id) processedIds.add(person.id);
@@ -368,6 +381,12 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">
                       {member.name}
+                      {isNew(member.createdAt) && (
+                        <span className="ml-2 text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Nuevo
+                        </span>
+                      )}
                       {team.team_type_id === 3 ? (
                         <>
                           {member.isResponsible && (
