@@ -11,4 +11,7 @@ CLAUDE.md
 # Pentest tool (separate project, not part of the main app)
 vibe-pentest/
 
+# Sentry
+.env.sentry-build-plugin
+
 
