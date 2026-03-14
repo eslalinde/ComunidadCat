@@ -4,6 +4,7 @@
     "exclude": ["/*.{css,js,svg,png,ico,jpg,jpeg,webp,gif,json,txt,xml}"]
   },
   "globalHeaders": {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
     "X-XSS-Protection": "0",

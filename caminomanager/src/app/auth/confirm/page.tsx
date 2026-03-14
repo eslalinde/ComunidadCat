@@ -1,57 +1,59 @@
 'use client';
 
-import { useEffect, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { type EmailOtpType } from '@supabase/supabase-js';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 
-function ConfirmHandler() {
-  const searchParams = useSearchParams();
+function ConfirmContent() {
   const router = useRouter();
-  const calledRef = useRef(false);
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (calledRef.current) return;
-    calledRef.current = true;
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
 
-    const token_hash = searchParams.get('token_hash');
-    const type = searchParams.get('type') as EmailOtpType | null;
-
-    if (!token_hash || !type) {
-      router.replace('/login?error=email_confirmation_failed');
+    if (!tokenHash || !type) {
+      router.replace('/login');
       return;
     }
 
     const supabase = createClient();
-    supabase.auth.verifyOtp({ type, token_hash }).then(({ error }) => {
-      if (error) {
-        router.replace('/login?error=email_confirmation_failed');
-      } else {
+
+    supabase.auth
+      .verifyOtp({
+        token_hash: tokenHash,
+        type: type as 'signup' | 'email' | 'recovery' | 'email_change',
+      })
+      .then(({ error: verifyError }) => {
+        if (verifyError) {
+          setError(verifyError.message);
+          return;
+        }
         router.replace('/');
-      }
-    });
+      });
   }, [searchParams, router]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-        <p className="text-gray-600">Confirmando email...</p>
+  if (error) {
+    return (
+      <div className="text-center space-y-4">
+        <p className="text-destructive">{error}</p>
+        <a href="/login" className="text-primary underline">
+          Volver al inicio de sesión
+        </a>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <p className="text-muted-foreground">Confirmando tu cuenta...</p>;
 }
 
-export default function ConfirmPage() {
+export default function AuthConfirmPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-        </div>
-      }
-    >
-      <ConfirmHandler />
-    </Suspense>
+    <div className="flex min-h-screen items-center justify-center">
+      <Suspense fallback={<p className="text-muted-foreground">Cargando...</p>}>
+        <ConfirmContent />
+      </Suspense>
+    </div>
   );
 }
