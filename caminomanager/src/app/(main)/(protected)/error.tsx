@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import { routes } from "@/lib/routes";
-import { trackException } from "@/lib/appinsights";
 
 export default function Error({
   error,
@@ -16,7 +16,7 @@ export default function Error({
   const router = useRouter();
 
   useEffect(() => {
-    trackException(error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
