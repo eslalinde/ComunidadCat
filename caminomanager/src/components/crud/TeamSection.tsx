@@ -380,39 +380,43 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                 mergedMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">
-                      {member.name}
-                      {isNew(member.createdAt) && (
-                        <span className="ml-2 text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          Nuevo
-                        </span>
-                      )}
-                      {team.team_type_id === 3 ? (
-                        <>
-                          {member.isResponsible && (
-                            <span className="ml-2 text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                              <Crown className="w-4 h-4" />
-                              Responsable
+                      <div className="flex flex-col gap-0.5">
+                        <span>{member.name}</span>
+                        <div className="flex flex-wrap gap-1 min-h-[20px]">
+                          {isNew(member.createdAt) && (
+                            <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              Nuevo
                             </span>
                           )}
-                          {member.carisma && member.carisma !== 'Matrimonio' && (
-                            <CarismaBadge carisma={member.carisma} className="ml-2" />
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {member.isResponsible ? (
-                            <span className="ml-2 text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                              <Crown className="w-4 h-4" />
-                              Responsable
-                            </span>
+                          {team.team_type_id === 3 ? (
+                            <>
+                              {member.isResponsible && (
+                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                  <Crown className="w-4 h-4" />
+                                  Responsable
+                                </span>
+                              )}
+                              {member.carisma && member.carisma !== 'Matrimonio' && (
+                                <CarismaBadge carisma={member.carisma} />
+                              )}
+                            </>
                           ) : (
-                            <span className="ml-2 text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-                              Corresponsable
-                            </span>
+                            <>
+                              {member.isResponsible ? (
+                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                  <Crown className="w-4 h-4" />
+                                  Responsable
+                                </span>
+                              ) : (
+                                <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                  Corresponsable
+                                </span>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {member.mobile || '-'}

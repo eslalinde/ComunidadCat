@@ -210,6 +210,7 @@ export interface FormField {
   options?: { value: string | number; label: string }[];
   validation?: (value: any) => string | null;
   hiddenInTable?: boolean;
+  hiddenInMobile?: boolean;
   columnWidth?: string;
 }
 

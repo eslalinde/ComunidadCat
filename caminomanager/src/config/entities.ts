@@ -500,7 +500,7 @@ export const communityConfig: EntityConfig<Community> = {
     {
       name: 'number',
       label: 'Número',
-      tableLabel: 'Nº',
+      tableLabel: 'No.',
       type: 'text',
       required: true,
       maxLength: 50,
@@ -514,7 +514,8 @@ export const communityConfig: EntityConfig<Community> = {
       type: 'date',
       required: false,
       placeholder: 'Seleccione la fecha',
-      columnWidth: '120px'
+      columnWidth: '120px',
+      hiddenInMobile: true
     },
     {
       name: 'parish_id',
@@ -531,7 +532,8 @@ export const communityConfig: EntityConfig<Community> = {
       type: 'number',
       required: false,
       placeholder: 'Ingrese el número de hermanos iniciales',
-      columnWidth: '90px'
+      columnWidth: '90px',
+      hiddenInMobile: true
     },
     {
       name: 'actual_brothers',
@@ -540,7 +542,8 @@ export const communityConfig: EntityConfig<Community> = {
       type: 'number',
       required: false,
       placeholder: 'Ingrese el número de hermanos actuales',
-      columnWidth: '90px'
+      columnWidth: '90px',
+      hiddenInMobile: true
     },
     {
       name: 'step_way_id',
@@ -550,7 +553,8 @@ export const communityConfig: EntityConfig<Community> = {
       required: false,
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione la etapa actual',
-      columnWidth: '120px'
+      columnWidth: '120px',
+      hiddenInMobile: true
     },
     {
       name: 'last_step_way_date',
@@ -559,7 +563,8 @@ export const communityConfig: EntityConfig<Community> = {
       type: 'date',
       required: false,
       placeholder: 'Seleccione la fecha',
-      columnWidth: '120px'
+      columnWidth: '120px',
+      hiddenInMobile: true
     },
     {
       name: 'cathechist_team_id',
