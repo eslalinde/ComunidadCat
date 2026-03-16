@@ -125,6 +125,7 @@ export function EntityPage<T extends BaseEntity>({
         label: field.tableLabel || field.label,
         sortable: config.sortableFields.includes(field.name as keyof T),
         width: field.columnWidth,
+        hiddenInMobile: field.hiddenInMobile,
         foreignKey: foreignKeyConfig ? {
           tableName: foreignKeyConfig.tableName,
           displayField: foreignKeyConfig.displayField,

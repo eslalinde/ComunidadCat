@@ -18,6 +18,7 @@ interface Column<T> {
     displayField: string;
     alias?: string;
   };
+  hiddenInMobile?: boolean;
 }
 
 interface EntityTableProps<T extends BaseEntity> {
@@ -84,6 +85,7 @@ export function EntityTable<T extends BaseEntity>({
   };
 
   const isMobile = useIsMobile();
+  const visibleColumns = isMobile ? columns.filter(col => !col.hiddenInMobile) : columns;
 
   const getCellValue = (item: T, column: Column<T>) => {
     if (column.render) return column.render(item[column.key], item);
@@ -154,7 +156,7 @@ export function EntityTable<T extends BaseEntity>({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0 space-y-1">
-                  {columns.map((column, colIndex) => (
+                  {visibleColumns.map((column, colIndex) => (
                     <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
                       {colIndex > 0 && <span className="text-xs text-gray-400">{column.label}: </span>}
                       <span className={colIndex === 0 ? "" : ""}>{getCellValue(item, column)}</span>

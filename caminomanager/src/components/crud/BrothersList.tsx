@@ -352,21 +352,25 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                         return (
                           <TableRow key={brother.id}>
                             <TableCell className="font-medium pl-8">
-                              {brother.name}
-                              {isNew(brother.createdAt) && (
-                                <span className="ml-2 text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3" />
-                                  Nuevo
-                                </span>
-                              )}
-                              {brother.isItinerante && (
-                                <CarismaBadge carisma="Itinerante" size="sm" className="ml-2" />
-                              )}
-                              {brother.isMarriage && (
-                                <span className="ml-2 text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
-                                  Matrimonio
-                                </span>
-                              )}
+                              <div className="flex flex-col gap-0.5">
+                                <span>{brother.name}</span>
+                                <div className="flex flex-wrap gap-1 min-h-[20px]">
+                                  {isNew(brother.createdAt) && (
+                                    <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                      <Sparkles className="w-3 h-3" />
+                                      Nuevo
+                                    </span>
+                                  )}
+                                  {brother.isItinerante && (
+                                    <CarismaBadge carisma="Itinerante" size="sm" />
+                                  )}
+                                  {brother.isMarriage && (
+                                    <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
+                                      Matrimonio
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </TableCell>
                             <TableCell>{brother.celular || '-'}</TableCell>
                             {onDelete && (
