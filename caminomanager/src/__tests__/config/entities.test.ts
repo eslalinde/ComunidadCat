@@ -231,15 +231,15 @@ describe('Entity Configurations', () => {
   });
 
   describe('entityConfigs export', () => {
-    it('should export all 12 entity configs', () => {
-      expect(Object.keys(entityConfigs).length).toBe(12);
+    it('should export all 13 entity configs', () => {
+      expect(Object.keys(entityConfigs).length).toBe(13);
     });
 
     it('should contain all expected keys', () => {
       const expectedKeys = [
         'countries', 'states', 'cities', 'cityZones', 'dioceses',
         'parishes', 'stepWays', 'teamTypes', 'people', 'communities',
-        'communityStepLog', 'parishCatechesis',
+        'communityStepLog', 'parishCatechesis', 'inventoryItemTypes',
       ];
       expectedKeys.forEach(key => {
         expect(entityConfigs).toHaveProperty(key);
