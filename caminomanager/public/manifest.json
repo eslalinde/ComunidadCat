@@ -4,7 +4,7 @@
   "description": "Sistema de gestión para comunidades neocatecumenales",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#1e3a5f",
   "theme_color": "#1e3a5f",
   "orientation": "portrait-primary",
   "scope": "/",
@@ -23,13 +23,13 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
