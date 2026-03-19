@@ -46,8 +46,26 @@ jobs:
       - run: npm ci
       - run: npm run type-check
 
+  test:
+    name: Test
+    needs: [lint, type-check]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: caminomanager
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci
+      - run: npm run test:coverage
+
   build:
     name: Build
+    needs: [lint, type-check]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -79,5 +97,4 @@ jobs:
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
-      - run: npm audit --audit-level=high
-        continue-on-error: true
+      - run: npm audit --audit-level=critical

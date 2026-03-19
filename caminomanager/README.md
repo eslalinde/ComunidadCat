@@ -28,6 +28,21 @@ Este proyecto fue creado con [Next.js](https://nextjs.org/) y [Supabase](https:/
    npm run dev
    ```
 
+## Emails locales (Inbucket)
+
+En desarrollo local, los emails que genera Supabase Auth (confirmación de cuenta, reset de password, magic links) son capturados por **Inbucket**, un servidor de email falso incluido en el stack de Supabase.
+
+- **Interfaz web:** [http://localhost:54324](http://localhost:54324)
+- Se abre automáticamente al ejecutar `supabase start`
+- Todos los emails enviados por Auth aparecen ahí (no se envían emails reales)
+
+**Flujo típico de registro:**
+1. El usuario se registra en la app
+2. Abrir [http://localhost:54324](http://localhost:54324)
+3. Buscar el email de confirmación en la bandeja de entrada
+4. Hacer click en el link de confirmación
+5. El usuario ya puede hacer login
+
 ## Base de datos (Supabase)
 
 Las instrucciones para **desplegar las migraciones de la base de datos a Supabase Cloud** están en el README raíz del repo: `../README.md`.

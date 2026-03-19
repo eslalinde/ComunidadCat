@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import serve from 'electron-serve';
@@ -52,6 +52,28 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Security headers for all responses
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self' 'unsafe-inline'; " +
+          "style-src 'self' 'unsafe-inline'; " +
+          "img-src 'self' data: blob:; " +
+          "font-src 'self' data:; " +
+          "connect-src 'self' https://*.supabase.co https://*.sentry.io http://127.0.0.1:*; " +
+          "frame-ancestors 'none';"
+        ],
+        'X-Content-Type-Options': ['nosniff'],
+        'X-Frame-Options': ['DENY'],
+        'Referrer-Policy': ['strict-origin-when-cross-origin'],
+        'Permissions-Policy': ['geolocation=(), microphone=(), camera=()'],
+      },
+    });
+  });
+
   createWindow();
 
   app.on('activate', () => {
