@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Team, Belongs, Parish } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, Crown, UserPlus, Pencil, Sparkles } from 'lucide-react';
+import { Trash2, UserMinus, Crown, UserPlus, Pencil, Church } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { getCarismaLabel } from '@/config/carisma';
@@ -348,14 +348,21 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
           </div>
         </div>
         {team.team_type_id === 3 && parishes.length > 0 && (
-          <div className="mt-2">
-            <div className="space-y-1">
-              {parishes.map((parish) => (
-                <p key={parish.id} className="text-sm text-gray-600">
-                  Lleva {parish.name}
-                </p>
-              ))}
-            </div>
+          <div className="mt-2 space-y-1">
+            {parishes.map((parish) => (
+              <div key={parish.id} className="flex items-center gap-1.5">
+                <Church className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-sm text-gray-500">Lleva</span>
+                <a
+                  href={`/parroquias/detalle?id=${parish.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  {parish.name}
+                </a>
+              </div>
+            ))}
           </div>
         )}
       </CardHeader>
@@ -379,50 +386,84 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
               ) : (
                 mergedMembers.map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col gap-0.5">
-                        <span>{member.name}</span>
-                        <div className="flex flex-wrap gap-1 min-h-[20px]">
-                          {isNew(member.createdAt) && (
-                            <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                              <Sparkles className="w-3 h-3" />
-                              Nuevo
-                            </span>
-                          )}
-                          {team.team_type_id === 3 ? (
-                            <>
+                    <TableCell className="font-medium py-1.5">
+                      {team.team_type_id === 3 ? (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            {isNew(member.createdAt) && (
+                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                              </span>
+                            )}
+                            <span>{member.name}</span>
+                            {member.isResponsible && (
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                                <Crown className="w-3.5 h-3.5" />
+                                Responsable
+                              </span>
+                            )}
+                            {member.carisma && member.carisma !== 'Matrimonio' && (
+                              <span className="hidden sm:inline-flex">
+                                <CarismaBadge carisma={member.carisma} />
+                              </span>
+                            )}
+                          </div>
+                          {(member.isResponsible || (member.carisma && member.carisma !== 'Matrimonio')) && (
+                            <div className="flex flex-wrap gap-1 sm:hidden mt-0.5">
                               {member.isResponsible && (
                                 <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                  <Crown className="w-4 h-4" />
+                                  <Crown className="w-3.5 h-3.5" />
                                   Responsable
                                 </span>
                               )}
                               {member.carisma && member.carisma !== 'Matrimonio' && (
                                 <CarismaBadge carisma={member.carisma} />
                               )}
-                            </>
-                          ) : (
-                            <>
-                              {member.isResponsible ? (
-                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                  <Crown className="w-4 h-4" />
-                                  Responsable
-                                </span>
-                              ) : (
-                                <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-                                  Corresponsable
-                                </span>
-                              )}
-                            </>
+                            </div>
                           )}
-                        </div>
-                      </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            {isNew(member.createdAt) && (
+                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                              </span>
+                            )}
+                            <span>{member.name}</span>
+                            {member.isResponsible ? (
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                                <Crown className="w-3.5 h-3.5" />
+                                Responsable
+                              </span>
+                            ) : (
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                Corresponsable
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex sm:hidden mt-0.5">
+                            {member.isResponsible ? (
+                              <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                <Crown className="w-3.5 h-3.5" />
+                                Responsable
+                              </span>
+                            ) : (
+                              <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                Corresponsable
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-1.5">
                       {member.mobile || '-'}
                     </TableCell>
                     {onDelete && (
-                      <TableCell className="print-hidden">
+                      <TableCell className="print-hidden py-1.5">
                         <div className="flex gap-1">
                           {onEditMember && (
                             <Button

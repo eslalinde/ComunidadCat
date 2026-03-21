@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Sparkles } from 'lucide-react';
+import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -351,30 +351,30 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
                         return (
                           <TableRow key={brother.id}>
-                            <TableCell className="font-medium pl-8">
-                              <div className="flex flex-col gap-0.5">
+                            <TableCell className="font-medium pl-8 py-1.5">
+                              <div className="flex items-center gap-1.5">
+                                {isNew(brother.createdAt) && (
+                                  <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                  </span>
+                                )}
                                 <span>{brother.name}</span>
-                                <div className="flex flex-wrap gap-1 min-h-[20px]">
-                                  {isNew(brother.createdAt) && (
-                                    <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                      <Sparkles className="w-3 h-3" />
-                                      Nuevo
-                                    </span>
-                                  )}
-                                  {brother.isItinerante && (
+                                {brother.isItinerante && (
+                                  <span className="hidden sm:inline-flex">
                                     <CarismaBadge carisma="Itinerante" size="sm" />
-                                  )}
-                                  {brother.isMarriage && (
-                                    <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
-                                      Matrimonio
-                                    </span>
-                                  )}
-                                </div>
+                                  </span>
+                                )}
                               </div>
+                              {brother.isItinerante && (
+                                <div className="flex sm:hidden mt-0.5">
+                                  <CarismaBadge carisma="Itinerante" size="sm" />
+                                </div>
+                              )}
                             </TableCell>
-                            <TableCell>{brother.celular || '-'}</TableCell>
+                            <TableCell className="py-1.5">{brother.celular || '-'}</TableCell>
                             {onDelete && (
-                              <TableCell>
+                              <TableCell className="py-1.5">
                                 <Button
                                   variant={isInTeam ? "secondary" : "outline"}
                                   className={!isInTeam ? "text-destructive border-destructive/50 hover:bg-destructive/10" : ""}
