@@ -28,3 +28,8 @@ next-env.d.ts
 
 # electron build output
 dist-electron
+
+# Playwright
+e2e/test-results/
+e2e/playwright-report/
+e2e/screenshots/

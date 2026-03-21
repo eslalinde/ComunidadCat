@@ -23,7 +23,11 @@
     "type-check": "tsc --noEmit",
     "electron:dev": "npm run build && tsc -p electron/tsconfig.json && electron .",
     "electron:build": "npm run build && tsc -p electron/tsconfig.json && electron-builder --win",
-    "electron:build:dir": "npm run build && tsc -p electron/tsconfig.json && electron-builder --win --dir"
+    "electron:build:dir": "npm run build && tsc -p electron/tsconfig.json && electron-builder --win --dir",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report e2e/playwright-report",
+    "seed:e2e": "npx tsx scripts/seed-test-users.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
@@ -50,6 +54,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@testing-library/jest-dom": "^6.9.1",
