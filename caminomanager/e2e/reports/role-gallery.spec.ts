@@ -1,10 +1,6 @@
 import { test } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.join(__dirname, '..', 'screenshots');
 const REPORT_PATH = path.join(SCREENSHOTS_DIR, 'role-report.html');

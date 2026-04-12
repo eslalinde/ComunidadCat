@@ -7,40 +7,40 @@ const SIDEBAR_ITEMS: Record<string, {
   hidden: string[];
 }> = {
   admin: {
-    visible: ['Inicio', 'Comunidades', 'Parroquias', 'Personas', 'Reportes', 'Admin'],
+    visible: ['Inicio', 'Comunidades', 'Parroquias', 'Personas', 'Reportes', 'Administración'],
     hidden: [],
   },
   contributor: {
     visible: ['Inicio', 'Comunidades', 'Parroquias', 'Personas', 'Reportes'],
-    hidden: ['Admin'],
+    hidden: ['Administración'],
   },
   zone_leader: {
     visible: ['Inicio', 'Comunidades', 'Parroquias', 'Personas', 'Reportes'],
-    hidden: ['Admin'],
+    hidden: ['Administración'],
   },
   zone_contributor: {
     visible: ['Inicio', 'Comunidades', 'Parroquias', 'Personas'],
-    hidden: ['Reportes', 'Admin'],
+    hidden: ['Reportes', 'Administración'],
   },
   community_responsible: {
     visible: ['Inicio', 'Comunidades'],
-    hidden: ['Parroquias', 'Personas', 'Reportes', 'Admin'],
+    hidden: ['Parroquias', 'Personas', 'Reportes', 'Administración'],
   },
   viewer_zone: {
     visible: ['Inicio', 'Comunidades', 'Parroquias'],
-    hidden: ['Personas', 'Reportes', 'Admin'],
+    hidden: ['Personas', 'Reportes', 'Administración'],
   },
   viewer_community: {
     visible: ['Inicio', 'Comunidades'],
-    hidden: ['Parroquias', 'Personas', 'Reportes', 'Admin'],
+    hidden: ['Parroquias', 'Personas', 'Reportes', 'Administración'],
   },
   viewer_grants: {
     visible: ['Inicio', 'Comunidades'],
-    hidden: ['Parroquias', 'Personas', 'Reportes', 'Admin'],
+    hidden: ['Parroquias', 'Personas', 'Reportes', 'Administración'],
   },
   viewer_noscope: {
     visible: ['Inicio'],
-    hidden: ['Comunidades', 'Parroquias', 'Personas', 'Reportes', 'Admin'],
+    hidden: ['Comunidades', 'Parroquias', 'Personas', 'Reportes', 'Administración'],
   },
 };
 
