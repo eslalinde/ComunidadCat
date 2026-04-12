@@ -1,20 +1,18 @@
 // caminomanager/scripts/seed-test-users.ts
+// Seeds one test user per role variant for E2E testing.
+// Connects directly to PostgreSQL to create auth users (bypasses GoTrue JWT issues).
+// Run: npm run seed:e2e
+// Requires: local Supabase running (supabase start)
+
+import pg from 'pg';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
+const DB_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-if (!SERVICE_ROLE_KEY) {
-  console.error('SUPABASE_SERVICE_ROLE_KEY is required. Get it from: npx supabase status');
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 const PASSWORD = 'TestPass123!';
-
 const TEST_ZONE_ID = 1;
 const TEST_COMMUNITY_ID = 1;
 
@@ -41,66 +39,123 @@ const TEST_USERS: TestUserDef[] = [
 ];
 
 async function seedUsers() {
+  const pool = new pg.Pool({ connectionString: DB_URL });
+
+  // Supabase client for profile updates (PostgREST accepts sb_secret or anon key)
+  const supabase = createClient(SUPABASE_URL, ANON_KEY);
+
   console.log('Seeding E2E test users...\n');
 
-  const { data: existingUsers } = await supabase.auth.admin.listUsers();
-  const e2eUsers = existingUsers?.users.filter((u) => u.email?.startsWith('e2e-')) || [];
-  for (const user of e2eUsers) {
-    await supabase.auth.admin.deleteUser(user.id);
-    console.log(`  Deleted existing: ${user.email}`);
-  }
-
-  for (const def of TEST_USERS) {
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: def.email,
-      password: PASSWORD,
-      email_confirm: true,
-      user_metadata: { full_name: def.fullName },
-    });
-
-    if (authError) {
-      console.error(`  FAILED ${def.email}: ${authError.message}`);
-      continue;
+  try {
+    // Clean up previous test users
+    const { rows: existing } = await pool.query(
+      "SELECT id, email FROM auth.users WHERE email LIKE 'e2e-%@test.local'"
+    );
+    for (const user of existing) {
+      // Delete profile first (FK), then identities, then user
+      await pool.query('DELETE FROM public.profiles WHERE id = $1', [user.id]);
+      await pool.query('DELETE FROM auth.identities WHERE user_id = $1', [user.id]);
+      await pool.query('DELETE FROM auth.users WHERE id = $1', [user.id]);
+      console.log(`  Deleted existing: ${user.email}`);
     }
 
-    const userId = authData.user.id;
+    for (const def of TEST_USERS) {
+      const userId = crypto.randomUUID();
+      const now = new Date().toISOString();
 
-    const profileUpdate: Record<string, unknown> = {
-      full_name: def.fullName,
-      username: def.username,
-      role: def.role,
-    };
-    if (def.zone_id) profileUpdate.zone_id = def.zone_id;
-    if (def.community_id) profileUpdate.community_id = def.community_id;
+      // Insert auth.users with bcrypt password
+      // GoTrue requires certain string columns to be '' not NULL
+      await pool.query(`
+        INSERT INTO auth.users (
+          id, instance_id, email, encrypted_password, email_confirmed_at,
+          role, aud, raw_user_meta_data, raw_app_meta_data,
+          created_at, updated_at,
+          confirmation_token, recovery_token,
+          email_change, email_change_token_new, email_change_token_current,
+          phone, phone_change, phone_change_token,
+          is_sso_user, is_anonymous
+        ) VALUES (
+          $1::uuid, '00000000-0000-0000-0000-000000000000', $2::text,
+          crypt($3::text, gen_salt('bf')), $4::timestamptz,
+          'authenticated', 'authenticated',
+          $5::jsonb, '{"provider":"email","providers":["email"]}'::jsonb,
+          $4::timestamptz, $4::timestamptz,
+          '', '',
+          '', '', '',
+          NULL, '', '',
+          false, false
+        )
+      `, [userId, def.email, PASSWORD, now, JSON.stringify({ full_name: def.fullName })]);
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update(profileUpdate)
-      .eq('id', userId);
+      // Insert auth.identities (required for GoTrue to recognize the user)
+      await pool.query(`
+        INSERT INTO auth.identities (
+          id, user_id, identity_data, provider, provider_id,
+          last_sign_in_at, created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(), $1::uuid,
+          jsonb_build_object('sub', $1::text, 'email', $2::text, 'email_verified', true, 'phone_verified', false),
+          'email', $2::text, $3::timestamptz, $3::timestamptz, $3::timestamptz
+        )
+      `, [userId, def.email, now]);
 
-    if (profileError) {
-      console.error(`  Profile update FAILED ${def.email}: ${profileError.message}`);
-      continue;
-    }
+      // Update profile with role and scope (the profiles trigger may auto-create the row)
+      // Wait a moment for the trigger to fire
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    if (def.grantCommunityAccess) {
-      const { error: grantError } = await supabase.rpc('grant_community_access', {
-        p_user_id: userId,
-        p_community_id: TEST_COMMUNITY_ID,
-      });
-      if (grantError) {
-        await supabase.from('user_community_access').insert({
-          user_id: userId,
-          community_id: TEST_COMMUNITY_ID,
-        });
+      const profileFields: string[] = ['full_name = $2', 'username = $3', 'role = $4::app_role'];
+      const profileValues: unknown[] = [userId, def.fullName, def.username, def.role];
+      let paramIdx = 5;
+
+      if (def.zone_id) {
+        profileFields.push(`zone_id = $${paramIdx}`);
+        profileValues.push(def.zone_id);
+        paramIdx++;
       }
-      console.log(`  Granted community access to ${def.email}`);
+      if (def.community_id) {
+        profileFields.push(`community_id = $${paramIdx}`);
+        profileValues.push(def.community_id);
+        paramIdx++;
+      }
+
+      // Try update first (trigger may have created the profile)
+      const { rowCount } = await pool.query(
+        `UPDATE public.profiles SET ${profileFields.join(', ')} WHERE id = $1`,
+        profileValues
+      );
+
+      // If no row existed, insert
+      if (rowCount === 0) {
+        const cols = ['id', 'full_name', 'username', 'role'];
+        const vals = [userId, def.fullName, def.username, def.role];
+        if (def.zone_id) { cols.push('zone_id'); vals.push(def.zone_id as any); }
+        if (def.community_id) { cols.push('community_id'); vals.push(def.community_id as any); }
+        const placeholders = vals.map((_, i) => i === 3 ? `$${i + 1}::app_role` : `$${i + 1}`);
+        await pool.query(
+          `INSERT INTO public.profiles (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`,
+          vals
+        );
+      }
+
+      // Grant community access for viewer_grants variant
+      if (def.grantCommunityAccess) {
+        await pool.query(
+          'INSERT INTO public.user_community_access (user_id, community_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [userId, TEST_COMMUNITY_ID]
+        );
+        console.log(`  Granted community access to ${def.email}`);
+      }
+
+      console.log(`  Created: ${def.email} (${def.role})`);
     }
 
-    console.log(`  Created: ${def.email} (${def.role})`);
+    console.log('\nDone! All test users use password: TestPass123!');
+  } finally {
+    await pool.end();
   }
-
-  console.log('\nDone! All test users use password: TestPass123!');
 }
 
-seedUsers().catch(console.error);
+seedUsers().catch((err) => {
+  console.error('Seed failed:', err);
+  process.exit(1);
+});
