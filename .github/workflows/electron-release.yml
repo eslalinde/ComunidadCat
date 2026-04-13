@@ -115,7 +115,7 @@ jobs:
 
       # ── Phase 4: Upload all artifacts to release ──────────────────────
       - name: Upload artifacts to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             caminomanager/release-cloud/ComunidadCat-Cloud-*-Setup.exe
