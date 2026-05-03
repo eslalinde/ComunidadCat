@@ -25,6 +25,7 @@ export default function AccountPage() {
   const [avatar_url, setAvatarUrl] = useState<string | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [scopeLabel, setScopeLabel] = useState<string | null>(null);
 
   // Obtener usuario actual
   useEffect(() => {
@@ -73,6 +74,51 @@ export default function AccountPage() {
   useEffect(() => {
     if (user) getProfile();
   }, [user, getProfile]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadScopeLabel() {
+      if (!userScope) {
+        if (!cancelled) setScopeLabel(null);
+        return;
+      }
+      if (userScope.zone_id) {
+        const { data } = await supabase
+          .from('city_zones')
+          .select('name')
+          .eq('id', userScope.zone_id)
+          .single();
+        if (!cancelled) {
+          setScopeLabel(data?.name ? `Zona ${data.name}` : `Zona #${userScope.zone_id}`);
+        }
+        return;
+      }
+      if (userScope.community_id) {
+        const { data } = await supabase
+          .from('communities')
+          .select('number, parish:parishes(name)')
+          .eq('id', userScope.community_id)
+          .single();
+        if (!cancelled) {
+          const parishName = (data?.parish as { name?: string } | null)?.name;
+          const number = data?.number;
+          if (number && parishName) {
+            setScopeLabel(`Comunidad ${number} — ${parishName}`);
+          } else if (number) {
+            setScopeLabel(`Comunidad ${number}`);
+          } else {
+            setScopeLabel(`Comunidad #${userScope.community_id}`);
+          }
+        }
+        return;
+      }
+      if (!cancelled) setScopeLabel(null);
+    }
+    loadScopeLabel();
+    return () => {
+      cancelled = true;
+    };
+  }, [userScope, supabase]);
 
   async function updateProfile({
     username,
@@ -135,14 +181,18 @@ export default function AccountPage() {
               <span className="text-sm font-medium text-[#1B3A6F]">Tu rol:</span>
               <Badge className={getRoleBadgeClass(role)}>{getRoleLabel(role)}</Badge>
             </div>
-            {userScope?.zone_id && (
-              <p className="text-xs text-blue-700">Alcance: Zona asignada</p>
+            {scopeLabel && (
+              <p className="text-xs text-blue-700" data-testid="scope-label">
+                Alcance: {scopeLabel}
+              </p>
             )}
-            {userScope?.community_id && !userScope?.zone_id && (
-              <p className="text-xs text-blue-700">Alcance: Comunidad asignada</p>
+            {!scopeLabel && (role === 'admin' || role === 'contributor') && (
+              <p className="text-xs text-blue-700" data-testid="scope-label">
+                Alcance: Acceso global a todas las zonas y comunidades.
+              </p>
             )}
             {role === 'viewer' && !userScope?.zone_id && !userScope?.community_id && accessCommunities.length === 0 && (
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-blue-700" data-testid="scope-label">
                 Sin acceso asignado. Contacta a un administrador para que te otorgue permisos.
               </p>
             )}

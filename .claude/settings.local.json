@@ -22,7 +22,9 @@
       "mcp__supabase__apply_migration",
       "mcp__supabase__execute_sql",
       "Bash(xargs:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx playwright *)",
+      "Bash(npx tsc *)"
     ]
   },
   "enableAllProjectMcpServers": true,

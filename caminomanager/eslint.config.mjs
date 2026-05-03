@@ -17,6 +17,15 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-empty-object-type": "warn",
     },
   },
+  {
+    // Playwright tests are not React code; disable React hooks rules so the
+    // fixture API parameter named `use` is not flagged as a hook call.
+    files: ["e2e/**/*.ts", "e2e/**/*.tsx"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/exhaustive-deps": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
