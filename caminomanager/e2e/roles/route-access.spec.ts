@@ -77,7 +77,9 @@ test.describe('Route access control per role', () => {
             expect(page.url()).not.toContain(route.path);
           }
 
-          await takeRoleScreenshot(page, roleKey, `route-${route.name}`);
+          await takeRoleScreenshot(page, roleKey, `route-${route.name}`, {
+            testCaseId: `TC-ROUTE-${roleKey.toUpperCase()}-${route.name.toUpperCase()}-${shouldAccess ? 'OK' : 'BLOCK'}`,
+          });
         });
       }
     });

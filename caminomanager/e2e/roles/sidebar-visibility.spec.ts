@@ -55,7 +55,7 @@ test.describe('Sidebar - item visibility per role', () => {
 
       const viewport = page.viewportSize();
       if (viewport && viewport.width < 768) {
-        const menuButton = page.getByRole('button', { name: /menu/i });
+        const menuButton = page.locator('[data-sidebar="trigger"]');
         if (await menuButton.isVisible()) {
           await menuButton.click();
           await page.waitForTimeout(500);
@@ -75,7 +75,9 @@ test.describe('Sidebar - item visibility per role', () => {
         expect(count, `"${item}" should not appear in sidebar for ${roleKey}`).toBe(0);
       }
 
-      await takeRoleScreenshot(page, roleKey, 'sidebar');
+      await takeRoleScreenshot(page, roleKey, 'sidebar', {
+        testCaseId: `TC-SIDEBAR-${roleKey.toUpperCase()}`,
+      });
     });
   }
 });

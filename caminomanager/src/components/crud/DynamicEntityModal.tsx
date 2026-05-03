@@ -427,7 +427,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
                               >
                                 <SelectTrigger>
                                   {selectedLabel ? (
-                                    <span className="truncate">{selectedLabel}</span>
+                                    <span className="truncate min-w-0">{selectedLabel}</span>
                                   ) : (
                                     <SelectValue
                                       placeholder={

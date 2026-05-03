@@ -86,7 +86,9 @@ test.describe('Home page - card visibility per role', () => {
         expect(count).toBe(0);
       }
 
-      await takeRoleScreenshot(page, roleKey, 'home');
+      await takeRoleScreenshot(page, roleKey, 'home', {
+        testCaseId: `TC-HOME-${roleKey.toUpperCase()}`,
+      });
     });
   }
 });
@@ -101,7 +103,9 @@ test.describe('Home page - redirect roles', () => {
       await page.waitForURL('**/comunidades/detalle**', { timeout: 15_000 });
       expect(page.url()).toContain('/comunidades/detalle');
 
-      await takeRoleScreenshot(page, roleKey, 'home-redirect');
+      await takeRoleScreenshot(page, roleKey, 'home-redirect', {
+        testCaseId: `TC-HOME-${roleKey.toUpperCase()}`,
+      });
     });
   }
 });

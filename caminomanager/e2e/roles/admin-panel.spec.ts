@@ -9,7 +9,9 @@ test.describe('Admin panel access', () => {
 
     await expect(page.getByText(/usuarios|gestión/i).first()).toBeVisible();
 
-    await takeRoleScreenshot(page, 'admin', 'admin-panel');
+    await takeRoleScreenshot(page, 'admin', 'admin-panel', {
+      testCaseId: 'TC-ADMIN-PANEL-ADMIN',
+    });
   });
 
   test('contributor cannot access admin panel', async ({ page, loginAs }) => {
@@ -18,7 +20,9 @@ test.describe('Admin panel access', () => {
 
     await page.waitForURL((url) => !url.pathname.startsWith('/admin'), { timeout: 10_000 });
     expect(page.url()).not.toContain('/admin');
-    await takeRoleScreenshot(page, 'contributor', 'admin-blocked');
+    await takeRoleScreenshot(page, 'contributor', 'admin-blocked', {
+      testCaseId: 'TC-ADMIN-PANEL-CONTRIBUTOR-BLOCKED',
+    });
   });
 
   test('viewer cannot access admin panel', async ({ page, loginAs }) => {
@@ -27,6 +31,8 @@ test.describe('Admin panel access', () => {
 
     await page.waitForURL((url) => !url.pathname.startsWith('/admin'), { timeout: 10_000 });
     expect(page.url()).not.toContain('/admin');
-    await takeRoleScreenshot(page, 'viewer_noscope', 'admin-blocked');
+    await takeRoleScreenshot(page, 'viewer_noscope', 'admin-blocked', {
+      testCaseId: 'TC-ADMIN-PANEL-VIEWER-BLOCKED',
+    });
   });
 });
