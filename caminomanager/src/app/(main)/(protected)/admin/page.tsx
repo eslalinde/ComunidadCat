@@ -43,6 +43,7 @@ import {
   roleAcceptsScope,
 } from "@/lib/permissions";
 import { useQuery } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ALL_ROLES: AppRole[] = [
   "viewer",
@@ -133,6 +134,7 @@ export default function AdminPage() {
 
   const { data: zones } = useZones();
   const { data: communities } = useCommunities();
+  const isMobile = useIsMobile();
 
   // Check admin authorization
   useEffect(() => {
@@ -313,8 +315,17 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Table */}
-          {!loading && !error && (
+          {/* Empty state (compartido entre desktop y mobile) */}
+          {!loading && !error && filteredUsers.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+              {searchTerm
+                ? "No se encontraron usuarios con ese criterio."
+                : "No hay usuarios registrados."}
+            </div>
+          )}
+
+          {/* Desktop: tabla completa */}
+          {!loading && !error && filteredUsers.length > 0 && !isMobile && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -326,73 +337,122 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5}>
-                      <div className="text-center text-gray-500 py-8">
-                        {searchTerm
-                          ? "No se encontraron usuarios con ese criterio."
-                          : "No hay usuarios registrados."}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((user) => {
-                    const isCurrentUser = user.id === currentUserId;
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <span className="text-sm">{user.email}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {user.full_name || "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {isCurrentUser ? (
-                            <Badge
-                              className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
-                              title="No puedes cambiar tu propio rol"
-                            >
-                              {getRoleLabel(user.role)}
-                            </Badge>
-                          ) : (
-                            <Select
-                              value={user.role}
-                              onValueChange={(val) =>
-                                handleRoleChange(user, val)
-                              }
-                            >
-                              <SelectTrigger className="h-7 text-xs border-none shadow-none w-[180px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ALL_ROLES.map((r) => (
-                                  <SelectItem key={r} value={r}>
-                                    {getRoleLabel(r)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {getScopeLabel(user) || "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-500">
-                            {formatDate(user.last_sign_in_at)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
+                {filteredUsers.map((user) => {
+                  const isCurrentUser = user.id === currentUserId;
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <span className="text-sm">{user.email}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {user.full_name || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {isCurrentUser ? (
+                          <Badge
+                            className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
+                            title="No puedes cambiar tu propio rol"
+                          >
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        ) : (
+                          <Select
+                            value={user.role}
+                            onValueChange={(val) =>
+                              handleRoleChange(user, val)
+                            }
+                          >
+                            <SelectTrigger className="h-7 text-xs border-none shadow-none w-[180px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ALL_ROLES.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                  {getRoleLabel(r)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {getScopeLabel(user) || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(user.last_sign_in_at)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
+          )}
+
+          {/* Mobile: una tarjeta por usuario */}
+          {!loading && !error && filteredUsers.length > 0 && isMobile && (
+            <ul className="space-y-2">
+              {filteredUsers.map((user) => {
+                const isCurrentUser = user.id === currentUserId;
+                const scope = getScopeLabel(user);
+                return (
+                  <li
+                    key={user.id}
+                    className="rounded-lg border border-gray-200 bg-white p-3 space-y-2"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium text-gray-900 break-all">
+                        {user.email}
+                      </p>
+                      {user.full_name && (
+                        <p className="text-xs text-gray-500">{user.full_name}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      {isCurrentUser ? (
+                        <Badge
+                          className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
+                          title="No puedes cambiar tu propio rol"
+                        >
+                          {getRoleLabel(user.role)}
+                        </Badge>
+                      ) : (
+                        <Select
+                          value={user.role}
+                          onValueChange={(val) => handleRoleChange(user, val)}
+                        >
+                          <SelectTrigger className="h-8 w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ALL_ROLES.map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {getRoleLabel(r)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-xs">
+                      <dt className="text-gray-500">Alcance:</dt>
+                      <dd className="text-gray-700">{scope || "—"}</dd>
+                      <dt className="text-gray-500">Último acceso:</dt>
+                      <dd className="text-gray-700">
+                        {formatDate(user.last_sign_in_at)}
+                      </dd>
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>

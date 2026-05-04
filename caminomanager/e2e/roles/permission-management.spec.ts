@@ -16,7 +16,11 @@ test.describe('Gestión de permisos — Admin vs Contribuidor', () => {
     await expect(page.getByRole('button', { name: /crear usuario/i })).toBeVisible();
 
     // Role selector (a SelectTrigger) must be present for at least one user row.
-    const roleSelectors = page.locator('table [role="combobox"]');
+    // En desktop el listado vive en una <table>; en mobile (<768px) se renderiza
+    // como una lista de tarjetas (<ul>). Cubrimos ambos sin acoplar al layout.
+    const roleSelectors = page.locator(
+      'table [role="combobox"], ul [role="combobox"]'
+    );
     await expect(roleSelectors.first()).toBeVisible({ timeout: 10_000 });
     expect(await roleSelectors.count()).toBeGreaterThan(0);
 

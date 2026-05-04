@@ -9,7 +9,7 @@
 
 export interface TestCase {
   id: string;
-  area: 'Sidebar' | 'Rutas' | 'Inicio' | 'Admin' | 'Parroquias' | 'Permisos' | 'Cuenta';
+  area: 'Sidebar' | 'Rutas' | 'Inicio' | 'Admin' | 'Parroquias' | 'Permisos' | 'Cuenta' | 'Comunidades';
   role: string;
   title: string;
   steps: string[];
@@ -353,6 +353,174 @@ const handwritten: TestCase[] = [
     ],
     expected:
       'El contribuidor no ve "Administración" en el sidebar y al navegar a /admin la aplicación lo redirige fuera. No tiene forma de cambiar roles ni crear usuarios.',
+  },
+
+  // ── Detalle de comunidad: visibilidad por rol ────────────────────────────
+  {
+    id: 'TC-COMMUNITY-DETAIL-ADMIN',
+    area: 'Comunidades',
+    role: 'admin',
+    title: 'Detalle de comunidad — Administrador ve todos los controles',
+    steps: [
+      'Iniciar sesión como Administrador.',
+      'Navegar a /comunidades/detalle?id=1.',
+      'Inspeccionar el encabezado y las tarjetas principales.',
+    ],
+    expected:
+      'Aparecen los botones Editar, Imprimir, Fusionar, Usuarios, Historial y Eliminar; las tarjetas de Bitácora (con botón Agregar), Hermanos (con Agregar Existente) y los equipos están visibles.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-CONTRIBUTOR',
+    area: 'Comunidades',
+    role: 'contributor',
+    title: 'Detalle de comunidad — Contribuidor ve casi todo, sin Eliminar',
+    steps: [
+      'Iniciar sesión como Contribuidor.',
+      'Navegar a /comunidades/detalle?id=1.',
+    ],
+    expected:
+      'Ve Editar, Imprimir, Fusionar, Usuarios e Historial, además de Bitácora con Agregar y Agregar Existente en Hermanos. NO aparece el botón "Eliminar" (sólo admin/zone_leader pueden borrar la comunidad).',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-ZONE_LEADER',
+    area: 'Comunidades',
+    role: 'zone_leader',
+    title: 'Detalle de comunidad — Jefe de Zona tiene control completo en su zona',
+    steps: [
+      'Iniciar sesión como Jefe de Zona (zona Norte).',
+      'Navegar a /comunidades/detalle?id=1 (parroquia 1, zona Norte).',
+    ],
+    expected:
+      'Ve Editar, Imprimir, Fusionar, Usuarios, Historial y Eliminar, igual que el administrador, pero acotado a comunidades de su zona.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-ZONE_CONTRIBUTOR',
+    area: 'Comunidades',
+    role: 'zone_contributor',
+    title: 'Detalle de comunidad — Contribuidor de Zona ve edición y bitácora, sin fusión ni accesos',
+    steps: [
+      'Iniciar sesión como Contribuidor Zona.',
+      'Navegar a /comunidades/detalle?id=1.',
+    ],
+    expected:
+      'Ve Editar, Imprimir, Historial y los botones de Bitácora y Hermanos. NO ve Fusionar, Usuarios ni Eliminar.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-COMMUNITY_RESPONSIBLE',
+    area: 'Comunidades',
+    role: 'community_responsible',
+    title: 'Detalle de comunidad — Responsable de Comunidad sólo gestiona hermanos',
+    steps: [
+      'Iniciar sesión como Responsable de Comunidad (comunidad 1).',
+      'Esperar la redirección automática al detalle.',
+    ],
+    expected:
+      'NO ve Editar, Fusionar, Usuarios, Historial, Eliminar ni la tarjeta de Bitácora. SÍ ve Imprimir (lista de hermanos) y el botón "Agregar Existente" en la lista de hermanos.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-VIEWER_ZONE',
+    area: 'Comunidades',
+    role: 'viewer_zone',
+    title: 'Detalle de comunidad — Viewer (zona) sólo lee',
+    steps: [
+      'Iniciar sesión como Viewer (zona Norte).',
+      'Navegar a /comunidades/detalle?id=1.',
+    ],
+    expected:
+      'Ve Imprimir y la Bitácora en modo lectura. NO aparecen Editar, Fusionar, Usuarios, Historial, Eliminar, ni botones de agregar (ni en Bitácora ni en Hermanos).',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-VIEWER_COMMUNITY',
+    area: 'Comunidades',
+    role: 'viewer_community',
+    title: 'Detalle de comunidad — Viewer (comunidad) sólo lee',
+    steps: [
+      'Iniciar sesión como Viewer (comunidad 1).',
+      'Esperar la redirección automática al detalle.',
+    ],
+    expected:
+      'Ve Imprimir y la Bitácora en modo lectura. No tiene controles de edición, fusión, accesos, historial, eliminación ni de gestión de hermanos.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-VIEWER_GRANTS',
+    area: 'Comunidades',
+    role: 'viewer_grants',
+    title: 'Detalle de comunidad — Viewer (con grants) sólo lee',
+    steps: [
+      'Iniciar sesión como Viewer con grants sobre la comunidad 1.',
+      'Navegar a /comunidades/detalle?id=1.',
+    ],
+    expected:
+      'Comportamiento idéntico al viewer con scope de comunidad: lee la información y la bitácora; no ve ninguno de los controles de escritura.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-VIEWER_NOSCOPE-BLOCKED',
+    area: 'Comunidades',
+    role: 'viewer_noscope',
+    title: 'Detalle de comunidad — Viewer sin alcance es redirigido',
+    steps: [
+      'Iniciar sesión como Viewer sin alcance.',
+      'Intentar navegar manualmente a /comunidades/detalle?id=1.',
+    ],
+    expected:
+      'El layout protegido detecta que el rol no puede acceder a /comunidades y redirige fuera de la ruta antes de renderizar el detalle.',
+  },
+
+  // ── Detalle de comunidad: acciones (writes) ──────────────────────────────
+  {
+    id: 'TC-COMMUNITY-DETAIL-ADMIN-EDIT',
+    area: 'Comunidades',
+    role: 'admin',
+    title: 'Editar campo de la comunidad — round-trip',
+    steps: [
+      'Iniciar sesión como Administrador.',
+      'Abrir el detalle de una comunidad scratch creada para la prueba.',
+      'Pulsar "Editar", cambiar "Hermanos Actuales" a 7 y Guardar.',
+      'Verificar el toast "Comunidad actualizada" y leer el valor desde la base.',
+    ],
+    expected:
+      'El modal se cierra, aparece el toast de éxito y la columna actual_brothers en la tabla communities queda en 7. La prueba luego revierte el cambio.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-ADMIN-CREATE-TEAM',
+    area: 'Comunidades',
+    role: 'admin',
+    title: 'Crear y eliminar Equipo de Responsables desde el detalle',
+    steps: [
+      'Iniciar sesión como Administrador.',
+      'Abrir el detalle de la comunidad scratch (sin equipos).',
+      'Pulsar "Crear Equipo de Responsables".',
+      'Verificar el TeamSection y luego pulsar "Eliminar Equipo" y confirmar.',
+    ],
+    expected:
+      'Se inserta una fila en teams (team_type_id=4), aparece el card "Equipo de Responsables", el borrado desde la UI ejecuta el cleanup en cascada y el equipo desaparece de la base.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-ADMIN-STEPLOG',
+    area: 'Comunidades',
+    role: 'admin',
+    title: 'Agregar entrada a la bitácora',
+    steps: [
+      'Iniciar sesión como Administrador.',
+      'Abrir el detalle de la comunidad scratch.',
+      'Pulsar "Agregar" en la tarjeta Bitácora, escribir una nota y Guardar.',
+    ],
+    expected:
+      'La nota aparece en la lista compacta de la bitácora y existe una fila en community_step_log con esa nota para la comunidad scratch.',
+  },
+  {
+    id: 'TC-COMMUNITY-DETAIL-CONTRIBUTOR-CATEQUISTAS',
+    area: 'Comunidades',
+    role: 'contributor',
+    title: 'Contribuidor crea Equipo de Catequistas y NO puede eliminar la comunidad',
+    steps: [
+      'Iniciar sesión como Contribuidor.',
+      'Abrir el detalle de la comunidad scratch (sin equipos de catequistas).',
+      'Confirmar que el botón "Eliminar" del encabezado no aparece.',
+      'Pulsar "Crear Equipo de Catequistas".',
+    ],
+    expected:
+      'El botón "Eliminar" de la comunidad nunca aparece para el contribuidor. Tras pulsar "Crear", se inserta una fila en teams (team_type_id=3) y aparece el card "Equipo de Catequistas".',
   },
 ];
 

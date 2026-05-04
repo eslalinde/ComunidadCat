@@ -24,7 +24,11 @@
       "Bash(xargs:*)",
       "Bash(find:*)",
       "Bash(npx playwright *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npx --prefix F:/repos/playground/VibeCaminoManager/caminomanager eslint F:/repos/playground/VibeCaminoManager/caminomanager/e2e)",
+      "Bash(npx --prefix F:/repos/playground/VibeCaminoManager/caminomanager playwright test --config F:/repos/playground/VibeCaminoManager/caminomanager/playwright.config.ts e2e/roles/community-detail-visibility.spec.ts --project=chromium-desktop --reporter=list)",
+      "Bash(npx --prefix F:/repos/playground/VibeCaminoManager/caminomanager playwright test --config F:/repos/playground/VibeCaminoManager/caminomanager/playwright.config.ts e2e/roles/community-detail-actions.spec.ts --project=chromium-desktop --reporter=list)",
+      "Bash(npx --prefix F:/repos/playground/VibeCaminoManager/caminomanager playwright test --config F:/repos/playground/VibeCaminoManager/caminomanager/playwright.config.ts --project=chromium-desktop --reporter=list)"
     ]
   },
   "enableAllProjectMcpServers": true,
