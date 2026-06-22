@@ -9,7 +9,7 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "shadcn": "^3.8.5",
-    "supabase": "^2.78.1",
+    "supabase": "^2.107.0",
     "wait-on": "^7.2.0"
   }
 }
