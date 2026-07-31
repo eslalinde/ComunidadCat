@@ -71,6 +71,18 @@ test.describe('Ciudades — piloto ReUI', () => {
 
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
+
+    const dialogBox = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+    expect(dialogBox).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(
+      Math.abs(dialogBox!.x + dialogBox!.width / 2 - viewport!.width / 2),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(dialogBox!.y + dialogBox!.height / 2 - viewport!.height / 2),
+    ).toBeLessThanOrEqual(1);
+
     await expect(dialog.getByRole('button', { name: 'Cancelar' })).toBeFocused();
     await expect(dialog.getByRole('button', { name: 'Eliminar' })).toBeDisabled();
 
