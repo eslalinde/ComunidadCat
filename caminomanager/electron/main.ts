@@ -5,6 +5,12 @@ import serve from 'electron-serve';
 import { autoUpdater } from 'electron-updater';
 
 const isProd = app.isPackaged;
+const isSmokeTest = process.env.ELECTRON_SMOKE_TEST === '1';
+const smokeUserDataPath = process.env.ELECTRON_SMOKE_USER_DATA;
+
+if (isSmokeTest && smokeUserDataPath) {
+  app.setPath('userData', smokeUserDataPath);
+}
 
 const appPackageJson = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')
@@ -34,7 +40,7 @@ function createWindow() {
 
   loadURL(mainWindow);
 
-  if (!isProd) {
+  if (!isProd && !isSmokeTest) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -51,7 +57,11 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  if (isSmokeTest) {
+    await session.defaultSession.clearStorageData();
+  }
+
   // Security headers for all responses
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({

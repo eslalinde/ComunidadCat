@@ -60,7 +60,7 @@ no deben compartir los tokens de la interfaz interactiva.
 - [x] Lint sin errores.
 - [x] Playwright de fases 2–6 aprobado (22 casos).
 - [x] Build estático aprobado (31 rutas).
-- [ ] Revisión manual en Electron.
+- [x] Navegación, breadcrumbs y controles de ventana verificados en Electron.
 
 ## Evidencia de cierre técnico
 
@@ -75,5 +75,5 @@ Validado el 31 de julio de 2026:
   desktop y mobile;
 - `npm run build`: compilación y exportación estática de 31 rutas aprobadas.
 
-La hoja de ruta ReUI queda cerrada técnicamente para el renderer web. La
-revisión manual en Electron continúa como puerta transversal previa a release.
+La hoja de ruta ReUI queda cerrada técnicamente para web y Electron mediante la
+[validación transversal automatizada](electron-validation.md).

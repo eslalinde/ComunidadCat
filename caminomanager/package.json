@@ -27,6 +27,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report e2e/playwright-report",
+    "test:electron": "tsc -p electron/tsconfig.json && playwright test --config playwright.electron.config.ts",
     "ui:audit": "node scripts/ui-audit.mjs",
     "seed:e2e": "tsx scripts/seed-test-users.ts"
   },

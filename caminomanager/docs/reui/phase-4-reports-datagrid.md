@@ -70,7 +70,7 @@ visible, preservando el comportamiento anterior.
 - [x] Suite unitaria completa aprobada (310 pruebas).
 - [x] Playwright de fases 2–4 aprobado (16 casos).
 - [x] Build estático aprobado (31 rutas).
-- [ ] Revisión manual en Electron.
+- [x] DataGrid verificado dentro de Electron.
 
 ## Evidencia de cierre técnico
 

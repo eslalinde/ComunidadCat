@@ -111,7 +111,7 @@ frágiles.
 - [x] Contrato Playwright definido.
 - [x] Lint sin errores, type-check y unitarias aprobados.
 - [x] Build de exportación estática local verificado (30 rutas prerenderizadas).
-- [ ] Prueba manual de Electron verificada en la rama de implementación.
+- [x] Validación del renderer estático en Electron automatizada.
 
-El punto pendiente es una puerta por componente desde la fase 2; no bloquea
-el cierre documental de esta fase porque todavía no existe código ReUI en runtime.
+La puerta transversal quedó implementada al finalizar la hoja de ruta mediante
+el [smoke test de Electron](electron-validation.md).

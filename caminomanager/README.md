@@ -64,6 +64,7 @@ Las instrucciones para **desplegar las migraciones de la base de datos a Supabas
 - [Piloto DataGrid en reportes — fase 4](docs/reui/phase-4-reports-datagrid.md)
 - [Formularios complejos y Stepper — fase 5](docs/reui/phase-5-complex-forms.md)
 - [Navegación responsive y limpieza — fase 6](docs/reui/phase-6-navigation-cleanup.md)
+- [Validación transversal en Electron](docs/reui/electron-validation.md)
 
 ## Getting Started
 

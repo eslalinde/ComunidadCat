@@ -72,7 +72,7 @@ permanece en laboratorio.
 - [x] Playwright del piloto aprobado en desktop y mobile (6 casos, incluido el
   ciclo CRUD persistente).
 - [x] Build estático aprobado (31 rutas).
-- [ ] Revisión manual en Electron.
+- [x] Autocomplete y AlertDialog verificados dentro de Electron.
 
 ## Evidencia de cierre técnico
 
@@ -85,6 +85,5 @@ Validado el 31 de julio de 2026:
 - `git diff --check`: aprobado; sólo informa la normalización LF/CRLF del
   entorno Windows.
 
-La fase 3 queda cerrada técnicamente para el renderer web. La revisión manual
-en Electron se conserva como control previo a release porque valida el
-empaquetado y la interacción en la ventana nativa, no la lógica del piloto.
+La validación transversal de Electron abre el modal real de Ciudades y cancela
+el AlertDialog sin persistir cambios.

@@ -62,7 +62,7 @@ independiente para no mezclar campos condicionales con la navegación por pasos.
 - [x] Suite unitaria completa aprobada (312 pruebas).
 - [x] Playwright de fases 2–5 aprobado (18 casos).
 - [x] Build estático aprobado (31 rutas).
-- [ ] Revisión manual en Electron.
+- [x] Stepper verificado dentro de Electron.
 
 ## Evidencia de cierre técnico
 
@@ -75,6 +75,5 @@ Validado el 31 de julio de 2026:
   aprobados en Chromium desktop y mobile.
 - `npm run build`: compilación y exportación estática de 31 rutas aprobadas.
 
-La fase 5 queda cerrada técnicamente para el renderer web. Antes de extender el
-patrón a formularios condicionales se mantiene pendiente la revisión manual en
-Electron.
+La fase 5 queda cerrada técnicamente. El smoke test transversal abre el Stepper
+real en Electron y sale antes de ejecutar la carga.
