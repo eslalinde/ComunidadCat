@@ -72,6 +72,19 @@
         "src/__tests__/components/DynamicReportTableDataGrid.test.tsx",
         "e2e/reports/catechist-teams-datagrid.spec.ts"
       ]
+    },
+    {
+      "name": "Stepper",
+      "status": "production-pilot",
+      "target": "Carga masiva de hermanos",
+      "documentationUrl": "https://reui.io/docs/components/radix/stepper",
+      "variant": "radix-compatible",
+      "localPath": "src/components/ui/stepper.tsx",
+      "decision": "Fachada local para comunicar el progreso del asistente de cuatro pasos, conservar las etiquetas en móvil y exponer el paso actual a tecnologías de asistencia sin cambiar el proceso de importación",
+      "tests": [
+        "src/__tests__/components/BulkUploadWizardPhase5.test.tsx",
+        "e2e/ui/bulk-upload-stepper.spec.ts"
+      ]
     }
   ]
 }

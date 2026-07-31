@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
+import { Stepper, type StepperItem } from '@/components/ui/stepper';
 import {
   Table,
   TableBody,
@@ -29,7 +30,6 @@ import {
   AlertCircle,
   AlertTriangle,
   Loader2,
-  X,
   Trash2,
 } from 'lucide-react';
 import {
@@ -63,6 +63,10 @@ const STEP_LABELS: Record<WizardStep, string> = {
 };
 
 const STEPS: WizardStep[] = ['upload', 'review', 'responsables', 'confirm'];
+const STEPPER_ITEMS: StepperItem[] = STEPS.map((step) => ({
+  id: step,
+  label: STEP_LABELS[step],
+}));
 
 export function BulkUploadWizard({
   open,
@@ -155,14 +159,14 @@ export function BulkUploadWizard({
       if (result.success) {
         onComplete();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUploadResult({
         success: false,
         peopleCreated: 0,
         brothersLinked: 0,
         marriagesLinked: 0,
         responsablesAssigned: 0,
-        errors: [error.message || 'Error inesperado'],
+        errors: [error instanceof Error ? error.message : 'Error inesperado'],
       });
     } finally {
       setIsUploading(false);
@@ -220,41 +224,19 @@ export function BulkUploadWizard({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Stepper */}
-        <div className="flex items-center gap-2 mb-4 px-2">
-          {STEPS.map((step, idx) => (
-            <div key={step} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  idx === stepIndex
-                    ? 'bg-[#1B3A6F] text-white'
-                    : idx < stepIndex
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border border-current/20">
-                  {idx < stepIndex ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    idx + 1
-                  )}
-                </span>
-                <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
-              </div>
-              {idx < STEPS.length - 1 && (
-                <div
-                  className={`h-px w-8 ${
-                    idx < stepIndex ? 'bg-green-300' : 'bg-gray-200'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        <Stepper
+          steps={STEPPER_ITEMS}
+          currentStep={stepIndex}
+          ariaLabel="Progreso de carga masiva"
+          className="mb-4 px-2"
+        />
 
         {/* Step Content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div
+          className="flex-1 overflow-y-auto min-h-0"
+          aria-live="polite"
+          aria-label={`Paso ${stepIndex + 1} de ${STEPS.length}: ${STEP_LABELS[currentStep]}`}
+        >
           {/* Step 1: Upload */}
           {currentStep === 'upload' && (
             <StepUpload
@@ -380,18 +362,24 @@ function StepUpload({
       </div>
 
       {/* Drop zone */}
-      <div
+      <span id="bulk-upload-csv-help" className="sr-only">
+        Solo archivos CSV
+      </span>
+      <label
+        htmlFor="bulk-upload-csv"
         className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#1B3A6F] transition-colors cursor-pointer"
         onDragOver={(e) => e.preventDefault()}
         onDrop={onFileDrop}
-        onClick={() => fileInputRef.current?.click()}
       >
         <input
+          id="bulk-upload-csv"
           ref={fileInputRef}
           type="file"
           accept=".csv"
-          className="hidden"
+          className="sr-only"
           onChange={onFileInput}
+          aria-label="Archivo CSV de hermanos"
+          aria-describedby="bulk-upload-csv-help"
         />
         {isParsing ? (
           <div className="space-y-2">
@@ -411,10 +399,12 @@ function StepUpload({
             <p className="text-gray-600 font-medium">
               Arrastra tu archivo CSV aquí o haz clic para seleccionar
             </p>
-            <p className="text-sm text-gray-400">Solo archivos .csv</p>
+            <p className="text-sm text-gray-400">
+              Solo archivos .csv
+            </p>
           </div>
         )}
-      </div>
+      </label>
 
       {/* Global errors */}
       {globalErrors.length > 0 && (
