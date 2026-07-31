@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
 interface ConfirmDeleteDialogProps {
@@ -50,22 +52,24 @@ export function ConfirmDeleteDialog({
 
   const isConfirmValid = confirmText.toUpperCase() === confirmWord.toUpperCase();
 
-  const handleConfirm = async () => {
-    if (!isConfirmValid) return;
+  const handleConfirm = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!isConfirmValid || loading) return;
     await onConfirm();
+    setConfirmText('');
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-red-600">
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">
               {title}
-            </DialogTitle>
-            <DialogDescription>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               {description}
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Prominent item name */}
@@ -95,36 +99,37 @@ export function ConfirmDeleteDialog({
             )}
 
             {/* Confirmation text input */}
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
-              <p className="text-sm text-red-700 font-medium">
+            <Field className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <FieldDescription className="font-medium text-red-700">
                 Esta acción es IRREVERSIBLE.
-              </p>
-              <p className="text-sm text-red-600">
+              </FieldDescription>
+              <FieldLabel htmlFor="delete-confirmation" className="text-red-600">
                 Escribe <span className="font-bold">{confirmWord}</span> para confirmar:
-              </p>
+              </FieldLabel>
               <Input
+                id="delete-confirmation"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={`Escribe ${confirmWord}`}
                 disabled={loading}
+                autoComplete="off"
                 className="border-red-300 focus:ring-red-500"
               />
-            </div>
+            </Field>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button variant="outline" onClick={onClose} disabled={loading}>
+          <AlertDialogFooter className="gap-3">
+            <AlertDialogCancel disabled={loading}>
               Cancelar
-            </Button>
-            <Button
-              variant="destructive"
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleConfirm}
               disabled={!isConfirmValid || loading}
             >
               {loading ? 'Eliminando...' : 'Eliminar'}
-            </Button>
-          </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

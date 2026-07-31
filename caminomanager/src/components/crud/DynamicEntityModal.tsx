@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { friendlyError } from "@/lib/supabaseErrors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -18,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormControl,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from "@/types/database";
@@ -88,8 +90,8 @@ export function DynamicEntityModal<T extends BaseEntity>({
   };
 
   // Hooks para opciones dependientes
-  const { options: countryOptions } = useCountryOptions();
-  const { options: stateOptions } = useStateOptions(toNum(countryId));
+  const { options: countryOptions, loading: countryOptionsLoading } = useCountryOptions();
+  const { options: stateOptions, loading: stateOptionsLoading } = useStateOptions(toNum(countryId));
 
   // Determinar si el formulario tiene campos de país y departamento
   const hasCountryField = fields.some((f) => f.name === "country_id");
@@ -302,6 +304,12 @@ export function DynamicEntityModal<T extends BaseEntity>({
     }
   };
 
+  const isFieldLoading = (fieldName: string) => {
+    if (fieldName === "country_id") return countryOptionsLoading;
+    if (fieldName === "state_id") return stateOptionsLoading;
+    return false;
+  };
+
   const onSubmit = async (data: Record<string, unknown>) => {
     const prepared = prepareFormData(data, fields);
 
@@ -414,6 +422,31 @@ export function DynamicEntityModal<T extends BaseEntity>({
                             disabled={loading}
                             rows={3}
                           />
+                        ) : field.type === "select" && field.searchable ? (
+                          <Autocomplete
+                            options={(fieldOptions || field.options || []).map((option) => ({
+                              value: String(option.value),
+                              label: option.label,
+                            }))}
+                            value={
+                              rhfField.value !== null && rhfField.value !== undefined
+                                ? String(rhfField.value)
+                                : ""
+                            }
+                            onValueChange={rhfField.onChange}
+                            onBlur={rhfField.onBlur}
+                            placeholder={field.placeholder || "Buscar..."}
+                            emptyMessage={
+                              field.name === "state_id" && !countryId
+                                ? "Seleccione primero un país"
+                                : "No se encontraron opciones"
+                            }
+                            loading={isFieldLoading(field.name)}
+                            disabled={
+                              loading ||
+                              (field.name === "state_id" && !countryId)
+                            }
+                          />
                         ) : field.type === "select" ? (
                           (() => {
                             const opts = fieldOptions || field.options || [];
@@ -469,6 +502,9 @@ export function DynamicEntityModal<T extends BaseEntity>({
                           />
                         )}
                       </FormControl>
+                      {field.description && (
+                        <FormDescription>{field.description}</FormDescription>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

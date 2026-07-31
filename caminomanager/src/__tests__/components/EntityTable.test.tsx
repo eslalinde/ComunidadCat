@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -25,6 +25,7 @@ vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, ...props }: any) => (
     <button onClick={onClick} {...props}>{children}</button>
   ),
+  buttonVariants: () => '',
 }));
 
 vi.mock('@/components/ui/table', () => ({
@@ -204,6 +205,18 @@ describe('EntityTable', () => {
     render(<EntityTable {...defaultProps} />);
     const trashIcons = screen.getAllByTestId('trash-icon');
     expect(trashIcons.length).toBe(mockData.length);
+  });
+
+  it('should restore focus to the delete trigger after cancelling', async () => {
+    const user = userEvent.setup();
+    render(<EntityTable {...defaultProps} />);
+
+    const trigger = screen.getByRole('button', { name: 'Eliminar Colombia' });
+    await user.click(trigger);
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('should call onRowClick when row is clicked and handler provided', async () => {

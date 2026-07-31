@@ -1,37 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
-
-// Mock radix dialog components
-vi.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: any) => <div>{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children, className }: any) => <h2 className={className}>{children}</h2>,
-  DialogDescription: ({ children }: any) => <p>{children}</p>,
-  DialogFooter: ({ children }: any) => <div>{children}</div>,
-}));
-
-vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, disabled, variant, ...props }: any) => (
-    <button onClick={onClick} disabled={disabled} data-variant={variant} {...props}>
-      {children}
-    </button>
-  ),
-}));
-
-vi.mock('@/components/ui/input', () => ({
-  Input: ({ value, onChange, placeholder, disabled, ...props }: any) => (
-    <input
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      disabled={disabled}
-      {...props}
-    />
-  ),
-}));
 
 import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 
@@ -46,13 +15,18 @@ const defaultProps = {
 describe('ConfirmDeleteDialog', () => {
   it('should not render when closed', () => {
     render(<ConfirmDeleteDialog {...defaultProps} open={false} />);
-    expect(screen.queryByTestId('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('should render when open', () => {
     render(<ConfirmDeleteDialog {...defaultProps} />);
-    expect(screen.getByTestId('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByText('¿Eliminar registro?')).toBeInTheDocument();
+  });
+
+  it('should focus the safe action when opened', () => {
+    render(<ConfirmDeleteDialog {...defaultProps} />);
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
   });
 
   it('should display description', () => {

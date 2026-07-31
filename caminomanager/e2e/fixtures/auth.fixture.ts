@@ -7,9 +7,30 @@ async function loginAs(page: Page, user: TestUser): Promise<void> {
   await page.getByLabel(/correo/i).fill(user.email);
   await page.getByLabel(/contraseña/i).fill(user.password);
   await page.getByRole('button', { name: /ingresar/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), {
-    timeout: 15_000,
-  });
+
+  const outcome = await Promise.race([
+    page
+      .waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15_000 })
+      .then(() => 'authenticated' as const)
+      .catch(() => 'timeout' as const),
+    page
+      .getByText(/Credenciales inválidas/i)
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => 'invalid-credentials' as const)
+      .catch(() => 'timeout' as const),
+  ]);
+
+  if (outcome === 'invalid-credentials') {
+    throw new Error(
+      `No fue posible autenticar ${user.email}. Verifica que Supabase local esté activo y ejecuta "npm run seed:e2e" antes de Playwright.`
+    );
+  }
+
+  if (outcome !== 'authenticated') {
+    throw new Error(
+      `El login de ${user.email} no terminó en 15 segundos. Revisa Supabase local y el servidor de Next.js.`
+    );
+  }
 }
 
 export const test = base.extend<{

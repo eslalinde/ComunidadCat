@@ -91,16 +91,20 @@ export const cityConfig: EntityConfig<City> = {
       label: 'País',
       type: 'select',
       required: true,
+      searchable: true,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione un país'
+      placeholder: 'Busque un país',
+      description: 'Escriba para filtrar la lista de países.'
     },
     {
       name: 'state_id',
       label: 'Departamento',
       type: 'select',
       required: false,
+      searchable: true,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione un departamento (opcional)'
+      placeholder: 'Busque un departamento (opcional)',
+      description: 'Las opciones dependen del país seleccionado.'
     }
   ],
   searchFields: ['name'],
@@ -773,4 +777,4 @@ export const entityConfigs = {
   communityStepLog: communityStepLogConfig,
   parishCatechesis: parishCatechesisConfig,
   inventoryItemTypes: inventoryItemTypeConfig
-}; 
+};

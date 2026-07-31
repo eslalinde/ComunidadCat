@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -67,6 +67,13 @@ export function EntityTable<T extends BaseEntity>({
   hideDeleteInTable = false
 }: EntityTableProps<T>) {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleDeleteDialogClose = () => {
+    const trigger = deleteTriggerRef.current;
+    setDeleteTarget(null);
+    window.setTimeout(() => trigger?.focus(), 0);
+  };
 
   const handleDeleteConfirmed = async () => {
     if (!deleteTarget) return;
@@ -101,6 +108,7 @@ export function EntityTable<T extends BaseEntity>({
             <Button
               size="icon"
               variant="ghost"
+              aria-label={`Editar ${getItemLabel(item)}`}
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 if (onRowClick) { onRowClick(item); } else { onEdit(item); }
@@ -117,10 +125,12 @@ export function EntityTable<T extends BaseEntity>({
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label={`Eliminar ${getItemLabel(item)}`}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   if (item.id) {
+                    deleteTriggerRef.current = e.currentTarget as HTMLButtonElement;
                     setDeleteTarget({ id: item.id, label: getItemLabel(item) });
                   }
                 }}
@@ -221,7 +231,7 @@ export function EntityTable<T extends BaseEntity>({
       {/* Delete confirmation dialog */}
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
+        onClose={handleDeleteDialogClose}
         onConfirm={handleDeleteConfirmed}
         title="¿Eliminar registro?"
         itemName={deleteTarget?.label}

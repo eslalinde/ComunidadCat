@@ -207,6 +207,10 @@ export interface FormField {
   maxLength?: number;
   minLength?: number;
   placeholder?: string;
+  /** Render select fields with searchable keyboard navigation. */
+  searchable?: boolean;
+  /** Optional help text associated with the form control. */
+  description?: string;
   options?: { value: string | number; label: string }[];
   validation?: (value: any) => string | null;
   hiddenInTable?: boolean;
@@ -230,4 +234,4 @@ export interface EntityConfig<T> {
   defaultSort: { field: keyof T; asc: boolean };
   foreignKeys?: ForeignKeyConfig[];
   renderValue?: (fieldName: string, value: any) => React.ReactNode;
-} 
+}

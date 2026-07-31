@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-31",
+  "policy": {
+    "publicImportBoundary": "@/components/ui/*",
+    "preferredPrimitive": "radix-ui",
+    "upstreamRegistry": "https://reui.io/r/{style}/{name}.json",
+    "requiredFieldsWhenAdopted": [
+      "name",
+      "registryItem",
+      "variant",
+      "documentationUrl",
+      "retrievedAt",
+      "upstreamVersion",
+      "sourceSha256",
+      "dependencies",
+      "localAdaptations",
+      "tests"
+    ]
+  },
+  "upstreamSnapshot": {
+    "name": "ReUI",
+    "catalogVersionObserved": "2.1.6",
+    "observedAt": "2026-07-31",
+    "changelogUrl": "https://reui.io/docs/changelog"
+  },
+  "adoptedComponents": [],
+  "candidates": [
+    {
+      "name": "Autocomplete",
+      "status": "production-pilot",
+      "target": "CRUD Ciudades",
+      "documentationUrl": "https://reui.io/docs/components/radix/autocomplete",
+      "variant": "radix-compatible",
+      "localPath": "src/components/ui/autocomplete.tsx",
+      "decision": "Piloto opt-in en País y Departamento del CRUD Ciudades; aún no adoptado desde el registry",
+      "tests": [
+        "src/__tests__/components/DynamicEntityModalPhase3.test.tsx",
+        "e2e/ui/cities-reui.spec.ts"
+      ]
+    },
+    {
+      "name": "Field/Form",
+      "status": "production-pilot",
+      "target": "CRUD genérico",
+      "documentationUrl": "https://reui.io/components/field",
+      "localPath": "src/components/ui/field.tsx",
+      "decision": "Composición local usada en confirmación destructiva y contrato Form enriquecido con descripciones accesibles"
+    },
+    {
+      "name": "AlertDialog",
+      "status": "production-pilot",
+      "target": "ConfirmDeleteDialog",
+      "documentationUrl": "https://reui.io/components/alert-dialog",
+      "variant": "radix-ui",
+      "localPath": "src/components/ui/alert-dialog.tsx",
+      "decision": "ConfirmDeleteDialog migrado conservando su API y la confirmación escrita",
+      "tests": [
+        "src/__tests__/components/ConfirmDeleteDialog.test.tsx",
+        "e2e/ui/cities-reui.spec.ts"
+      ]
+    },
+    {
+      "name": "DataGrid",
+      "status": "local-prototype",
+      "target": "Laboratorio de reportes",
+      "documentationUrl": "https://reui.io/docs/components/radix/data-grid",
+      "variant": "tanstack-adapter",
+      "localPath": "src/components/ui/data-grid.tsx",
+      "decision": "Adaptador mínimo para evaluar el contrato; no sustituye el DataGrid completo de ReUI"
+    }
+  ]
+}
