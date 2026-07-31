@@ -298,7 +298,7 @@ export function BulkUploadWizard({
                 <Button
                   onClick={handleConfirmUpload}
                   disabled={isUploading}
-                  className="bg-[#1B3A6F] hover:bg-[#15305c]"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {isUploading ? (
                     <>
@@ -313,7 +313,7 @@ export function BulkUploadWizard({
                 <Button
                   onClick={() => setCurrentStep(STEPS[stepIndex + 1])}
                   disabled={!canGoNext}
-                  className="bg-[#1B3A6F] hover:bg-[#15305c]"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   Siguiente
                 </Button>
@@ -367,7 +367,7 @@ function StepUpload({
       </span>
       <label
         htmlFor="bulk-upload-csv"
-        className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#1B3A6F] transition-colors cursor-pointer"
+        className="cursor-pointer rounded-lg border-2 border-dashed border-border p-12 text-center transition-colors hover:border-primary"
         onDragOver={(e) => e.preventDefault()}
         onDrop={onFileDrop}
       >
@@ -383,12 +383,12 @@ function StepUpload({
         />
         {isParsing ? (
           <div className="space-y-2">
-            <Loader2 className="h-10 w-10 mx-auto text-[#1B3A6F] animate-spin" />
+            <Loader2 className="mx-auto size-10 animate-spin text-primary" />
             <p className="text-gray-600">Procesando archivo...</p>
           </div>
         ) : fileName ? (
           <div className="space-y-2">
-            <FileText className="h-10 w-10 mx-auto text-[#1B3A6F]" />
+            <FileText className="mx-auto size-10 text-primary" />
             <p className="font-medium">{fileName}</p>
             <p className="text-sm text-gray-500">{brothersCount} registros encontrados</p>
             <p className="text-xs text-gray-400">Haz clic para cambiar el archivo</p>
@@ -576,7 +576,7 @@ function StepResponsables({
       </div>
 
       {selectedCount > 0 && (
-        <Badge variant="secondary" className="bg-[#1B3A6F]/10 text-[#1B3A6F]">
+        <Badge variant="secondary" className="bg-primary/10 text-primary">
           {selectedCount} responsable{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
         </Badge>
       )}
@@ -707,11 +707,11 @@ function StepConfirm({
 
     return (
       <div className="p-8 text-center space-y-4">
-        <Loader2 className="h-12 w-12 mx-auto text-[#1B3A6F] animate-spin" />
+        <Loader2 className="mx-auto size-12 animate-spin text-primary" />
         <p className="font-medium text-lg">{uploadProgress.phaseLabel}</p>
         <div className="w-full max-w-md mx-auto bg-gray-200 rounded-full h-2">
           <div
-            className="bg-[#1B3A6F] h-2 rounded-full transition-all duration-300"
+            className="h-2 rounded-full bg-primary transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>

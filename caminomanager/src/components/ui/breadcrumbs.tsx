@@ -58,34 +58,43 @@ export function Breadcrumbs() {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500">
-      <Link
-        href={routes.home}
-        className="flex items-center gap-1 hover:text-[#1B3A6F] transition-colors"
-      >
-        <Home className="w-4 h-4" />
-        <span className="hidden sm:inline">Inicio</span>
-      </Link>
+    <nav aria-label="Migas de pan" className="min-w-0 text-sm text-muted-foreground">
+      <ol className="flex min-w-0 items-center gap-1.5">
+        <li className="shrink-0">
+          <Link
+            href={routes.home}
+            className="flex items-center gap-1 transition-colors hover:text-primary"
+          >
+            <Home className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Inicio</span>
+          </Link>
+        </li>
 
-      {crumbs.map((crumb, index) => {
-        const isLast = index === crumbs.length - 1;
+        {crumbs.map((crumb, index) => {
+          const isLast = index === crumbs.length - 1;
 
-        return (
-          <span key={crumb.href} className="flex items-center gap-1.5">
-            <ChevronRight className="w-4 h-4 text-gray-300" />
-            {isLast ? (
-              <span className="font-medium text-gray-800">{crumb.label}</span>
-            ) : (
-              <Link
-                href={crumb.href}
-                className="hover:text-[#1B3A6F] transition-colors"
-              >
-                {crumb.label}
-              </Link>
-            )}
-          </span>
-        );
-      })}
+          return (
+            <li key={crumb.href} className="flex min-w-0 items-center gap-1.5">
+              <ChevronRight className="size-4 shrink-0 text-border" aria-hidden="true" />
+              {isLast ? (
+                <span
+                  aria-current="page"
+                  className="truncate font-medium text-foreground"
+                >
+                  {crumb.label}
+                </span>
+              ) : (
+                <Link
+                  href={crumb.href}
+                  className="truncate transition-colors hover:text-primary"
+                >
+                  {crumb.label}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

@@ -126,18 +126,6 @@
   z-index: 9999 !important;
 }
 
-/* Ensure form fields stack vertically */
-[data-radix-form-field] {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.5rem !important;
-}
-
-/* Ensure form controls take full width */
-[data-radix-form-control] {
-  width: 100% !important;
-}
-
 /* Align date input calendar icon to the right */
 .date-input input[type="date"],
 input[type="date"].date-input {

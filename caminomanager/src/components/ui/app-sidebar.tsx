@@ -38,6 +38,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,7 +122,12 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const { userScope } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
   const visibility = useMemo(() => getSidebarVisibility(userScope), [userScope]);
+
+  const closeMobileNavigation = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   const filteredGroups = useMemo(() => {
     return allNavGroups
@@ -150,7 +156,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
+              <Link href="/" onClick={closeMobileNavigation}>
                 <div className="flex aspect-square size-8 items-center justify-center shrink-0">
                   <Image
                     src="/logo.png"
@@ -161,7 +167,7 @@ export function AppSidebar({
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-[family-name:var(--font-montserrat)]" style={{ color: "#1B3A6F" }}>
+                  <span className="truncate font-[family-name:var(--font-montserrat)] text-primary">
                     <span className="font-normal">Comunidad</span>
                     <span className="font-semibold">Cat</span>
                   </span>
@@ -209,7 +215,11 @@ export function AppSidebar({
                             isActive={isActive}
                             tooltip={item.label}
                           >
-                            <Link href={item.href}>
+                            <Link
+                              href={item.href}
+                              aria-current={isActive ? "page" : undefined}
+                              onClick={closeMobileNavigation}
+                            >
                               <Icon />
                               <span>{item.label}</span>
                             </Link>
