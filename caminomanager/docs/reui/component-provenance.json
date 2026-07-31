@@ -62,12 +62,16 @@
     },
     {
       "name": "DataGrid",
-      "status": "local-prototype",
-      "target": "Laboratorio de reportes",
+      "status": "production-pilot",
+      "target": "Reporte Equipos de Catequistas",
       "documentationUrl": "https://reui.io/docs/components/radix/data-grid",
       "variant": "tanstack-adapter",
       "localPath": "src/components/ui/data-grid.tsx",
-      "decision": "Adaptador mínimo para evaluar el contrato; no sustituye el DataGrid completo de ReUI"
+      "decision": "Piloto opt-in que reutiliza la instancia TanStack Table y añade filtros, paginación, visibilidad de columnas y soporte responsive sin modificar las consultas",
+      "tests": [
+        "src/__tests__/components/DynamicReportTableDataGrid.test.tsx",
+        "e2e/reports/catechist-teams-datagrid.spec.ts"
+      ]
     }
   ]
 }

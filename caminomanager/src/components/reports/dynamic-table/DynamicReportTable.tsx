@@ -8,10 +8,13 @@ import {
   getGroupedRowModel,
   getExpandedRowModel,
   getFacetedUniqueValues,
+  getPaginationRowModel,
   flexRender,
   SortingState,
   ColumnFiltersState,
   ExpandedState,
+  PaginationState,
+  VisibilityState,
   Row,
 } from "@tanstack/react-table";
 import {
@@ -28,6 +31,7 @@ import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DataGrid } from "@/components/ui/data-grid";
 import {
   Table,
   TableHeader,
@@ -42,6 +46,7 @@ import { exportTableToCSV } from "./utils";
 import { GlobalFilter } from "./GlobalFilter";
 import { ColumnFilter } from "./ColumnFilter";
 import { GroupingControls } from "./GroupingControls";
+import { ColumnVisibilityControl } from "./ColumnVisibilityControl";
 
 export function DynamicReportTable<TData>({
   config,
@@ -59,6 +64,13 @@ export function DynamicReportTable<TData>({
   );
   const [expanded, setExpanded] = useState<ExpandedState>(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    config.dataGrid?.defaultColumnVisibility ?? {}
+  );
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: config.dataGrid?.pageSize ?? 10,
+  });
 
   const table = useReactTable({
     data,
@@ -69,18 +81,25 @@ export function DynamicReportTable<TData>({
       globalFilter,
       grouping,
       expanded,
+      columnVisibility,
+      ...(config.dataGrid ? { pagination } : {}),
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onGroupingChange: setGrouping,
     onExpandedChange: setExpanded,
+    onColumnVisibilityChange: setColumnVisibility,
+    ...(config.dataGrid ? { onPaginationChange: setPagination } : {}),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    ...(config.dataGrid
+      ? { getPaginationRowModel: getPaginationRowModel() }
+      : {}),
     enableGrouping: true,
   });
 
@@ -95,10 +114,12 @@ export function DynamicReportTable<TData>({
 
   const handleGlobalFilterChange = useCallback((value: string) => {
     setGlobalFilter(value);
+    setPagination((current) => ({ ...current, pageIndex: 0 }));
   }, []);
 
   const handleGroupingChange = useCallback((newGrouping: string[]) => {
     setGrouping(newGrouping);
+    setPagination((current) => ({ ...current, pageIndex: 0 }));
   }, []);
 
   // Compute footer aggregations
@@ -165,12 +186,40 @@ export function DynamicReportTable<TData>({
             grouping={grouping}
             onGroupingChange={handleGroupingChange}
           />
+          {config.dataGrid && <ColumnVisibilityControl table={table} />}
         </div>
       </div>
 
       {/* Table */}
       <Card className="p-2 sm:p-6">
-        {loading ? (
+        {config.dataGrid ? (
+          <DataGrid
+            table={table}
+            loading={loading}
+            loadingMessage="Cargando datos..."
+            emptyMessage="No hay datos disponibles"
+            className="[&_table]:min-w-[52rem]"
+            renderColumnFilter={(column) => (
+              <ColumnFilter column={column} />
+            )}
+            getRowClassName={(row) =>
+              row.getIsGrouped() ? "bg-gray-50 font-semibold" : undefined
+            }
+            getCellClassName={(cell) => {
+              const meta = cell.column.columnDef.meta as
+                | DynamicColumnMeta
+                | undefined;
+              const align = meta?.align ?? "left";
+              return `px-3 py-2 ${
+                align === "center"
+                  ? "text-center"
+                  : align === "right"
+                    ? "text-right"
+                    : "text-left"
+              }`;
+            }}
+          />
+        ) : loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
             <span className="ml-3 text-gray-600">Cargando datos...</span>
@@ -347,13 +396,61 @@ export function DynamicReportTable<TData>({
           </div>
         )}
 
-        {data.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 text-center">
-            Mostrando {filteredLeafRowCount} registros
-            {filteredLeafRowCount !== data.length &&
-              ` (de ${data.length} totales)`}
-          </div>
-        )}
+        {data.length > 0 &&
+          (config.dataGrid ? (
+            <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <span>
+                  Página {table.getState().pagination.pageIndex + 1} de{" "}
+                  {Math.max(1, table.getPageCount())} · {filteredLeafRowCount}{" "}
+                  registros
+                </span>
+                <label className="flex items-center gap-2">
+                  <span className="sr-only sm:not-sr-only">Filas:</span>
+                  <select
+                    aria-label="Filas por página"
+                    value={table.getState().pagination.pageSize}
+                    onChange={(event) => table.setPageSize(Number(event.target.value))}
+                    className="h-9 rounded-md border bg-background px-2 text-foreground"
+                  >
+                    {[5, 10, 20, 50].map((pageSize) => (
+                      <option key={pageSize} value={pageSize}>
+                        {pageSize}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="flex-1 sm:flex-none"
+                >
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="flex-1 sm:flex-none"
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 text-center text-sm text-gray-500">
+              Mostrando {filteredLeafRowCount} registros
+              {filteredLeafRowCount !== data.length &&
+                ` (de ${data.length} totales)`}
+            </div>
+          ))}
       </Card>
     </div>
   );

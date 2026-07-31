@@ -61,6 +61,7 @@ Las instrucciones para **desplegar las migraciones de la base de datos a Supabas
 - [Línea base y criterios de la fase 1](docs/reui/phase-1-baseline.md)
 - [Laboratorio de componentes — fase 2](docs/reui/phase-2-component-lab.md)
 - [Piloto productivo en Ciudades — fase 3](docs/reui/phase-3-cities-pilot.md)
+- [Piloto DataGrid en reportes — fase 4](docs/reui/phase-4-reports-datagrid.md)
 
 ## Getting Started
 

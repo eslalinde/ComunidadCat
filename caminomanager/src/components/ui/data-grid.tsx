@@ -1,8 +1,21 @@
 "use client"
 
 import * as React from "react"
-import { flexRender, type Table as TanStackTable } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, LoaderCircle } from "lucide-react"
+import {
+  flexRender,
+  type Cell,
+  type Column,
+  type Row,
+  type Table as TanStackTable,
+} from "@tanstack/react-table"
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  LoaderCircle,
+} from "lucide-react"
 
 import {
   Table,
@@ -20,6 +33,9 @@ type DataGridProps<TData> = {
   loading?: boolean
   loadingMessage?: string
   className?: string
+  renderColumnFilter?: (column: Column<TData, unknown>) => React.ReactNode
+  getRowClassName?: (row: Row<TData>) => string | undefined
+  getCellClassName?: (cell: Cell<TData, unknown>) => string | undefined
 }
 
 function DataGrid<TData>({
@@ -28,6 +44,9 @@ function DataGrid<TData>({
   loading = false,
   loadingMessage = "Cargando registros",
   className,
+  renderColumnFilter,
+  getRowClassName,
+  getCellClassName,
 }: DataGridProps<TData>) {
   const rows = table.getRowModel().rows
 
@@ -50,26 +69,34 @@ function DataGrid<TData>({
                           : "none"
                     }
                   >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        type="button"
-                        className="flex min-h-9 items-center gap-2 text-left"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {sorted === "asc" ? (
-                          <ArrowUp className="size-3.5" />
-                        ) : sorted === "desc" ? (
-                          <ArrowDown className="size-3.5" />
+                    {header.isPlaceholder ? null : (
+                      <div className="space-y-1">
+                        {header.column.getCanSort() ? (
+                          <button
+                            type="button"
+                            className="flex min-h-9 items-center gap-2 text-left"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                            {sorted === "asc" ? (
+                              <ArrowUp className="size-3.5" />
+                            ) : sorted === "desc" ? (
+                              <ArrowDown className="size-3.5" />
+                            ) : (
+                              <ArrowUpDown className="size-3.5 opacity-50" />
+                            )}
+                          </button>
                         ) : (
-                          <ArrowUpDown className="size-3.5 opacity-50" />
+                          flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )
                         )}
-                      </button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
+                        {renderColumnFilter?.(header.column)}
+                      </div>
                     )}
                   </TableHead>
                 )
@@ -92,10 +119,38 @@ function DataGrid<TData>({
             </TableRow>
           ) : rows.length ? (
             rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className={getRowClassName?.(row)}
+              >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  <TableCell key={cell.id} className={getCellClassName?.(cell)}>
+                    {cell.getIsGrouped() ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1"
+                        onClick={row.getToggleExpandedHandler()}
+                      >
+                        {row.getIsExpanded() ? (
+                          <ChevronDown className="size-4" />
+                        ) : (
+                          <ChevronRight className="size-4" />
+                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          ({row.subRows.length})
+                        </span>
+                      </button>
+                    ) : cell.getIsAggregated() ? (
+                      flexRender(
+                        cell.column.columnDef.aggregatedCell ??
+                          cell.column.columnDef.cell,
+                        cell.getContext()
+                      )
+                    ) : cell.getIsPlaceholder() ? null : (
+                      flexRender(cell.column.columnDef.cell, cell.getContext())
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
