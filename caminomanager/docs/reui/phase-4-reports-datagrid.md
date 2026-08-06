@@ -88,3 +88,9 @@ Validado el 31 de julio de 2026:
 La fase 4 queda cerrada técnicamente para el renderer web. La expansión a otros
 reportes debe mantener activación individual y validar por separado los pies
 con agregaciones.
+
+## Evolución posterior
+
+El despliegue general a los cinco reportes se documenta en
+[`phase-4-datagrid-rollout.md`](phase-4-datagrid-rollout.md). El piloto se
+mantiene aquí como registro de la decisión y de su puerta de salida original.

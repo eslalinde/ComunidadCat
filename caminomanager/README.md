@@ -62,7 +62,9 @@ Las instrucciones para **desplegar las migraciones de la base de datos a Supabas
 - [Laboratorio de componentes — fase 2](docs/reui/phase-2-component-lab.md)
 - [Piloto productivo en Ciudades — fase 3](docs/reui/phase-3-cities-pilot.md)
 - [Piloto DataGrid en reportes — fase 4](docs/reui/phase-4-reports-datagrid.md)
+- [Despliegue de DataGrid en todos los reportes](docs/reui/phase-4-datagrid-rollout.md)
 - [Formularios complejos y Stepper — fase 5](docs/reui/phase-5-complex-forms.md)
+- [Despliegue en EntityTable y formularios complejos](docs/reui/phase-5-complex-forms-rollout.md)
 - [Navegación responsive y limpieza — fase 6](docs/reui/phase-6-navigation-cleanup.md)
 - [Validación transversal en Electron](docs/reui/electron-validation.md)
 

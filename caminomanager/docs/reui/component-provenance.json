@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-31",
+  "updatedAt": "2026-08-05",
   "policy": {
     "publicImportBoundary": "@/components/ui/*",
     "preferredPrimitive": "radix-ui",
@@ -28,24 +28,25 @@
   "candidates": [
     {
       "name": "Autocomplete",
-      "status": "production-pilot",
-      "target": "CRUD Ciudades",
+      "status": "production-rollout",
+      "target": "CRUD Ciudades y formularios complejos",
       "documentationUrl": "https://reui.io/docs/components/radix/autocomplete",
       "variant": "radix-compatible",
       "localPath": "src/components/ui/autocomplete.tsx",
-      "decision": "Piloto opt-in en País y Departamento del CRUD Ciudades; aún no adoptado desde el registry",
+      "decision": "Búsqueda en relaciones de Ciudad, Persona, Comunidad y Parroquia, incluidos selectores dependientes y condicionales; aún no adoptado desde el registry",
       "tests": [
         "src/__tests__/components/DynamicEntityModalPhase3.test.tsx",
-        "e2e/ui/cities-reui.spec.ts"
+        "e2e/ui/cities-reui.spec.ts",
+        "e2e/ui/entity-datagrid-complex-forms.spec.ts"
       ]
     },
     {
       "name": "Field/Form",
-      "status": "production-pilot",
-      "target": "CRUD genérico",
+      "status": "production-rollout",
+      "target": "CRUD genérico y formularios complejos",
       "documentationUrl": "https://reui.io/components/field",
       "localPath": "src/components/ui/field.tsx",
-      "decision": "Composición local usada en confirmación destructiva y contrato Form enriquecido con descripciones accesibles"
+      "decision": "Contrato Form enriquecido con descripción accesible, secciones responsive y metadatos de ancho para Persona, Comunidad y Parroquia"
     },
     {
       "name": "AlertDialog",
@@ -62,15 +63,18 @@
     },
     {
       "name": "DataGrid",
-      "status": "production-pilot",
-      "target": "Reporte Equipos de Catequistas",
+      "status": "production-rollout",
+      "target": "Todos los reportes y EntityTable",
       "documentationUrl": "https://reui.io/docs/components/radix/data-grid",
       "variant": "tanstack-adapter",
       "localPath": "src/components/ui/data-grid.tsx",
-      "decision": "Piloto opt-in que reutiliza la instancia TanStack Table y añade filtros, paginación, visibilidad de columnas y soporte responsive sin modificar las consultas",
+      "decision": "Despliegue en los cinco reportes y en EntityTable; conserva orden y paginación remotos del CRUD, tarjetas móviles, filtros, pies agregados y soporte responsive sin modificar consultas",
       "tests": [
         "src/__tests__/components/DynamicReportTableDataGrid.test.tsx",
-        "e2e/reports/catechist-teams-datagrid.spec.ts"
+        "src/__tests__/components/EntityTable.test.tsx",
+        "e2e/reports/catechist-teams-datagrid.spec.ts",
+        "e2e/reports/all-reports-datagrid.spec.ts",
+        "e2e/ui/entity-datagrid-complex-forms.spec.ts"
       ]
     },
     {

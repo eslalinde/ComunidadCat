@@ -1,8 +1,21 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import {
+  createColumnHelper,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
 import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DataGrid } from "@/components/ui/data-grid";
+import {
+  TableCell,
+  TableFooter,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowLeft, RefreshCw, Printer, Download } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
@@ -22,11 +35,25 @@ interface CommunityRow {
   step_way_name: string | null;
 }
 
+interface MatrixRow {
+  parishId: number;
+  parishName: string;
+  communitiesByStep: Record<number, string[]>;
+  total: number;
+}
+
+const matrixColumnHelper = createColumnHelper<MatrixRow>();
+
+const toOrdinal = (num: string) => `${num}ª`;
+
 export default function ReporteEstadoPasos() {
   const [communities, setCommunities] = useState<CommunityRow[]>([]);
   const [stepWays, setStepWays] = useState<StepWay[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "parishName", desc: false },
+  ]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -150,7 +177,47 @@ export default function ReporteEstadoPasos() {
       return { parishes, matrix, totalsByStep, totalsByParish, grandTotal };
     }, [communities, stepWays]);
 
-  const toOrdinal = (num: string) => `${num}ª`;
+  const matrixRows = useMemo<MatrixRow[]>(
+    () =>
+      parishes.map((parish) => ({
+        parishId: parish.id,
+        parishName: parish.name,
+        communitiesByStep: matrix[parish.id],
+        total: totalsByParish[parish.id],
+      })),
+    [matrix, parishes, totalsByParish]
+  );
+
+  const matrixColumns = useMemo(
+    () => [
+      matrixColumnHelper.accessor("parishName", {
+        header: "Parroquia",
+      }),
+      ...stepWays.map((step) =>
+        matrixColumnHelper.accessor(
+          (row) => row.communitiesByStep[step.id]?.map(toOrdinal).join(", ") ?? "",
+          {
+            id: `step_${step.id}`,
+            header: step.name,
+            enableSorting: false,
+          }
+        )
+      ),
+      matrixColumnHelper.accessor("total", {
+        header: "Total",
+      }),
+    ],
+    [stepWays]
+  );
+
+  const matrixTable = useReactTable({
+    data: matrixRows,
+    columns: matrixColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   const handleExportCSV = () => {
     setIsExporting(true);
@@ -255,87 +322,65 @@ export default function ReporteEstadoPasos() {
 
       {/* Matrix Table */}
       <Card className="p-4 print:shadow-none print:border-none print:p-0">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando datos...</span>
-          </div>
-        ) : parishes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hay datos disponibles</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm print:text-xs">
-              <thead>
-                <tr className="bg-gray-100 print:bg-gray-200">
-                  <th className="sticky left-0 z-10 bg-gray-100 print:bg-gray-200 border border-gray-300 px-3 py-2 text-left font-semibold text-gray-900 min-w-[180px] print:min-w-0">
-                    Parroquia
-                  </th>
-                  {stepWays.map((step) => (
-                    <th
-                      key={step.id}
-                      className="border border-gray-300 px-2 py-2 text-center font-semibold text-gray-900 w-24 min-w-[96px] print:w-auto print:min-w-0"
-                    >
-                      {step.name}
-                    </th>
-                  ))}
-                  <th className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-900 bg-blue-50 print:bg-blue-100 w-20 min-w-[80px] print:w-auto print:min-w-0">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {parishes.map((parish, idx) => (
-                  <tr
-                    key={parish.id}
-                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                  >
-                    <td className="sticky left-0 z-10 border border-gray-300 px-3 py-1.5 font-medium text-gray-900 bg-inherit">
-                      {parish.name}
-                    </td>
-                    {stepWays.map((step) => {
-                      const nums = matrix[parish.id][step.id];
-                      return (
-                        <td
-                          key={step.id}
-                          className="border border-gray-300 px-2 py-1.5 text-center text-gray-700 break-words"
-                        >
-                          {nums.length > 0
-                            ? nums.map(toOrdinal).join(", ")
-                            : ""}
-                        </td>
-                      );
-                    })}
-                    <td className="border border-gray-300 px-2 py-1.5 text-center font-semibold text-blue-800 bg-blue-50 print:bg-blue-100">
-                      {totalsByParish[parish.id]}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-100 print:bg-gray-200 font-bold">
-                  <td className="sticky left-0 z-10 bg-gray-100 print:bg-gray-200 border border-gray-300 px-3 py-2 font-bold text-gray-900">
-                    Total por Paso
-                  </td>
-                  {stepWays.map((step) => (
-                    <td
-                      key={step.id}
-                      className="border border-gray-300 px-2 py-2 text-center text-gray-900"
-                    >
-                      {totalsByStep[step.id]}
-                    </td>
-                  ))}
-                  <td className="border border-gray-300 px-2 py-2 text-center font-bold text-white bg-blue-600 print:bg-blue-800 print:text-white">
-                    {grandTotal}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
+        <DataGrid
+          table={matrixTable}
+          loading={loading}
+          loadingMessage="Cargando datos..."
+          emptyMessage="No hay datos disponibles"
+          className="[&_table]:min-w-max print:overflow-visible print:border-0 print:[&_table]:min-w-0 print:[&_table]:text-xs"
+          getHeaderClassName={(column) =>
+            column.id === "parishName"
+              ? "sticky left-0 z-10 min-w-[180px] bg-gray-100 text-gray-900 print:min-w-0 print:bg-gray-200"
+              : column.id === "total"
+                ? "min-w-[80px] bg-blue-50 text-center text-gray-900 print:min-w-0 print:bg-blue-100"
+                : "min-w-[96px] text-center text-gray-900 print:min-w-0"
+          }
+          getCellClassName={(cell) =>
+            cell.column.id === "parishName"
+              ? "sticky left-0 z-10 bg-inherit font-medium text-gray-900"
+              : cell.column.id === "total"
+                ? "bg-blue-50 text-center font-semibold text-blue-800 print:bg-blue-100"
+                : "text-center text-gray-700"
+          }
+          footer={
+            <TableFooter>
+              <TableRow className="bg-gray-100 font-bold print:bg-gray-200">
+                {matrixTable.getVisibleLeafColumns().map((column) => {
+                  if (column.id === "parishName") {
+                    return (
+                      <TableCell
+                        key={column.id}
+                        className="sticky left-0 z-10 bg-gray-100 font-bold text-gray-900 print:bg-gray-200"
+                      >
+                        Total por Paso
+                      </TableCell>
+                    );
+                  }
 
-        {parishes.length > 0 && (
+                  if (column.id === "total") {
+                    return (
+                      <TableCell
+                        key={column.id}
+                        className="bg-blue-600 text-center font-bold text-white print:bg-blue-800"
+                      >
+                        {grandTotal}
+                      </TableCell>
+                    );
+                  }
+
+                  const stepId = Number(column.id.replace("step_", ""));
+                  return (
+                    <TableCell key={column.id} className="text-center">
+                      {totalsByStep[stepId] ?? 0}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            </TableFooter>
+          }
+        />
+
+        {!loading && parishes.length > 0 && (
           <div className="mt-4 text-sm text-gray-500 text-center print:hidden">
             {parishes.length} parroquias &middot; {grandTotal} comunidades
           </div>

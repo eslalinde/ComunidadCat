@@ -252,6 +252,7 @@ function ParishDetailContent() {
         fields={parishConfig.fields}
         title="Editar Parroquia"
         loading={isSaving}
+        size={parishConfig.formSize}
       />
     </div>
   );

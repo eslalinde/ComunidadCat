@@ -99,6 +99,9 @@ const reportConfig: DynamicReportConfig<ParishCatechesisRow> = {
   defaultSorting: [{ id: "planned_start_date", desc: false }],
   globalFilterPlaceholder:
     "Buscar por parroquia, diócesis, equipo catequista...",
+  dataGrid: {
+    pageSize: 10,
+  },
 };
 
 export default function ParishCatechesisReport() {

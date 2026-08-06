@@ -211,6 +211,10 @@ export interface FormField {
   searchable?: boolean;
   /** Optional help text associated with the form control. */
   description?: string;
+  /** Optional visual section used by complex forms. */
+  formSection?: string;
+  /** Span the complete responsive form grid. */
+  fullWidth?: boolean;
   options?: { value: string | number; label: string }[];
   validation?: (value: any) => string | null;
   hiddenInTable?: boolean;
@@ -228,6 +232,7 @@ export interface ForeignKeyConfig {
 export interface EntityConfig<T> {
   tableName: string;
   displayName: string;
+  formSize?: "default" | "wide";
   fields: FormField[];
   searchFields: (keyof T)[];
   sortableFields: (keyof T)[];

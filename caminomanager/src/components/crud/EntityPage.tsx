@@ -279,6 +279,7 @@ export function EntityPage<T extends BaseEntity>({
           fields={config.fields}
           title={editing ? `Editar ${config.displayName.toLowerCase()}` : `Agregar ${config.displayName.toLowerCase()}`}
           loading={loading}
+          size={config.formSize}
         />
       ) : (
         <EntityModal
@@ -294,4 +295,4 @@ export function EntityPage<T extends BaseEntity>({
       )}
     </div>
   );
-} 
+}

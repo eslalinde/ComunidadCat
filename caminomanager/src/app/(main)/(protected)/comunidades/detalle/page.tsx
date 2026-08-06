@@ -593,6 +593,7 @@ function CommunityDetailContent() {
           fields={communityConfig.fields}
           title="Editar Comunidad"
           loading={isSaving}
+          size={communityConfig.formSize}
         />
       )}
 

@@ -34,8 +34,13 @@ type DataGridProps<TData> = {
   loadingMessage?: string
   className?: string
   renderColumnFilter?: (column: Column<TData, unknown>) => React.ReactNode
+  getHeaderClassName?: (column: Column<TData, unknown>) => string | undefined
+  getHeaderStyle?: (column: Column<TData, unknown>) => React.CSSProperties | undefined
   getRowClassName?: (row: Row<TData>) => string | undefined
   getCellClassName?: (cell: Cell<TData, unknown>) => string | undefined
+  getCellStyle?: (cell: Cell<TData, unknown>) => React.CSSProperties | undefined
+  onRowClick?: (row: Row<TData>) => void
+  footer?: React.ReactNode
 }
 
 function DataGrid<TData>({
@@ -45,13 +50,21 @@ function DataGrid<TData>({
   loadingMessage = "Cargando registros",
   className,
   renderColumnFilter,
+  getHeaderClassName,
+  getHeaderStyle,
   getRowClassName,
   getCellClassName,
+  getCellStyle,
+  onRowClick,
+  footer,
 }: DataGridProps<TData>) {
   const rows = table.getRowModel().rows
 
   return (
-    <div className={cn("overflow-x-auto rounded-md border", className)}>
+    <div
+      data-slot="data-grid"
+      className={cn("overflow-x-auto rounded-md border", className)}
+    >
       <Table aria-busy={loading}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -61,6 +74,8 @@ function DataGrid<TData>({
                 return (
                   <TableHead
                     key={header.id}
+                    className={getHeaderClassName?.(header.column)}
+                    style={getHeaderStyle?.(header.column)}
                     aria-sort={
                       sorted === "asc"
                         ? "ascending"
@@ -123,9 +138,22 @@ function DataGrid<TData>({
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
                 className={getRowClassName?.(row)}
+                tabIndex={onRowClick ? 0 : undefined}
+                onClick={() => onRowClick?.(row)}
+                onKeyDown={(event) => {
+                  if (!onRowClick) return
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    onRowClick(row)
+                  }
+                }}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={getCellClassName?.(cell)}>
+                  <TableCell
+                    key={cell.id}
+                    className={getCellClassName?.(cell)}
+                    style={getCellStyle?.(cell)}
+                  >
                     {cell.getIsGrouped() ? (
                       <button
                         type="button"
@@ -166,6 +194,7 @@ function DataGrid<TData>({
             </TableRow>
           )}
         </TableBody>
+        {!loading && rows.length > 0 ? footer : null}
       </Table>
     </div>
   )

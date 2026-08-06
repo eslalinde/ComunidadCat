@@ -1,6 +1,13 @@
 import { useRef, useState } from 'react';
+import {
+  functionalUpdate,
+  getCoreRowModel,
+  type ColumnDef,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { DataGrid } from '@/components/ui/data-grid';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BaseEntity } from '@/types/database';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -71,8 +78,16 @@ export function EntityTable<T extends BaseEntity>({
 
   const handleDeleteDialogClose = () => {
     const trigger = deleteTriggerRef.current;
+    const targetId = deleteTarget?.id;
     setDeleteTarget(null);
-    window.setTimeout(() => trigger?.focus(), 0);
+    window.setTimeout(() => {
+      const currentTrigger = targetId
+        ? document.querySelector<HTMLButtonElement>(
+            `[data-delete-entity-id="${targetId}"]`,
+          )
+        : null;
+      (trigger?.isConnected ? trigger : currentTrigger)?.focus();
+    }, 0);
   };
 
   const handleDeleteConfirmed = async () => {
@@ -126,6 +141,7 @@ export function EntityTable<T extends BaseEntity>({
                 size="icon"
                 variant="ghost"
                 aria-label={`Eliminar ${getItemLabel(item)}`}
+                data-delete-entity-id={item.id}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
@@ -145,87 +161,105 @@ export function EntityTable<T extends BaseEntity>({
     </div>
   );
 
-  if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Cargando...</div>;
-  }
-
-  if (data.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>;
-  }
+  const dataGridColumns: ColumnDef<T>[] = [
+    ...columns.map((column) => ({
+      id: String(column.key),
+      accessorFn: (item: T) => item[column.key],
+      header: column.label,
+      enableSorting: Boolean(column.sortable),
+      cell: ({ row }: { row: { original: T } }) =>
+        getCellValue(row.original, column),
+    })),
+    {
+      id: 'actions',
+      header: 'Acciones',
+      enableHiding: false,
+      enableSorting: false,
+      cell: ({ row }) => renderActions(row.original),
+    },
+  ];
+  const sorting: SortingState = [
+    { id: String(sort.field), desc: !sort.asc },
+  ];
+  const table = useReactTable({
+    data,
+    columns: dataGridColumns,
+    state: { sorting },
+    manualSorting: true,
+    enableSortingRemoval: false,
+    onSortingChange: (updater) => {
+      const nextSorting = functionalUpdate(updater, sorting);
+      const nextColumn = nextSorting[0];
+      if (nextColumn) onSort(nextColumn.id as keyof T);
+    },
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
     <>
       {/* Mobile: Card view */}
       {isMobile ? (
-        <div className="space-y-3">
-          {data.map((item, index) => (
-            <div
-              key={item.id || index}
-              className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-gray-50" : ""}`}
-              onClick={() => onRowClick?.(item)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0 space-y-1">
-                  {visibleColumns.map((column, colIndex) => (
-                    <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
-                      {colIndex > 0 && <span className="text-xs text-gray-400">{column.label}: </span>}
-                      <span className={colIndex === 0 ? "" : ""}>{getCellValue(item, column)}</span>
-                    </div>
-                  ))}
+        loading ? (
+          <div className="text-center py-8 text-muted-foreground">Cargando...</div>
+        ) : data.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>
+        ) : (
+          <div className="space-y-3">
+            {data.map((item, index) => (
+              <div
+                key={item.id || index}
+                className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-gray-50" : ""}`}
+                onClick={() => onRowClick?.(item)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {visibleColumns.map((column, colIndex) => (
+                      <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
+                        {colIndex > 0 && <span className="text-xs text-gray-400">{column.label}: </span>}
+                        <span>{getCellValue(item, column)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {renderActions(item)}
                 </div>
-                {renderActions(item)}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
       ) : (
-        /* Desktop: Table view */
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map(column => (
-                  <TableHead
-                    key={String(column.key)}
-                    className={`whitespace-nowrap ${column.sortable ? "cursor-pointer hover:bg-gray-50" : ""}`}
-                    style={column.width ? { width: column.width } : undefined}
-                    onClick={() => column.sortable && onSort(column.key)}
-                  >
-                    <div className="flex items-center gap-1">
-                      {column.label}
-                      {column.sortable && sort.field === column.key && (
-                        <span className="text-sm">
-                          {sort.asc ? "▲" : "▼"}
-                        </span>
-                      )}
-                    </div>
-                  </TableHead>
-                ))}
-                <TableHead className="whitespace-nowrap text-center w-[80px]">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item, index) => (
-                <TableRow
-                  key={item.id || index}
-                  className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
-                  onClick={() => onRowClick?.(item)}
-                >
-                  {columns.map(column => (
-                    <TableCell key={String(column.key)} className="truncate">
-                      {getCellValue(item, column)}
-                    </TableCell>
-                  ))}
-                  <TableCell>
-                    <div className="flex gap-0.5 items-center justify-center">
-                      {renderActions(item)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataGrid
+          table={table}
+          loading={loading}
+          loadingMessage="Cargando..."
+          emptyMessage={emptyMessage}
+          className="[&_table]:min-w-[44rem]"
+          getHeaderClassName={(column) =>
+            column.id === 'actions'
+              ? 'w-[80px] whitespace-nowrap text-center'
+              : 'whitespace-nowrap'
+          }
+          getHeaderStyle={(column) => {
+            const configured = columns.find(
+              (candidate) => String(candidate.key) === column.id,
+            );
+            return configured?.width ? { width: configured.width } : undefined;
+          }}
+          getRowClassName={() =>
+            onRowClick ? 'cursor-pointer hover:bg-gray-50' : undefined
+          }
+          getCellClassName={(cell) =>
+            cell.column.id === 'actions'
+              ? 'w-[80px] text-center'
+              : 'max-w-0 truncate'
+          }
+          getCellStyle={(cell) => {
+            const configured = columns.find(
+              (candidate) => String(candidate.key) === cell.column.id,
+            );
+            return configured?.width ? { width: configured.width } : undefined;
+          }}
+          onRowClick={onRowClick ? (row) => onRowClick(row.original) : undefined}
+        />
       )}
 
       {/* Delete confirmation dialog */}

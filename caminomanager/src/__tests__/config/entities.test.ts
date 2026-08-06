@@ -218,6 +218,11 @@ describe('Entity Configurations', () => {
   });
 
   describe('communityConfig - ordering', () => {
+    it('should use a wide form layout', () => {
+      expect(communityConfig.formSize).toBe('wide');
+      expect(parishConfig.formSize).toBe('wide');
+    });
+
     it('should have step_way foreign key', () => {
       const stepFK = communityConfig.foreignKeys!.find(fk => fk.foreignKey === 'step_way_id');
       expect(stepFK).toBeDefined();
@@ -227,6 +232,14 @@ describe('Entity Configurations', () => {
     it('should have cathechist_team_id hidden in table', () => {
       const catField = communityConfig.fields.find(f => f.name === 'cathechist_team_id');
       expect(catField?.hiddenInTable).toBe(true);
+      expect(catField?.fullWidth).toBe(true);
+    });
+
+    it('should keep relational selectors aligned without section headings', () => {
+      const parishField = communityConfig.fields.find(f => f.name === 'parish_id');
+
+      expect(parishField?.fullWidth).toBe(true);
+      expect(communityConfig.fields.every(field => !field.formSection)).toBe(true);
     });
   });
 

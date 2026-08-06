@@ -13,6 +13,7 @@ interface ReportRow {
   diocese: string;
   parish: string;
   community: string;
+  members: number;
 }
 
 const columnHelper = createColumnHelper<ReportRow>();
@@ -29,12 +30,21 @@ const columns = [
     header: 'Comunidad',
     meta: { filterType: 'text' } satisfies DynamicColumnMeta,
   }),
+  columnHelper.accessor('members', {
+    header: 'Hermanos',
+    meta: {
+      align: 'center',
+      aggregationType: 'sum',
+      aggregationLabel: 'Total',
+    } satisfies DynamicColumnMeta,
+  }),
 ];
 
 const data: ReportRow[] = Array.from({ length: 7 }, (_, index) => ({
   diocese: index < 5 ? 'Medellín' : 'Bogotá',
   parish: `Parroquia ${index + 1}`,
   community: `Comunidad ${index + 1}`,
+  members: index + 1,
 }));
 
 const config: DynamicReportConfig<ReportRow> = {
@@ -94,5 +104,27 @@ describe('DynamicReportTable con DataGrid', () => {
       screen.queryByRole('columnheader', { name: /Parroquia/ }),
     ).not.toBeInTheDocument();
     expect(data).toHaveLength(7);
+  });
+
+  it('calcula los totales sobre todos los resultados filtrados, no sólo la página', async () => {
+    const user = userEvent.setup();
+    render(
+      <DynamicReportTable
+        config={config}
+        data={data}
+        loading={false}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Total: 28')).toBeVisible();
+
+    await user.type(
+      screen.getByPlaceholderText('Buscar en todos los campos...'),
+      'Bogotá',
+    );
+
+    expect(await screen.findByText('Total: 13')).toBeVisible();
+    expect(screen.getByText('Página 1 de 1 · 2 registros')).toBeVisible();
   });
 });

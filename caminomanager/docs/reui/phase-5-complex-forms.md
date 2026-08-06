@@ -77,3 +77,9 @@ Validado el 31 de julio de 2026:
 
 La fase 5 queda cerrada técnicamente. El smoke test transversal abre el Stepper
 real en Electron y sale antes de ejecutar la carga.
+
+## Evolución posterior
+
+La migración de Persona, Comunidad y Parroquia, que se mantuvo fuera del piloto,
+se documenta en
+[`phase-5-complex-forms-rollout.md`](phase-5-complex-forms-rollout.md).

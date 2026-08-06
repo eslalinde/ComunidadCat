@@ -16,6 +16,7 @@ import {
   PaginationState,
   VisibilityState,
   Row,
+  type Table as TanStackTable,
 } from "@tanstack/react-table";
 import {
   ArrowLeft,
@@ -218,6 +219,11 @@ export function DynamicReportTable<TData>({
                     : "text-left"
               }`;
             }}
+            footer={
+              hasAggregations && data.length > 0 ? (
+                <AggregationFooter table={table} />
+              ) : null
+            }
           />
         ) : loading ? (
           <div className="flex items-center justify-center py-12">
@@ -337,60 +343,7 @@ export function DynamicReportTable<TData>({
               </TableBody>
 
               {hasAggregations && data.length > 0 && (
-                <TableFooter>
-                  <TableRow className="bg-gray-100 font-semibold">
-                    {table.getAllLeafColumns().map((column, index) => {
-                      const meta = column.columnDef
-                        .meta as DynamicColumnMeta | undefined;
-                      const align = meta?.align ?? "left";
-
-                      if (index === 0) {
-                        return (
-                          <TableCell key={column.id} className="px-3 py-2">
-                            Totales
-                          </TableCell>
-                        );
-                      }
-
-                      if (meta?.aggregationType) {
-                        const allRows = table.getFilteredRowModel().flatRows.filter(
-                          (r) => !r.getIsGrouped()
-                        );
-                        let value: number;
-                        if (meta.aggregationType === "count") {
-                          value = allRows.length;
-                        } else if (meta.aggregationType === "sum") {
-                          value = allRows.reduce(
-                            (sum, row) =>
-                              sum + (Number(row.getValue(column.id)) || 0),
-                            0
-                          );
-                        } else {
-                          const unique = new Set(
-                            allRows
-                              .map((row) => row.getValue(column.id))
-                              .filter(Boolean)
-                          );
-                          value = unique.size;
-                        }
-                        return (
-                          <TableCell
-                            key={column.id}
-                            className={`px-3 py-2 ${align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"}`}
-                          >
-                            {meta.aggregationLabel
-                              ? `${meta.aggregationLabel}: ${value}`
-                              : value}
-                          </TableCell>
-                        );
-                      }
-
-                      return (
-                        <TableCell key={column.id} className="px-3 py-2" />
-                      );
-                    })}
-                  </TableRow>
-                </TableFooter>
+                <AggregationFooter table={table} />
               )}
             </Table>
           </div>
@@ -453,6 +406,75 @@ export function DynamicReportTable<TData>({
           ))}
       </Card>
     </div>
+  );
+}
+
+function AggregationFooter<TData>({
+  table,
+}: {
+  table: TanStackTable<TData>;
+}) {
+  const allRows = table.getFilteredRowModel().flatRows;
+  const visibleColumns = table.getVisibleLeafColumns();
+  const labelColumnId = visibleColumns.find((column) => {
+    const meta = column.columnDef.meta as DynamicColumnMeta | undefined;
+    return !meta?.aggregationType;
+  })?.id;
+
+  return (
+    <TableFooter>
+      <TableRow className="bg-gray-100 font-semibold">
+        {visibleColumns.map((column) => {
+          const meta = column.columnDef.meta as DynamicColumnMeta | undefined;
+          const align = meta?.align ?? "left";
+
+          if (column.id === labelColumnId) {
+            return (
+              <TableCell key={column.id} className="px-3 py-2">
+                Totales
+              </TableCell>
+            );
+          }
+
+          if (!meta?.aggregationType) {
+            return <TableCell key={column.id} className="px-3 py-2" />;
+          }
+
+          let value: number;
+          if (meta.aggregationType === "count") {
+            value = allRows.length;
+          } else if (meta.aggregationType === "sum") {
+            value = allRows.reduce(
+              (sum, row) => sum + (Number(row.getValue(column.id)) || 0),
+              0
+            );
+          } else {
+            value = new Set(
+              allRows
+                .map((row) => row.getValue(column.id))
+                .filter(Boolean)
+            ).size;
+          }
+
+          return (
+            <TableCell
+              key={column.id}
+              className={`px-3 py-2 ${
+                align === "center"
+                  ? "text-center"
+                  : align === "right"
+                    ? "text-right"
+                    : "text-left"
+              }`}
+            >
+              {meta.aggregationLabel
+                ? `${meta.aggregationLabel}: ${value}`
+                : value}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    </TableFooter>
   );
 }
 
