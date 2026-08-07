@@ -48,7 +48,7 @@ A web application for managing Neocatechumenal Way communities, coordinating par
 
    ```
    NEXT_PUBLIC_SUPABASE_URL=<your-local-supabase-url>
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-local-anon-key>
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=<your-local-publishable-key>
    ```
 
 4. Start the development server:

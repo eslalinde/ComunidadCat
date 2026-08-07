@@ -1,14 +1,18 @@
 name: Supabase Migrations
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "supabase/migrations/**"
+      - ".github/workflows/supabase-migrations.yml"
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - "supabase/migrations/**"
+      - ".github/workflows/supabase-migrations.yml"
 
 permissions:
   contents: read
@@ -16,7 +20,7 @@ permissions:
 jobs:
   migrate-production:
     name: Migrate Production
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
