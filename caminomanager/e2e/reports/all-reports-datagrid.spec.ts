@@ -32,6 +32,10 @@ test.describe('DataGrid en todos los reportes', () => {
       const grid = page.locator('[data-slot="data-grid"]');
       await expect(grid).toBeVisible();
       await expect(grid.getByRole('table')).toBeVisible();
+      await expect(grid.getByRole('columnheader').first()).toHaveCSS(
+        'text-transform',
+        'none',
+      );
       await expect(
         page.getByRole('button', { name: 'Columnas', exact: true }),
       ).toBeVisible();
@@ -49,6 +53,15 @@ test.describe('DataGrid en todos los reportes', () => {
             ),
           )
           .toBe(true);
+      }
+
+      if (report.path === '/reportes/catequesis-parroquia') {
+        await expect(
+          grid.getByRole('columnheader', { name: 'Fecha planificada' }),
+        ).toBeVisible();
+        await expect(
+          grid.getByRole('columnheader', { name: 'Equipo catequista' }),
+        ).toBeVisible();
       }
     });
   }

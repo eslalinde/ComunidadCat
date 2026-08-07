@@ -31,7 +31,7 @@ const columns = [
     meta: { filterType: 'text' } satisfies DynamicColumnMeta,
   }),
   columnHelper.accessor('members', {
-    header: 'Hermanos',
+    header: 'Hermanos Iniciales',
     meta: {
       align: 'center',
       aggregationType: 'sum',
@@ -70,6 +70,9 @@ describe('DynamicReportTable con DataGrid', () => {
     expect(screen.getByText('Página 1 de 2 · 7 registros')).toBeVisible();
     expect(screen.getByText('Comunidad 5')).toBeVisible();
     expect(screen.queryByText('Comunidad 6')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: /Hermanos iniciales/ }),
+    ).toHaveClass('normal-case', 'tracking-normal');
     expect(screen.getByRole('columnheader', { name: /Parroquia/ })).toHaveAttribute(
       'aria-sort',
       'ascending',
@@ -93,6 +96,9 @@ describe('DynamicReportTable con DataGrid', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Columnas' }));
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Hermanos iniciales' }),
+    ).toBeVisible();
     const parishOption = screen.getByRole('menuitemcheckbox', {
       name: 'Parroquia',
     });

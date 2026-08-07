@@ -1,5 +1,6 @@
 import { Table, Row } from "@tanstack/react-table";
 import { DynamicColumnMeta } from "./types";
+import { toSentenceCase } from "@/lib/text-format";
 
 function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -24,7 +25,15 @@ export function exportTableToCSV<TData>(
     .filter((col) => col.getIsVisible());
 
   const headers = visibleColumns
-    .map((col) => escapeCSVValue(typeof col.columnDef.header === "string" ? col.columnDef.header : col.id))
+    .map((col) =>
+      escapeCSVValue(
+        toSentenceCase(
+          typeof col.columnDef.header === "string"
+            ? col.columnDef.header
+            : col.id,
+        ),
+      ),
+    )
     .join(",");
 
   // Get only leaf (non-grouped) rows for export

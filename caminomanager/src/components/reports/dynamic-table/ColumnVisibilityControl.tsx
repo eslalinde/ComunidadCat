@@ -11,6 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toSentenceCase } from "@/lib/text-format";
 
 interface ColumnVisibilityControlProps<TData> {
   table: Table<TData>;
@@ -42,7 +43,9 @@ export function ColumnVisibilityControl<TData>({
         <DropdownMenuLabel>Columnas visibles</DropdownMenuLabel>
         {columns.map((column) => {
           const header = column.columnDef.header;
-          const label = typeof header === "string" ? header : column.id;
+          const label = toSentenceCase(
+            typeof header === "string" ? header : column.id,
+          );
 
           return (
             <DropdownMenuCheckboxItem

@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { toSentenceCase } from "@/lib/text-format"
 
 type DataGridProps<TData> = {
   table: TanStackTable<TData>
@@ -71,10 +72,18 @@ function DataGrid<TData>({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const sorted = header.column.getIsSorted()
+                const columnHeader = header.column.columnDef.header
+                const displayHeader =
+                  typeof columnHeader === "string"
+                    ? toSentenceCase(columnHeader)
+                    : columnHeader
                 return (
                   <TableHead
                     key={header.id}
-                    className={getHeaderClassName?.(header.column)}
+                    className={cn(
+                      "normal-case tracking-normal",
+                      getHeaderClassName?.(header.column)
+                    )}
                     style={getHeaderStyle?.(header.column)}
                     aria-sort={
                       sorted === "asc"
@@ -93,7 +102,7 @@ function DataGrid<TData>({
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(
-                              header.column.columnDef.header,
+                              displayHeader,
                               header.getContext()
                             )}
                             {sorted === "asc" ? (
@@ -106,7 +115,7 @@ function DataGrid<TData>({
                           </button>
                         ) : (
                           flexRender(
-                            header.column.columnDef.header,
+                            displayHeader,
                             header.getContext()
                           )
                         )}

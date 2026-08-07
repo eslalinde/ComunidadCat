@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { DataGrid } from '@/components/ui/data-grid';
+import { toSentenceCase } from '@/lib/text-format';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BaseEntity } from '@/types/database';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -215,7 +216,11 @@ export function EntityTable<T extends BaseEntity>({
                   <div className="flex-1 min-w-0 space-y-1">
                     {visibleColumns.map((column, colIndex) => (
                       <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
-                        {colIndex > 0 && <span className="text-xs text-gray-400">{column.label}: </span>}
+                        {colIndex > 0 && (
+                          <span className="text-xs text-gray-400">
+                            {toSentenceCase(column.label)}:{' '}
+                          </span>
+                        )}
                         <span>{getCellValue(item, column)}</span>
                       </div>
                     ))}
