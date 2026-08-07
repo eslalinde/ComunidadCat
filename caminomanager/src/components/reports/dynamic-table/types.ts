@@ -1,4 +1,8 @@
-import { ColumnDef, SortingState } from "@tanstack/react-table";
+import {
+  ColumnDef,
+  SortingState,
+  VisibilityState,
+} from "@tanstack/react-table";
 
 export interface DynamicColumnMeta {
   filterType?: "text" | "select";
@@ -16,6 +20,10 @@ export interface DynamicReportConfig<TData> {
   defaultGrouping?: string[];
   defaultSorting?: SortingState;
   globalFilterPlaceholder?: string;
+  dataGrid?: {
+    pageSize?: number;
+    defaultColumnVisibility?: VisibilityState;
+  };
 }
 
 export interface DynamicReportTableProps<TData> {

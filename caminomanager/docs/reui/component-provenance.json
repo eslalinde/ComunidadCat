@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-05",
+  "policy": {
+    "publicImportBoundary": "@/components/ui/*",
+    "preferredPrimitive": "radix-ui",
+    "upstreamRegistry": "https://reui.io/r/{style}/{name}.json",
+    "requiredFieldsWhenAdopted": [
+      "name",
+      "registryItem",
+      "variant",
+      "documentationUrl",
+      "retrievedAt",
+      "upstreamVersion",
+      "sourceSha256",
+      "dependencies",
+      "localAdaptations",
+      "tests"
+    ]
+  },
+  "upstreamSnapshot": {
+    "name": "ReUI",
+    "catalogVersionObserved": "2.1.6",
+    "observedAt": "2026-07-31",
+    "changelogUrl": "https://reui.io/docs/changelog"
+  },
+  "adoptedComponents": [],
+  "candidates": [
+    {
+      "name": "Autocomplete",
+      "status": "production-rollout",
+      "target": "CRUD Ciudades y formularios complejos",
+      "documentationUrl": "https://reui.io/docs/components/radix/autocomplete",
+      "variant": "radix-compatible",
+      "localPath": "src/components/ui/autocomplete.tsx",
+      "decision": "Búsqueda en relaciones de Ciudad, Persona, Comunidad y Parroquia, incluidos selectores dependientes y condicionales; aún no adoptado desde el registry",
+      "tests": [
+        "src/__tests__/components/DynamicEntityModalPhase3.test.tsx",
+        "e2e/ui/cities-reui.spec.ts",
+        "e2e/ui/entity-datagrid-complex-forms.spec.ts"
+      ]
+    },
+    {
+      "name": "Field/Form",
+      "status": "production-rollout",
+      "target": "CRUD genérico y formularios complejos",
+      "documentationUrl": "https://reui.io/components/field",
+      "localPath": "src/components/ui/field.tsx",
+      "decision": "Contrato Form enriquecido con descripción accesible, secciones responsive y metadatos de ancho para Persona, Comunidad y Parroquia"
+    },
+    {
+      "name": "AlertDialog",
+      "status": "production-pilot",
+      "target": "ConfirmDeleteDialog",
+      "documentationUrl": "https://reui.io/components/alert-dialog",
+      "variant": "radix-ui",
+      "localPath": "src/components/ui/alert-dialog.tsx",
+      "decision": "ConfirmDeleteDialog migrado conservando su API y la confirmación escrita",
+      "tests": [
+        "src/__tests__/components/ConfirmDeleteDialog.test.tsx",
+        "e2e/ui/cities-reui.spec.ts"
+      ]
+    },
+    {
+      "name": "DataGrid",
+      "status": "production-rollout",
+      "target": "Todos los reportes y EntityTable",
+      "documentationUrl": "https://reui.io/docs/components/radix/data-grid",
+      "variant": "tanstack-adapter",
+      "localPath": "src/components/ui/data-grid.tsx",
+      "decision": "Despliegue en los cinco reportes y en EntityTable; conserva orden y paginación remotos del CRUD, tarjetas móviles, filtros, pies agregados y soporte responsive sin modificar consultas",
+      "tests": [
+        "src/__tests__/components/DynamicReportTableDataGrid.test.tsx",
+        "src/__tests__/components/EntityTable.test.tsx",
+        "e2e/reports/catechist-teams-datagrid.spec.ts",
+        "e2e/reports/all-reports-datagrid.spec.ts",
+        "e2e/ui/entity-datagrid-complex-forms.spec.ts"
+      ]
+    },
+    {
+      "name": "Stepper",
+      "status": "production-pilot",
+      "target": "Carga masiva de hermanos",
+      "documentationUrl": "https://reui.io/docs/components/radix/stepper",
+      "variant": "radix-compatible",
+      "localPath": "src/components/ui/stepper.tsx",
+      "decision": "Fachada local para comunicar el progreso del asistente de cuatro pasos, conservar las etiquetas en móvil y exponer el paso actual a tecnologías de asistencia sin cambiar el proceso de importación",
+      "tests": [
+        "src/__tests__/components/BulkUploadWizardPhase5.test.tsx",
+        "e2e/ui/bulk-upload-stepper.spec.ts"
+      ]
+    }
+  ]
+}

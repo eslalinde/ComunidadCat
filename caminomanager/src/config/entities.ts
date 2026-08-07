@@ -91,16 +91,20 @@ export const cityConfig: EntityConfig<City> = {
       label: 'País',
       type: 'select',
       required: true,
+      searchable: true,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione un país'
+      placeholder: 'Busque un país',
+      description: 'Escriba para filtrar la lista de países.'
     },
     {
       name: 'state_id',
       label: 'Departamento',
       type: 'select',
       required: false,
+      searchable: true,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione un departamento (opcional)'
+      placeholder: 'Busque un departamento (opcional)',
+      description: 'Las opciones dependen del país seleccionado.'
     }
   ],
   searchFields: ['name'],
@@ -207,6 +211,7 @@ export const dioceseConfig: EntityConfig<Diocese> = {
 export const parishConfig: EntityConfig<Parish> = {
   tableName: 'parishes',
   displayName: 'Parroquia',
+  formSize: 'wide',
   fields: [
     {
       name: 'name',
@@ -215,7 +220,8 @@ export const parishConfig: EntityConfig<Parish> = {
       required: true,
       maxLength: 256,
       placeholder: 'Ingrese el nombre de la parroquia',
-      columnWidth: '220px'
+      columnWidth: '220px',
+      formSection: 'Información parroquial'
     },
     {
       name: 'diocese_id',
@@ -224,7 +230,9 @@ export const parishConfig: EntityConfig<Parish> = {
       required: false,
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione una diócesis (opcional)',
-      columnWidth: '180px'
+      columnWidth: '180px',
+      searchable: true,
+      description: 'Puede buscar por el nombre de la diócesis.'
     },
     {
       name: 'address',
@@ -232,7 +240,8 @@ export const parishConfig: EntityConfig<Parish> = {
       type: 'text',
       required: false,
       maxLength: 256,
-      placeholder: 'Ingrese la dirección'
+      placeholder: 'Ingrese la dirección',
+      fullWidth: true
     },
     {
       name: 'phone',
@@ -259,7 +268,10 @@ export const parishConfig: EntityConfig<Parish> = {
       required: true,
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione una ciudad',
-      columnWidth: '100px'
+      columnWidth: '100px',
+      searchable: true,
+      formSection: 'Ubicación',
+      description: 'Escriba para buscar la ciudad de la parroquia.'
     },
     {
       name: 'zone_id',
@@ -268,7 +280,9 @@ export const parishConfig: EntityConfig<Parish> = {
       required: false,
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione una zona (opcional)',
-      columnWidth: '80px'
+      columnWidth: '80px',
+      searchable: true,
+      description: 'Las zonas disponibles dependen de la ciudad seleccionada.'
     }
   ],
   searchFields: ['name'],
@@ -359,7 +373,9 @@ export const personConfig: EntityConfig<Person> = {
       type: 'text',
       required: true,
       maxLength: 256,
-      placeholder: 'Ingrese el nombre completo'
+      placeholder: 'Ingrese el nombre completo',
+      formSection: 'Datos personales',
+      fullWidth: true
     },
     {
       name: 'phone',
@@ -391,7 +407,8 @@ export const personConfig: EntityConfig<Person> = {
       type: 'select',
       required: false,
       options: CARISMA_OPTIONS,
-      placeholder: 'Seleccione el estado'
+      placeholder: 'Seleccione el estado',
+      formSection: 'Vocación y vínculos'
     },
     {
       name: 'is_itinerante',
@@ -420,6 +437,9 @@ export const personConfig: EntityConfig<Person> = {
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione el país',
       hiddenInTable: true,
+      searchable: true,
+      formSection: 'Ubicación actual',
+      description: 'Se muestra para itinerantes y vocaciones que requieren ubicación.'
     },
     {
       name: 'location_city_id',
@@ -429,6 +449,8 @@ export const personConfig: EntityConfig<Person> = {
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione la ciudad',
       hiddenInTable: true,
+      searchable: true,
+      description: 'Las ciudades dependen del país seleccionado.'
     },
     {
       name: 'spouse_id',
@@ -436,7 +458,10 @@ export const personConfig: EntityConfig<Person> = {
       type: 'select',
       required: false,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione el cónyuge (opcional)'
+      placeholder: 'Seleccione el cónyuge (opcional)',
+      searchable: true,
+      formSection: 'Matrimonio',
+      description: 'Busque por nombre. La persona actual no aparece en la lista.'
     }
   ],
   searchFields: ['person_name', 'email'],
@@ -496,6 +521,7 @@ export const personConfig: EntityConfig<Person> = {
 export const communityConfig: EntityConfig<Community> = {
   tableName: 'communities',
   displayName: 'Comunidad',
+  formSize: 'wide',
   fields: [
     {
       name: 'number',
@@ -523,7 +549,10 @@ export const communityConfig: EntityConfig<Community> = {
       type: 'select',
       required: false,
       options: [], // Se llenará dinámicamente
-      placeholder: 'Seleccione una parroquia'
+      placeholder: 'Seleccione una parroquia',
+      searchable: true,
+      fullWidth: true,
+      description: 'Escriba para buscar la parroquia a la que pertenece.'
     },
     {
       name: 'born_brothers',
@@ -554,7 +583,8 @@ export const communityConfig: EntityConfig<Community> = {
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione la etapa actual',
       columnWidth: '120px',
-      hiddenInMobile: true
+      hiddenInMobile: true,
+      searchable: true
     },
     {
       name: 'last_step_way_date',
@@ -573,7 +603,10 @@ export const communityConfig: EntityConfig<Community> = {
       required: false,
       options: [], // Se llenará dinámicamente
       placeholder: 'Seleccione un equipo de catequistas',
-      hiddenInTable: true
+      hiddenInTable: true,
+      searchable: true,
+      fullWidth: true,
+      description: 'Busque el equipo de catequistas asignado a la comunidad.'
     }
   ],
   searchFields: ['number', 'parish'],
@@ -773,4 +806,4 @@ export const entityConfigs = {
   communityStepLog: communityStepLogConfig,
   parishCatechesis: parishCatechesisConfig,
   inventoryItemTypes: inventoryItemTypeConfig
-}; 
+};

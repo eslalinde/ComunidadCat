@@ -26,9 +26,11 @@ export const routes = {
   admin: '/admin',
   publico: '/publico',
   authConfirm: '/auth/confirm',
+  uiLab: '/ui-lab',
 } as const;
 
 export const publicRoutes = [
   routes.login, routes.signup, routes.publico,
   routes.authConfirm,
+  routes.uiLab,
 ];

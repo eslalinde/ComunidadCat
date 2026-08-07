@@ -2,6 +2,7 @@
 import { Column } from "@tanstack/react-table";
 import { X, Layers } from "lucide-react";
 import { DynamicColumnMeta } from "./types";
+import { toSentenceCase } from "@/lib/text-format";
 
 interface GroupingControlsProps<TData> {
   allColumns: Column<TData, unknown>[];
@@ -43,7 +44,9 @@ export function GroupingControls<TData>({
       {grouping.map((columnId) => {
         const col = allColumns.find((c) => c.id === columnId);
         const header = col?.columnDef.header;
-        const label = typeof header === "string" ? header : columnId;
+        const label = toSentenceCase(
+          typeof header === "string" ? header : columnId,
+        );
         return (
           <span
             key={columnId}
@@ -71,7 +74,9 @@ export function GroupingControls<TData>({
           <option value="">+ Agregar agrupación</option>
           {availableColumns.map((col) => {
             const header = col.columnDef.header;
-            const label = typeof header === "string" ? header : col.id;
+            const label = toSentenceCase(
+              typeof header === "string" ? header : col.id,
+            );
             return (
               <option key={col.id} value={col.id}>
                 {label}

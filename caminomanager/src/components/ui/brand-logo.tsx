@@ -27,7 +27,7 @@ export function BrandLogo({ size = "md", showIcon = true, className }: BrandLogo
           className="drop-shadow-sm"
         />
       )}
-      <span className={cn("font-[family-name:var(--font-montserrat)]", s.text)} style={{ color: "#1B3A6F" }}>
+      <span className={cn("font-[family-name:var(--font-montserrat)] text-primary", s.text)}>
         <span className="font-normal">Comunidad</span>
         <span className="font-semibold">Cat</span>
       </span>

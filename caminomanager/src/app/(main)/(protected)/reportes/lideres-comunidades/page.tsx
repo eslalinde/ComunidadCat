@@ -144,6 +144,9 @@ const reportConfig: DynamicReportConfig<CommunityLeaderRow> = {
   exportFileName: "lideres_comunidades",
   defaultSorting: [{ id: "diocese_name", desc: false }],
   globalFilterPlaceholder: "Buscar por nombre, parroquia, comunidad...",
+  dataGrid: {
+    pageSize: 10,
+  },
 };
 
 export default function CommunityLeadersReportPage() {

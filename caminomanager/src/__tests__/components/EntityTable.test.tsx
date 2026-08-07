@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -25,20 +25,21 @@ vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, ...props }: any) => (
     <button onClick={onClick} {...props}>{children}</button>
   ),
+  buttonVariants: () => '',
 }));
 
 vi.mock('@/components/ui/table', () => ({
   Table: ({ children }: any) => <table>{children}</table>,
   TableHeader: ({ children }: any) => <thead>{children}</thead>,
   TableBody: ({ children }: any) => <tbody>{children}</tbody>,
-  TableHead: ({ children, onClick, className, style }: any) => (
-    <th onClick={onClick} className={className} style={style}>{children}</th>
+  TableHead: ({ children, ...props }: any) => (
+    <th {...props}>{children}</th>
   ),
-  TableRow: ({ children, onClick, className }: any) => (
-    <tr onClick={onClick} className={className}>{children}</tr>
+  TableRow: ({ children, ...props }: any) => (
+    <tr {...props}>{children}</tr>
   ),
-  TableCell: ({ children, colSpan, className }: any) => (
-    <td colSpan={colSpan} className={className}>{children}</td>
+  TableCell: ({ children, ...props }: any) => (
+    <td {...props}>{children}</td>
   ),
 }));
 
@@ -56,6 +57,12 @@ vi.mock('lucide-react', () => ({
   Pencil: () => <span data-testid="pencil-icon">✏️</span>,
   Trash2: () => <span data-testid="trash-icon">🗑️</span>,
   X: () => <span data-testid="x-icon">✕</span>,
+  ArrowUp: () => <span data-testid="sort-ascending" />,
+  ArrowDown: () => <span data-testid="sort-descending" />,
+  ArrowUpDown: () => <span data-testid="sort-none" />,
+  ChevronDown: () => <span />,
+  ChevronRight: () => <span />,
+  LoaderCircle: () => <span />,
 }));
 
 vi.mock('@/components/ui/dialog', () => ({
@@ -99,6 +106,7 @@ const defaultProps = {
 describe('EntityTable', () => {
   it('should render column headers', () => {
     render(<EntityTable {...defaultProps} />);
+    expect(document.querySelector('[data-slot="data-grid"]')).toBeInTheDocument();
     expect(screen.getByText('Nombre')).toBeInTheDocument();
     expect(screen.getByText('Código')).toBeInTheDocument();
     expect(screen.getByText('Acciones')).toBeInTheDocument();
@@ -132,19 +140,28 @@ describe('EntityTable', () => {
     const onSort = vi.fn();
     render(<EntityTable {...defaultProps} onSort={onSort} />);
 
-    const nameHeader = screen.getByText('Nombre').closest('th');
-    await user.click(nameHeader!);
+    const nameHeader = screen.getByRole('columnheader', { name: /Nombre/ });
+    await user.click(screen.getByRole('button', { name: /Nombre/ }));
     expect(onSort).toHaveBeenCalledWith('name');
+    expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
   });
 
   it('should show sort indicator on active sort field', () => {
     render(<EntityTable {...defaultProps} sort={{ field: 'name' as keyof TestEntity, asc: true }} />);
-    expect(screen.getByText('▲')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Nombre/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    expect(screen.getByTestId('sort-ascending')).toBeInTheDocument();
   });
 
   it('should show descending sort indicator', () => {
     render(<EntityTable {...defaultProps} sort={{ field: 'name' as keyof TestEntity, asc: false }} />);
-    expect(screen.getByText('▼')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Nombre/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    expect(screen.getByTestId('sort-descending')).toBeInTheDocument();
   });
 
   it('should render foreign key values', () => {
@@ -204,6 +221,22 @@ describe('EntityTable', () => {
     render(<EntityTable {...defaultProps} />);
     const trashIcons = screen.getAllByTestId('trash-icon');
     expect(trashIcons.length).toBe(mockData.length);
+  });
+
+  it('should restore focus to the delete trigger after cancelling', async () => {
+    const user = userEvent.setup();
+    render(<EntityTable {...defaultProps} />);
+
+    const trigger = screen.getByRole('button', { name: 'Eliminar Colombia' });
+    await user.click(trigger);
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Eliminar Colombia' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('should call onRowClick when row is clicked and handler provided', async () => {

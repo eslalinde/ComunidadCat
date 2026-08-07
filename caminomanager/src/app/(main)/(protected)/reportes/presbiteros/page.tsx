@@ -102,6 +102,9 @@ const reportConfig: DynamicReportConfig<PriestRow> = {
   exportFileName: "presbiteros",
   defaultSorting: [{ id: "priest_name", desc: false }],
   globalFilterPlaceholder: "Buscar por nombre, parroquia, diócesis, ciudad...",
+  dataGrid: {
+    pageSize: 10,
+  },
 };
 
 export default function PriestsReport() {

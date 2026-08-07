@@ -18,13 +18,13 @@ export function UpdateNotification() {
   if (!updateReady) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-[#1B3A6F] text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg bg-primary px-4 py-3 text-primary-foreground shadow-lg">
       <span className="text-sm font-medium">
         Actualización disponible
       </span>
       <button
         onClick={() => window.electronAPI?.installUpdate()}
-        className="bg-white text-[#1B3A6F] px-3 py-1 rounded text-sm font-medium hover:bg-blue-50 transition-colors"
+        className="rounded bg-background px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-muted"
       >
         Reiniciar
       </button>

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { friendlyError } from "@/lib/supabaseErrors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -18,12 +19,21 @@ import {
   FormItem,
   FormLabel,
   FormControl,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from "@/types/database";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { needsLocationFields } from "@/config/carisma";
+import { cn } from "@/lib/utils";
 import { buildZodSchema, buildDefaultValues, prepareFormData } from "@/lib/form-schema";
 import {
   useCountryOptions,
@@ -47,6 +57,7 @@ interface DynamicEntityModalProps<T extends BaseEntity> {
   fields: FormFieldType[];
   title: string;
   loading?: boolean;
+  size?: "default" | "wide";
 }
 
 export function DynamicEntityModal<T extends BaseEntity>({
@@ -57,6 +68,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
   fields,
   title,
   loading = false,
+  size = "default",
 }: DynamicEntityModalProps<T>) {
   const schema = useMemo(() => buildZodSchema(fields), [fields]);
 
@@ -88,8 +100,8 @@ export function DynamicEntityModal<T extends BaseEntity>({
   };
 
   // Hooks para opciones dependientes
-  const { options: countryOptions } = useCountryOptions();
-  const { options: stateOptions } = useStateOptions(toNum(countryId));
+  const { options: countryOptions, loading: countryOptionsLoading } = useCountryOptions();
+  const { options: stateOptions, loading: stateOptionsLoading } = useStateOptions(toNum(countryId));
 
   // Determinar si el formulario tiene campos de país y departamento
   const hasCountryField = fields.some((f) => f.name === "country_id");
@@ -302,6 +314,12 @@ export function DynamicEntityModal<T extends BaseEntity>({
     }
   };
 
+  const isFieldLoading = (fieldName: string) => {
+    if (fieldName === "country_id") return countryOptionsLoading;
+    if (fieldName === "state_id") return stateOptionsLoading;
+    return false;
+  };
+
   const onSubmit = async (data: Record<string, unknown>) => {
     const prepared = prepareFormData(data, fields);
 
@@ -315,94 +333,114 @@ export function DynamicEntityModal<T extends BaseEntity>({
     }
   };
 
+  const visibleFields = fields.filter((field) => {
+    if (field.name === "zone_id" && zoneOptions.length === 0) {
+      return false;
+    }
+
+    if (
+      field.name === "location_country_id" ||
+      field.name === "location_city_id"
+    ) {
+      const numType = personTypeId ? Number(personTypeId) : null;
+      return needsLocationFields(numType, isItinerante);
+    }
+
+    if (field.name === "spouse_id") {
+      return Number(personTypeId) === 1;
+    }
+
+    return true;
+  });
+  const isComplexForm =
+    fields.length >= 6 || fields.some((field) => field.formSection);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Cerrar"
-        >
-          <X className="w-5 h-5 text-gray-400" />
-        </button>
-        <h2 className="text-xl font-bold mb-5 pr-8">{title}</h2>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent
+        className={cn(
+          "max-h-[90vh] overflow-y-auto",
+          isComplexForm && (size === "wide" ? "sm:max-w-3xl" : "sm:max-w-2xl")
+        )}
+      >
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            Complete los campos requeridos. Puede buscar escribiendo en los
+            selectores de relaciones.
+          </DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {fields.map((field) => {
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className={cn(
+              "grid grid-cols-1 gap-4",
+              isComplexForm && "sm:grid-cols-2"
+            )}
+          >
+            {visibleFields.map((field) => {
               const fieldOptions = getFieldOptions(field.name);
-
-              // Solo mostrar zone_id si la ciudad seleccionada tiene zonas
-              if (field.name === "zone_id") {
-                if (!zoneOptions || zoneOptions.length === 0) {
-                  return null;
-                }
-              }
-
-              // Solo mostrar ubicación si el tipo requiere ubicación o es itinerante
-              if (
-                field.name === "location_country_id" ||
-                field.name === "location_city_id"
-              ) {
-                const numType = personTypeId ? Number(personTypeId) : null;
-                if (!needsLocationFields(numType, isItinerante)) {
-                  return null;
-                }
-              }
-
-              // Lógica condicional para mostrar/ocultar el campo cónyuge
-              if (field.name === "spouse_id") {
-                const isMarried =
-                  personTypeId === "1" || personTypeId === (1 as any);
-                if (!isMarried) {
-                  return null;
-                }
-              }
 
               // Render checkbox fields with their own layout
               if (field.type === "checkbox") {
                 return (
-                  <FormField
-                    key={field.name}
-                    control={form.control}
-                    name={field.name}
-                    render={({ field: rhfField }) => (
-                      <FormItem className="flex flex-row items-center gap-3 space-y-0 rounded-md border p-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={rhfField.value === true}
-                            onCheckedChange={rhfField.onChange}
-                            disabled={loading}
-                          />
-                        </FormControl>
-                        <FormLabel className="cursor-pointer font-medium">
-                          {field.label}
-                        </FormLabel>
-                        <FormMessage />
-                      </FormItem>
+                  <Fragment key={field.name}>
+                    {field.formSection && (
+                      <FormSectionTitle title={field.formSection} />
                     )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name={field.name}
+                      render={({ field: rhfField }) => (
+                        <FormItem
+                          className={cn(
+                            "flex flex-row items-center gap-3 space-y-0 rounded-md border p-3",
+                            field.fullWidth && "sm:col-span-2"
+                          )}
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={rhfField.value === true}
+                              onCheckedChange={rhfField.onChange}
+                              disabled={loading}
+                            />
+                          </FormControl>
+                          <FormLabel className="cursor-pointer font-medium">
+                            {field.label}
+                          </FormLabel>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </Fragment>
                 );
               }
 
               return (
-                <FormField
-                  key={field.name}
-                  control={form.control}
-                  name={field.name}
-                  render={({ field: rhfField }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {field.label}
-                        {field.required && (
-                          <span className="text-red-500 ml-1">*</span>
+                <Fragment key={field.name}>
+                  {field.formSection && (
+                    <FormSectionTitle title={field.formSection} />
+                  )}
+                  <FormField
+                    control={form.control}
+                    name={field.name}
+                    render={({ field: rhfField }) => (
+                      <FormItem
+                        className={cn(
+                          (field.fullWidth || field.type === "textarea") &&
+                            "sm:col-span-2"
                         )}
-                      </FormLabel>
-                      <FormControl>
+                      >
+                        <FormLabel>
+                          {field.label}
+                          {field.required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </FormLabel>
+                        <FormControl>
                         {field.type === "textarea" ? (
                           <Textarea
                             value={(rhfField.value as string) || ""}
@@ -413,6 +451,36 @@ export function DynamicEntityModal<T extends BaseEntity>({
                             placeholder={field.placeholder}
                             disabled={loading}
                             rows={3}
+                          />
+                        ) : field.type === "select" && field.searchable ? (
+                          <Autocomplete
+                            options={(fieldOptions || field.options || []).map((option) => ({
+                              value: String(option.value),
+                              label: option.label,
+                            }))}
+                            value={
+                              rhfField.value !== null && rhfField.value !== undefined
+                                ? String(rhfField.value)
+                                : ""
+                            }
+                            onValueChange={rhfField.onChange}
+                            onBlur={rhfField.onBlur}
+                            placeholder={field.placeholder || "Buscar..."}
+                            emptyMessage={
+                              field.name === "state_id" && !countryId
+                                ? "Seleccione primero un país"
+                                : field.name === "location_city_id" &&
+                                    !locationCountryId
+                                  ? "Seleccione primero el país de ubicación"
+                                : "No se encontraron opciones"
+                            }
+                            loading={isFieldLoading(field.name)}
+                            disabled={
+                              loading ||
+                              (field.name === "state_id" && !countryId) ||
+                              (field.name === "location_city_id" &&
+                                !locationCountryId)
+                            }
                           />
                         ) : field.type === "select" ? (
                           (() => {
@@ -468,15 +536,21 @@ export function DynamicEntityModal<T extends BaseEntity>({
                             }
                           />
                         )}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        </FormControl>
+                        {field.description && (
+                          <FormDescription>{field.description}</FormDescription>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </Fragment>
               );
             })}
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end mt-6 pt-4 border-t border-gray-100">
+            <DialogFooter
+              className="col-span-full mt-2 w-full gap-3 border-t border-gray-100 pt-4 sm:justify-end"
+            >
               <Button
                 type="button"
                 variant="outline"
@@ -488,10 +562,18 @@ export function DynamicEntityModal<T extends BaseEntity>({
               <Button type="submit" disabled={loading}>
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
-      </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormSectionTitle({ title }: { title: string }) {
+  return (
+    <div className="border-b pb-2 pt-1 sm:col-span-2" data-slot="form-section">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
     </div>
   );
 }

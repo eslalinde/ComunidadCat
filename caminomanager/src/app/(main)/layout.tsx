@@ -22,7 +22,7 @@ export default function MainLayout({
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+        <div className="size-8 animate-spin rounded-full border-b-2 border-primary"></div>
       </div>
     );
   }

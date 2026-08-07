@@ -82,6 +82,9 @@ const reportConfig: DynamicReportConfig<CatechistTeamRow> = {
   exportFileName: "equipos_catequistas",
   defaultSorting: [{ id: "diocese_name", desc: false }],
   globalFilterPlaceholder: "Buscar por responsable, parroquia, comunidad...",
+  dataGrid: {
+    pageSize: 5,
+  },
 };
 
 export default function CatechistTeamsReport() {
