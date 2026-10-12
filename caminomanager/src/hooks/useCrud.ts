@@ -278,7 +278,7 @@ export function useCrud<T extends BaseEntity>({
     mutationFn: async (newData) => {
       const { data: result, error } = await supabase
         .from(tableName)
-        .insert([newData])
+        .insert<Omit<T, 'id' | 'created_at' | 'updated_at'>>([newData])
         .select()
         .single();
 
@@ -320,7 +320,7 @@ export function useCrud<T extends BaseEntity>({
     mutationFn: async ({ id, data }) => {
       const { data: result, error } = await supabase
         .from(tableName)
-        .update(data)
+        .update<Record<string, unknown>>({ ...data })
         .eq('id', id)
         .select()
         .single();

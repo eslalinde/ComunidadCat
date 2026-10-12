@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -42,38 +42,36 @@ export default function AccountPage() {
     fetchUser();
   }, [supabase, router]);
 
-  const getProfile = useCallback(async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select(`full_name, username, website, avatar_url, role`)
-        .eq("id", user.id)
-        .single();
-      if (error && status !== 406) {
-        console.error("Error loading profile:", error);
-        setMessage({ type: 'error', text: 'Error al cargar los datos del perfil.' });
-        return;
-      }
-      if (data) {
-        setFullname(data.full_name);
-        setUsername(data.username);
-        setWebsite(data.website);
-        setAvatarUrl(data.avatar_url);
-        setRole(data.role as AppRole);
-      }
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      setMessage({ type: 'error', text: 'Error inesperado al cargar los datos.' });
-    } finally {
-      setLoading(false);
-    }
-  }, [user, supabase]);
-
   useEffect(() => {
-    if (user) getProfile();
-  }, [user, getProfile]);
+    async function getProfile() {
+      if (!user) return;
+      try {
+        const { data, error, status } = await supabase
+          .from("profiles")
+          .select(`full_name, username, website, avatar_url, role`)
+          .eq("id", user.id)
+          .single();
+        if (error && status !== 406) {
+          console.error("Error loading profile:", error);
+          setMessage({ type: 'error', text: 'Error al cargar los datos del perfil.' });
+          return;
+        }
+        if (data) {
+          setFullname(data.full_name);
+          setUsername(data.username);
+          setWebsite(data.website);
+          setAvatarUrl(data.avatar_url);
+          setRole(data.role as AppRole);
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        setMessage({ type: 'error', text: 'Error inesperado al cargar los datos.' });
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (user) void getProfile();
+  }, [user, supabase]);
 
   useEffect(() => {
     let cancelled = false;
