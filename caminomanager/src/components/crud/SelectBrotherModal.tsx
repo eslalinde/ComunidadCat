@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Dialog,
   DialogContent,
@@ -23,31 +25,23 @@ interface SelectBrotherModalProps {
   communityId: number;
 }
 
-export function SelectBrotherModal({
+export function SelectBrotherModal(props: SelectBrotherModalProps) {
+  return props.open ? <SelectBrotherModalContent key={props.communityId} {...props} /> : null;
+}
+
+function SelectBrotherModalContent({
   open,
   onClose,
   onSelect,
   communityId,
 }: SelectBrotherModalProps) {
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectionError, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      fetchAvailablePeople();
-      setSearchTerm('');
-      setSelectedPersonId(null);
-      setError(null);
-    }
-  }, [open, communityId]);
-
-  const fetchAvailablePeople = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data: people = [], isFetching: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.options.filtered('people', { selection: 'SelectBrotherModal', communityId }),
+    queryFn: async (): Promise<Person[]> => {
       const supabase = createClient();
 
       // Obtener todos los IDs de personas que ya tienen comunidad asignada
@@ -74,14 +68,13 @@ export function SelectBrotherModal({
         (person) => !assignedPersonIds.has(person.id!)
       );
 
-      setPeople(availablePeople);
-    } catch (err: any) {
-      console.error('Error fetching available people:', err);
-      setError(friendlyError(err, 'Error al cargar las personas disponibles'));
-    } finally {
-      setLoading(false);
-    }
-  };
+      return availablePeople;
+    },
+    staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnMount: 'always',
+  });
+  const error = selectionError ?? (queryError ? friendlyError(queryError, 'Error al cargar las personas disponibles') : null);
 
   const filteredPeople = people.filter((person) =>
     normalizeText(person.person_name).includes(normalizeText(searchTerm))

@@ -1,4 +1,7 @@
 export const queryKeys = {
+  nationalTeam: {
+    all: ['nationalTeam'] as const,
+  },
   // Entidades CRUD
   crud: {
     all: ['crud'] as const,

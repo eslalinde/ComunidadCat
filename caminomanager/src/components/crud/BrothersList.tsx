@@ -43,9 +43,11 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [brotherToDelete, setBrotherToDelete] = useState<MergedBrother | null>(null);
 
+  const [now] = useState(() => Date.now());
+
   const isNew = (createdAt: string | null) => {
     if (!createdAt) return false;
-    return Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
+    return now - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
   };
 
   const toggleGroup = (carisma: string) => {

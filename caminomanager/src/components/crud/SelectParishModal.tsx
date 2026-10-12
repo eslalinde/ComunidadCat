@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Dialog,
   DialogContent,
@@ -23,53 +25,44 @@ interface SelectParishModalProps {
   excludeParishIds: number[];
 }
 
-export function SelectParishModal({
+export function SelectParishModal(props: SelectParishModalProps) {
+  return props.open ? <SelectParishModalContent key={props.excludeParishIds.join(",")} {...props} /> : null;
+}
+
+function SelectParishModalContent({
   open,
   onClose,
   onSelect,
   excludeParishIds,
 }: SelectParishModalProps) {
-  const [parishes, setParishes] = useState<Parish[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParishId, setSelectedParishId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectionError, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  const { data: parishes = [], isFetching: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.options.filtered('parishes', { selection: 'SelectParishModal', excludeParishIds }),
+    queryFn: async (): Promise<Parish[]> => {
+      const supabase = createClient();
 
-    async function fetchAvailableParishes() {
-      setLoading(true);
-      setError(null);
-      try {
-        const supabase = createClient();
+      const { data: parishData, error: parishError } = await supabase
+        .from('parishes')
+        .select('*, diocese:dioceses(name)')
+        .order('name', { ascending: true });
 
-        const { data: parishData, error: parishError } = await supabase
-          .from('parishes')
-          .select('*, diocese:dioceses(name)')
-          .order('name', { ascending: true });
+      if (parishError) throw parishError;
 
-        if (parishError) throw parishError;
+      const excludeSet = new Set(excludeParishIds);
+      const availableParishes = (parishData || []).filter(
+        (parish) => !excludeSet.has(parish.id!)
+      );
 
-        const excludeSet = new Set(excludeParishIds);
-        const availableParishes = (parishData || []).filter(
-          (parish) => !excludeSet.has(parish.id!)
-        );
-
-        setParishes(availableParishes);
-      } catch (err: any) {
-        console.error('Error fetching available parishes:', err);
-        setError(friendlyError(err, 'Error al cargar las parroquias disponibles'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAvailableParishes();
-    setSearchTerm('');
-    setSelectedParishId(null);
-    setError(null);
-  }, [open, excludeParishIds]);
+      return availableParishes;
+    },
+    staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnMount: 'always',
+  });
+  const error = selectionError ?? (queryError ? friendlyError(queryError, 'Error al cargar las parroquias disponibles') : null);
 
   const filteredParishes = parishes.filter((parish) =>
     normalizeText(parish.name).includes(normalizeText(searchTerm))

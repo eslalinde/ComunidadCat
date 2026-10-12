@@ -433,8 +433,8 @@ function CommunityDetailContent() {
             {/* Responsables Team */}
             <div>
               {teams.responsables.length > 0 ? (
-                teams.responsables.map((team) => (
-                  <div key={team.id || `responsable-${Math.random()}`}>
+                teams.responsables.map((team, index) => (
+                  <div key={team.id || `responsable-${index}`}>
                     <TeamSection
                       team={team}
                       members={team.id ? teamMembers[team.id] || [] : []}

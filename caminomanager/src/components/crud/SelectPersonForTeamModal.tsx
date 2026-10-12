@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Dialog,
   DialogContent,
@@ -23,53 +25,44 @@ interface SelectPersonForTeamModalProps {
   excludePersonIds: number[];
 }
 
-export function SelectPersonForTeamModal({
+export function SelectPersonForTeamModal(props: SelectPersonForTeamModalProps) {
+  return props.open ? <SelectPersonForTeamModalContent key={props.excludePersonIds.join(",")} {...props} /> : null;
+}
+
+function SelectPersonForTeamModalContent({
   open,
   onClose,
   onSelect,
   excludePersonIds,
 }: SelectPersonForTeamModalProps) {
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectionError, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  const { data: people = [], isFetching: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.options.filtered('people', { selection: 'SelectPersonForTeamModal', excludePersonIds }),
+    queryFn: async (): Promise<Person[]> => {
+      const supabase = createClient();
 
-    async function fetchAvailablePeople() {
-      setLoading(true);
-      setError(null);
-      try {
-        const supabase = createClient();
+      const { data: peopleData, error: peopleError } = await supabase
+        .from('people')
+        .select('*')
+        .order('person_name', { ascending: true });
 
-        const { data: peopleData, error: peopleError } = await supabase
-          .from('people')
-          .select('*')
-          .order('person_name', { ascending: true });
+      if (peopleError) throw peopleError;
 
-        if (peopleError) throw peopleError;
+      const excludeSet = new Set(excludePersonIds);
+      const availablePeople = (peopleData || []).filter(
+        (person) => !excludeSet.has(person.id!)
+      );
 
-        const excludeSet = new Set(excludePersonIds);
-        const availablePeople = (peopleData || []).filter(
-          (person) => !excludeSet.has(person.id!)
-        );
-
-        setPeople(availablePeople);
-      } catch (err: any) {
-        console.error('Error fetching available people:', err);
-        setError(friendlyError(err, 'Error al cargar las personas disponibles'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAvailablePeople();
-    setSearchTerm('');
-    setSelectedPersonId(null);
-    setError(null);
-  }, [open, excludePersonIds]);
+      return availablePeople;
+    },
+    staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnMount: 'always',
+  });
+  const error = selectionError ?? (queryError ? friendlyError(queryError, 'Error al cargar las personas disponibles') : null);
 
   const filteredPeople = people.filter((person) =>
     normalizeText(person.person_name).includes(normalizeText(searchTerm))
