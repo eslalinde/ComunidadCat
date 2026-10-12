@@ -60,6 +60,29 @@ A web application for managing Neocatechumenal Way communities, coordinating par
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Supabase deployment configuration
+
+The Electron cloud build reads GitHub secrets `SUPABASE_URL` and
+`SUPABASE_PUBLISHABLE_DEFAULT_KEY`. Next.js consumes them as
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`.
+Keep the cloud URL, publishable key, and migration project ID aligned with the
+intended Supabase project. Confirm the destination before changing `env.cloud.local`.
+
+The migration workflow requires these GitHub Actions secrets:
+
+- Production: `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`.
+- Integration: `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD`.
+- Both environments: `SUPABASE_ACCESS_TOKEN`, a personal access token with access
+  to the corresponding projects. The CLI expects a token starting with `sbp_`;
+  project publishable or secret API keys do not replace this token.
+
+Production migrations run on matching pushes to `main`, including workflow or
+credential-validator changes. The manual workflow also targets production and
+only runs from `main`. Integration migrations require a matching pull request
+with the `run-migrations` label; adding that label triggers the workflow.
+Credential validation checks presence and the token prefix without printing
+secret values. A successful check does not verify remote access or passwords.
+
 ## License
 
 All rights reserved.
