@@ -16,9 +16,11 @@ export function GlobalFilter({
 }: GlobalFilterProps) {
   const [localValue, setLocalValue] = useState(value);
 
-  useEffect(() => {
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
     setLocalValue(value);
-  }, [value]);
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => {

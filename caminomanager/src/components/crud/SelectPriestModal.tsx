@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Dialog,
   DialogContent,
@@ -23,66 +25,56 @@ interface SelectPriestModalProps {
   parishId: number;
 }
 
-export function SelectPriestModal({
+export function SelectPriestModal(props: SelectPriestModalProps) {
+  return props.open ? <SelectPriestModalContent key={props.parishId} {...props} /> : null;
+}
+
+function SelectPriestModalContent({
   open,
   onClose,
   onSelect,
   parishId,
 }: SelectPriestModalProps) {
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<boolean>(false); // false = Vicario, true = Párroco
-  const [error, setError] = useState<string | null>(null);
+  const [selectionError, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  const { data: people = [], isFetching: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.options.filtered('people', { selection: 'SelectPriestModal', parishId }),
+    queryFn: async (): Promise<Person[]> => {
+      const supabase = createClient();
 
-    async function fetchAvailablePeople() {
-      setLoading(true);
-      setError(null);
-      try {
-        const supabase = createClient();
+      const { data: priestsData, error: priestsError } = await supabase
+        .from('priests')
+        .select('person_id')
+        .eq('parish_id', parishId);
 
-        const { data: priestsData, error: priestsError } = await supabase
-          .from('priests')
-          .select('person_id')
-          .eq('parish_id', parishId);
+      if (priestsError) throw priestsError;
 
-        if (priestsError) throw priestsError;
+      const assignedPersonIds = new Set(
+        (priestsData || []).map((p) => p.person_id)
+      );
 
-        const assignedPersonIds = new Set(
-          (priestsData || []).map((p) => p.person_id)
-        );
+      const { data: peopleData, error: peopleError } = await supabase
+        .from('people')
+        .select('*')
+        .eq('person_type_id', 3)
+        .order('person_name', { ascending: true });
 
-        const { data: peopleData, error: peopleError } = await supabase
-          .from('people')
-          .select('*')
-          .eq('person_type_id', 3)
-          .order('person_name', { ascending: true });
+      if (peopleError) throw peopleError;
 
-        if (peopleError) throw peopleError;
+      const availablePeople = (peopleData || []).filter(
+        (person) => !assignedPersonIds.has(person.id!)
+      );
 
-        const availablePeople = (peopleData || []).filter(
-          (person) => !assignedPersonIds.has(person.id!)
-        );
-
-        setPeople(availablePeople);
-      } catch (err: any) {
-        console.error('Error fetching available people:', err);
-        setError(friendlyError(err, 'Error al cargar las personas disponibles'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAvailablePeople();
-    setSearchTerm('');
-    setSelectedPersonId(null);
-    setSelectedRole(false);
-    setError(null);
-  }, [open, parishId]);
+      return availablePeople;
+    },
+    staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnMount: 'always',
+  });
+  const error = selectionError ?? (queryError ? friendlyError(queryError, 'Error al cargar las personas disponibles') : null);
 
   const filteredPeople = people.filter((person) =>
     normalizeText(person.person_name).includes(normalizeText(searchTerm))

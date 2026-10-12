@@ -44,9 +44,12 @@ function Autocomplete({
   const [open, setOpen] = React.useState(false)
   const [activeIndex, setActiveIndex] = React.useState(-1)
 
-  React.useEffect(() => {
-    if (!open) setQuery(selected?.label ?? "")
-  }, [open, selected?.label])
+  const label = selected?.label ?? ""
+  const [previousSelection, setPreviousSelection] = React.useState({ open, label })
+  if (previousSelection.open !== open || previousSelection.label !== label) {
+    setPreviousSelection({ open, label })
+    if (!open) setQuery(label)
+  }
 
   const filteredOptions = React.useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es")

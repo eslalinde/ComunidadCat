@@ -237,7 +237,7 @@ export async function executeBulkUpload(
           is_responsible_for_the_team: index === 0, // First one is the team leader
         };
       })
-      .filter(Boolean);
+      .filter((row) => row !== null);
 
     if (belongsInserts.length > 0) {
       const { error } = await supabase.from('belongs').insert(belongsInserts);

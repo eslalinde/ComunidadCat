@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { Team, Belongs, Community } from '@/types/database';
 import { friendlyError } from '@/lib/supabaseErrors';
+import { queryKeys } from '@/lib/queryKeys';
 
 export interface NationalTeamData {
   team: Team | null;
@@ -12,78 +13,48 @@ export interface NationalTeamData {
   refreshTeam: () => Promise<void>;
 }
 
+type TeamQueryData = Pick<NationalTeamData, 'team' | 'members' | 'communities'>;
+
 export function useNationalTeamData(): NationalTeamData {
-  const [team, setTeam] = useState<Team | null>(null);
-  const [members, setMembers] = useState<Belongs[]>([]);
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const supabase = useMemo(() => createClient(), []);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Find the national team (community_id IS NULL, team_type_id = 3)
-      // The team is created by a database migration, so it should always exist
-      const { data: teamData, error: teamError } = await supabase
+  const { data, isFetching, error, refetch } = useQuery<TeamQueryData>({
+    queryKey: queryKeys.nationalTeam.all,
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: team, error: teamError } = await supabase
         .from('teams')
         .select('*, team_type:team_types(*)')
         .is('community_id', null)
         .eq('team_type_id', 3)
         .maybeSingle();
-
       if (teamError) throw teamError;
-
-      if (!teamData) {
+      if (!team) {
         throw new Error('El equipo nacional de catequistas no existe. Contacta al administrador.');
       }
 
-      setTeam(teamData);
-
-      if (!teamData?.id) return;
-
-      // Fetch members (via belongs)
-      const { data: membersData, error: membersError } = await supabase
-        .from('belongs')
-        .select('*, person:people(*)')
-        .eq('team_id', teamData.id);
-
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
-
-      // Fetch communities where this team is the catechist team
-      const { data: communitiesData, error: communitiesError } = await supabase
-        .from('communities')
-        .select('*, parish:parishes(*), step_way:step_ways(*)')
-        .eq('cathechist_team_id', teamData.id);
-
-      if (communitiesError) throw communitiesError;
-      setCommunities(communitiesData || []);
-    } catch (err: any) {
-      console.error('Error fetching national team data:', JSON.stringify(err));
-      setError(friendlyError(err, 'Error desconocido'));
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const refreshTeam = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
+      const [membersResult, communitiesResult] = await Promise.all([
+        supabase.from('belongs').select('*, person:people(*)').eq('team_id', team.id),
+        supabase.from('communities')
+          .select('*, parish:parishes(*), step_way:step_ways(*)')
+          .eq('cathechist_team_id', team.id),
+      ]);
+      if (membersResult.error) throw membersResult.error;
+      if (communitiesResult.error) throw communitiesResult.error;
+      return {
+        team,
+        members: membersResult.data || [],
+        communities: communitiesResult.data || [],
+      };
+    },
+    staleTime: 60_000,
+    gcTime: 300_000,
+  });
 
   return {
-    team,
-    members,
-    communities,
-    loading,
-    error,
-    refreshTeam,
+    team: data?.team ?? null,
+    members: data?.members ?? [],
+    communities: data?.communities ?? [],
+    loading: isFetching,
+    error: error ? friendlyError(error, 'Error desconocido') : null,
+    refreshTeam: async () => { await refetch(); },
   };
 }
