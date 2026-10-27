@@ -18,7 +18,7 @@ const CASES: ScopeExpectation[] = [
   { roleKey: 'community_responsible', expectedScope: /Comunidad\s+1/i },
   { roleKey: 'viewer_zone', expectedScope: /Zona\s+Norte/i },
   { roleKey: 'viewer_community', expectedScope: /Comunidad\s+1/i },
-  { roleKey: 'viewer_grants', expectedScope: /Comunidades con acceso otorgado|Sin acceso asignado/i },
+  { roleKey: 'viewer_grants', expectedScope: /Comunidades con acceso otorgado/i },
   { roleKey: 'viewer_noscope', expectedScope: /sin acceso asignado/i },
 ];
 
@@ -32,11 +32,14 @@ test.describe('Cuenta — alcance del usuario', () => {
       // Wait for the profile card to render.
       await expect(page.getByRole('heading', { name: /mi perfil/i })).toBeVisible({ timeout: 10_000 });
 
-      // Pull the scope copy. For viewer_grants we accept either the explicit
-      // "Comunidades con acceso otorgado" panel or, if grants haven't loaded
-      // yet, the "Sin acceso asignado" placeholder — the regex covers both.
+      // Wait for the final scope, including asynchronously loaded grants.
       const body = page.locator('body');
       await expect(body).toContainText(c.expectedScope, { timeout: 10_000 });
+      if (c.roleKey === 'viewer_grants') {
+        await expect(page.getByRole('link', { name: /^Comunidad 1(?:\s|$)/ }))
+          .toHaveAttribute('href', '/comunidades/detalle?id=1');
+        await expect(page.getByText(/Sin acceso asignado/i)).toHaveCount(0);
+      }
 
       await takeRoleScreenshot(page, c.roleKey, 'cuenta', {
         testCaseId: `TC-CUENTA-${c.roleKey.toUpperCase()}`,

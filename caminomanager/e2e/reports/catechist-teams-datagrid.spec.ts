@@ -23,7 +23,7 @@ test.describe('Reporte de Equipos de Catequistas — DataGrid', () => {
     expect(recordCount).toBeGreaterThan(5);
 
     const dioceseHeader = page.getByRole('columnheader', {
-      name: /Arquidiócesis\/Diócesis/,
+      name: /Arquidiócesis\/Diócesis/i,
     });
     await expect(dioceseHeader).toHaveAttribute('aria-sort', 'ascending');
     await dioceseHeader.getByRole('button').focus();
@@ -58,12 +58,12 @@ test.describe('Reporte de Equipos de Catequistas — DataGrid', () => {
 
     await page.getByRole('button', { name: 'Columnas', exact: true }).click();
     const parishColumn = page.getByRole('menuitemcheckbox', {
-      name: 'Parroquia que Lleva',
+      name: /Parroquia que lleva/i,
     });
     await expect(parishColumn).toHaveAttribute('aria-checked', 'true');
     await parishColumn.click();
     await expect(
-      page.getByRole('columnheader', { name: /Parroquia que Lleva/ }),
+      page.getByRole('columnheader', { name: /Parroquia que lleva/i }),
     ).toBeHidden();
     await page.keyboard.press('Escape');
 
