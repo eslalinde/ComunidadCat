@@ -420,6 +420,44 @@ de trabajo. Se desactivó Studio en esa copia temporal para evitar un fallo de
 montaje de Docker en Windows. La instancia y sus volúmenes se eliminaron al
 terminar; la base Supabase de trabajo no se reseteó.
 
+## Actualización de dependencias y compatibilidad de CI
+
+Se corrigieron las dependencias vulnerables de la aplicación y las herramientas
+de raíz. Las versiones elegidas son Next.js y eslint-config-next 16.4.3,
+Sentry 10.77.1, Zod 4.6.7, Vitest/coverage 4.1.12 y Electron 43.8.3.
+Las dependencias transitivas se actualizaron dentro de los rangos compatibles.
+En la raíz se actualizaron shadcn CLI a 4.23.0 y Supabase CLI a 2.122.0. El salto
+de versión mayor de shadcn afecta a la herramienta de desarrollo: se comprobó
+con `shadcn info` que reconoce Next.js, Tailwind 4, Radix y la configuración
+New York; no se regeneraron componentes ni estilos.
+
+`npm ci` y `npm audit --audit-level=moderate` pasan en ambas carpetas, con cero
+vulnerabilidades incluyendo las dependencias de desarrollo. El lint completo
+mantiene cero errores y las 321 pruebas unitarias pasan. El build de producción,
+TypeScript y la compilación del proceso de Electron pasan con los parches.
+La importación de Sentry usa ahora `@sentry/nextjs/config`, eliminando el aviso de
+la importación obsoleta. No se desactivó el chequeo de seguridad de Next.js.
+
+El fallo real del smoke anterior de GitHub era la instalación de Chromium:
+`ubuntu-latest` había pasado a Ubuntu 26.04, no soportado por Playwright 1.58.2.
+CI fija Ubuntu 24.04 y Node 22. El requisito mínimo Node 22.12.0 queda declarado
+en ambos package.json y .nvmrc, y el workflow de release de Electron también usa
+Node 22. La acción de artefactos pasa a v7. El job de auditoría comprueba los dos
+lockfiles, y cambios de los manifiestos de raíz o del workflow activan CI.
+
+El smoke local con las mismas variables públicas ficticias de CI pasó sus 18
+casos sin requerir un backend activo. Los checks del commit bfc8bcd en GitHub
+aprobaron: Lint, Type Check, Test, Build, Playwright Smoke, Dependency Audit
+(aplicación y raíz), CodeQL y preview de Vercel. Las migraciones a producción e
+integración conservan sus condiciones de ejecución; no se aplicaron en cloud.
+
+La suite web completa de esta actualización utiliza los fixtures locales y
+guarda sus artefactos en
+`caminomanager/e2e/playwright-report/dependency-full-final/index.html` y
+`caminomanager/e2e/test-results/dependency-full-final-results.json`.
+El estado consolidado de validación también se documenta en el
+[PR #228](https://github.com/eslalinde/ComunidadCat/pull/228).
+
 ## Referencias
 
 - [Playwright: servidor web](https://playwright.dev/docs/test-webserver)
