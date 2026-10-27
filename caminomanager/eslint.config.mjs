@@ -5,7 +5,7 @@ import nextTypescript from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTypescript,
-  globalIgnores(["dist-electron/**", "out/**", "release/**", ".next/**", "test-*.js"]),
+  globalIgnores(["dist-electron/**", "out/**", "release/**", ".next/**", "test-*.js", "coverage/**", "e2e/playwright-report/**", "e2e/test-results/**", "e2e/test-results-electron/**"]),
   {
     files: ["**/*.ts", "**/*.tsx"],
     rules: {

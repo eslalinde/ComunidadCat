@@ -83,6 +83,34 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-key
 
+  e2e-smoke:
+    name: Playwright Smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: caminomanager
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:smoke
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-key
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-smoke
+          path: |
+            caminomanager/e2e/playwright-report/
+            caminomanager/e2e/test-results/
+          retention-days: 7
+
   dependency-audit:
     name: Dependency Audit
     runs-on: ubuntu-latest
