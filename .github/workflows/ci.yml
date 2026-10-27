@@ -6,6 +6,8 @@ on:
     paths:
       - "caminomanager/**"
       - ".github/workflows/ci.yml"
+      - "package.json"
+      - "package-lock.json"
 
 concurrency:
   group: ci-${{ github.head_ref }}
@@ -127,3 +129,4 @@ jobs:
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
       - run: npm audit --audit-level=critical
+      - run: npm audit --prefix .. --package-lock-only --audit-level=critical
