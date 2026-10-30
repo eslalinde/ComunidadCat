@@ -17,9 +17,12 @@ El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
 - La conexión MCP disponible solo muestra otro proyecto y deniega acceso a la
   organización facilitada, `qtdfmxydesepydsvbmak`. No se consultaron ni modificaron
   bases ajenas para inferir el estado de ComunidadCat.
-- `env.cloud.local` referencia `zdmwekololwtdluvsxbd`. Ese dato por sí solo no
-  demuestra que coincida con `SUPABASE_PROJECT_ID` en GitHub ni identifica integración.
-  Los valores de GitHub Secrets no se pueden recuperar mediante su API.
+- El propietario confirmó `zdmwekololwtdluvsxbd` como **integración**. El archivo
+  `env.cloud.local` apunta a ese mismo proyecto: no asumir que representa producción.
+  Falta identificar producción y cotejar los secretos del workflow y del frontend.
+  No se modificó ningún destino. Los valores de GitHub Secrets no se pueden
+  recuperar mediante su API. El intento de listar migraciones del proyecto de
+  integración mediante MCP también fue denegado por falta de permisos.
 
 ## Migraciones candidatas y su impacto
 
@@ -119,3 +122,6 @@ secretos de Vault ni seed. No usa `--include-all` ni resetea bases.
 
 Comprobación local del validador: `node --test .github/scripts/validate-supabase-env.test.mjs`.
 Las pruebas usan valores sintéticos y no consultan Supabase ni necesitan secretos.
+Las 19 pruebas también pasaron en [Actions](https://github.com/eslalinde/ComunidadCat/actions/runs/41127656842).
+Los jobs remotos quedaron omitidos porque el PR no tiene etiquetas de migración;
+ese resultado no valida las credenciales ni el estado de las bases cloud.
