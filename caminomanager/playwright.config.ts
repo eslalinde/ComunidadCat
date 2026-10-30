@@ -10,15 +10,17 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   timeout: 30_000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://127.0.0.1:3100',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --hostname localhost',
-    url: 'http://localhost:3000/login',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    command: process.env.PLAYWRIGHT_SKIP_BUILD === '1'
+      ? 'node scripts/serve-e2e.mjs'
+      : 'npm run build:e2e && node scripts/serve-e2e.mjs',
+    url: 'http://127.0.0.1:3100/login',
+    reuseExistingServer: false,
+    timeout: 180_000,
   },
   projects: [
     {
