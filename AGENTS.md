@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**ComunidadCat** is a community management system for Neocatechumenal Way communities. Built with **Next.js 15 + Electron + Supabase**, it runs both as a web app (SWA) and a desktop app (Windows NSIS installer).
+**ComunidadCat** is a community management system for Neocatechumenal Way communities. Built with **Next.js 15 + Electron + Supabase**, it runs both as a web app (Vercel) and a desktop app (Windows NSIS installer).
 
 ## Repository Layout
 
@@ -143,10 +143,10 @@ npm run electron:build    # Production Electron installer (Windows)
 
 ## CI/CD
 
-- **ci.yml**: Lint + type-check on PRs
-- **deploy.yml**: Deploy to Azure SWA (PR preview environments + production on main)
+- **ci.yml**: Quality, coverage, build, database and smoke checks on PRs/pushes to dev and main.
+- **Vercel Git integration**: Automatic previews for PR branches and dev; main is deployed manually from Vercel. See docs/deployment.md.
 - **electron-release.yml**: Build and publish Electron releases
-- **supabase-migrations.yml**: Apply migrations to Supabase
+- **supabase-migrations.yml**: Integration after successful dev CI; production requires manual dispatch on main.
 - **security.yml**: CodeQL security scanning
 
 ## Testing
@@ -160,7 +160,7 @@ npm run electron:build    # Production Electron installer (Windows)
 
 ## Git Workflow
 
-- Main branch: `main`
+- Default/integration branch: `dev`; production branch: `main`
 - Feature branches: `feature/description` or `fix/description`
 - Commit messages in English, imperative mood.
 - PRs require CI checks to pass before merge.

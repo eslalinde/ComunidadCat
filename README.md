@@ -63,3 +63,7 @@ A web application for managing Neocatechumenal Way communities, coordinating par
 ## License
 
 All rights reserved.
+
+## Entornos y entregas
+
+Consulte [la guía de CI/CD](docs/deployment.md): PR a dev, previews automáticos y producción manual desde main en Vercel.

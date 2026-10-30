@@ -1,6 +1,6 @@
 # ComunidadCat - Guia de Despliegue Standalone en Windows
 
-Despliegue de ComunidadCat (Next.js + Electron + Supabase) en una sola maquina Windows, sin base de datos en internet. Usa Supabase local via Docker con backups diarios a Azure Blob Storage.
+Despliegue de ComunidadCat (Next.js + Electron + Supabase) en una sola maquina Windows, sin base de datos en internet. Usa Supabase local via Docker con backups diarios locales y copia remota opcional.
 
 ---
 
@@ -17,7 +17,7 @@ Windows PC
 ├── ComunidadCat.exe (Electron app)
 └── Tareas Programadas
     ├── Startup (al iniciar sesion)
-    ├── Daily Backup (2:00 AM → Azure Blob)
+    ├── Daily Backup (2:00 AM → backup local)
     └── Health Check (cada 15 min)
 ```
 
@@ -34,7 +34,7 @@ Windows PC
 | Docker Desktop | 4.x+ | Motor de contenedores |
 | Node.js | LTS (v20+) | Para Supabase CLI |
 | Supabase CLI | Latest | Gestion de contenedores Supabase |
-| rclone | Latest | Sincronizacion de backups a Azure |
+| rclone | Latest | Sincronizacion de backups a almacenamiento remoto |
 
 ---
 
@@ -60,16 +60,16 @@ Abrir Docker Desktop y configurar:
 2. **Software Updates** > "Automatically check for updates" = **OFF**
 3. Aceptar terminos de servicio si es la primera vez
 
-### Paso 3: Configurar rclone para Azure
+### Paso 3 (opcional): Configurar rclone para almacenamiento remoto
 
 ```powershell
 C:\ComunidadCat\rclone\rclone.exe config
 ```
 
 Configurar:
-- **Remote name**: `azure-backup`
-- **Type**: `azureblob`
-- **SAS URL**: Obtener desde Azure Portal (generar SAS token con 1 ano de vigencia)
+- **Remote name**: `backup`
+- **Type**: el proveedor elegido
+- **Credenciales**: Configurar las del proveedor elegido directamente en rclone.
 - **Container**: `comunidadcat-backups`
 
 > **Tamano estimado de backups**: ~100-500 KB por backup comprimido. 30 dias ≈ 15 MB.
@@ -105,7 +105,7 @@ C:\ComunidadCat\scripts\Register-ScheduledTasks.ps1
 C:\ComunidadCat\scripts\Backup-ComunidadCat.ps1
 ```
 
-Verificar que se cree el archivo en `C:\ComunidadCat\backups\` y que se suba a Azure.
+Verificar que se cree el archivo en `C:\ComunidadCat\backups\` y, si se configura un remote, que se suba una copia.
 
 ---
 
@@ -133,7 +133,7 @@ El backup diario se ejecuta a las 2:00 AM via tarea programada:
 
 1. `pg_dump` (schemas: public + auth) via `docker exec`
 2. Compresion GZip (PowerShell nativo)
-3. Upload a Azure Blob Storage via rclone
+3. Copia remota solo cuando se indica -RcloneRemote; la tarea programada usa backup local
 4. Limpieza: locales >7 dias, remotos >30 dias
 
 Si la maquina estaba apagada a las 2 AM, el backup se ejecuta al encender (StartWhenAvailable).
@@ -141,11 +141,11 @@ Si la maquina estaba apagada a las 2 AM, el backup se ejecuta al encender (Start
 ### Manual
 
 ```powershell
-# Backup local + Azure
-C:\ComunidadCat\scripts\Backup-ComunidadCat.ps1
+# Backup local + almacenamiento remoto (opcional)
+C:\ComunidadCat\scripts\Backup-ComunidadCat.ps1 -RcloneRemote backup
 
-# Solo backup local (sin Azure)
-C:\ComunidadCat\scripts\Backup-ComunidadCat.ps1 -SkipAzure
+# Solo backup local (sin almacenamiento remoto)
+C:\ComunidadCat\scripts\Backup-ComunidadCat.ps1 -SkipRemote
 ```
 
 ### Restaurar desde backup
@@ -174,11 +174,11 @@ docker exec $dbContainer psql -U postgres -d postgres -f /tmp/restore.sql
 docker exec $dbContainer rm /tmp/restore.sql
 ```
 
-### Restaurar desde Azure
+### Restaurar desde almacenamiento remoto
 
 ```powershell
-# Descargar backup mas reciente desde Azure
-C:\ComunidadCat\rclone\rclone.exe copy azure-backup:comunidadcat-backups C:\ComunidadCat\backups --include "*.sql.gz" --max-depth 1
+# Descargar backup mas reciente desde almacenamiento remoto
+C:\ComunidadCat\rclone\rclone.exe copy backup:comunidadcat-backups C:\ComunidadCat\backups --include "*.sql.gz" --max-depth 1
 
 # Luego seguir pasos de restauracion anteriores
 ```
@@ -315,11 +315,11 @@ En caso de falla total del disco o maquina:
 3. Copiar config de Supabase a `C:\ComunidadCat\supabase\`
 4. Ejecutar `supabase start` (crea DB limpia con migraciones)
 
-### 2. Restaurar datos desde Azure
+### 2. Restaurar datos desde almacenamiento remoto
 
 ```powershell
 # Descargar ultimo backup
-C:\ComunidadCat\rclone\rclone.exe copy azure-backup:comunidadcat-backups C:\ComunidadCat\backups --include "*.sql.gz" --max-depth 1
+C:\ComunidadCat\rclone\rclone.exe copy backup:comunidadcat-backups C:\ComunidadCat\backups --include "*.sql.gz" --max-depth 1
 
 # Descomprimir y restaurar (ver seccion Backups > Restaurar)
 ```
@@ -349,7 +349,7 @@ C:\ComunidadCat\
 ├── backups/                  # Backups locales (ultimos 7 dias)
 ├── logs/                     # Logs de startup, backup, health
 └── rclone/
-    └── rclone.exe           # Herramienta de sync a Azure
+    └── rclone.exe           # Herramienta de sync a almacenamiento remoto
 ```
 
 ---
@@ -359,7 +359,7 @@ C:\ComunidadCat\
 - Todos los puertos de Supabase estan enlazados a `127.0.0.1` (solo acceso local)
 - Las passwords default de Supabase son aceptables para maquina single-user
 - El auto-updater de Electron esta deshabilitado (no hay internet)
-- Los backups usan SAS token de Azure (rotable, con expiracion)
+- Guarde una copia de los backups fuera de la maquina; configure las credenciales de su proveedor en rclone.
 - Studio, Inbucket y Analytics estan deshabilitados en produccion
 
 ## Riesgo de Apagado sin `supabase stop`
