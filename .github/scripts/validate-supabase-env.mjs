@@ -7,6 +7,11 @@ for (const name of required) {
   }
 }
 const token = process.env.SUPABASE_ACCESS_TOKEN;
+const project = process.env.SUPABASE_PROJECT_ID;
+if (project?.trim() && !/^[a-z]{20}$/.test(project)) {
+  console.error('::error::SUPABASE_PROJECT_ID debe ser el identificador del proyecto (20 letras minúsculas), no una URL ni el identificador de la organización.');
+  invalid = true;
+}
 if (token?.trim() && (!/^sbp_[^\s]+$/.test(token))) {
   console.error('::error::SUPABASE_ACCESS_TOKEN debe ser un personal access token de Supabase (sbp_...). No uses una clave publishable ni una clave secreta del proyecto.');
   invalid = true;

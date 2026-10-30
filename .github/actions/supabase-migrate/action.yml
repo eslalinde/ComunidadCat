@@ -1,0 +1,31 @@
+name: Inspect and optionally apply Supabase migrations
+description: Validate credentials, compare history, preview pending SQL, then optionally apply.
+inputs:
+  apply:
+    description: Only the literal true enables applying migrations.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+    - name: Validate migration credentials
+      shell: bash
+      run: node .github/scripts/validate-supabase-env.mjs
+    - uses: supabase/setup-cli@v3
+      with:
+        version: 2.122.0
+    - name: Link Supabase project
+      shell: bash
+      run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+    - name: Compare local and remote migration history
+      shell: bash
+      run: supabase migration list --linked
+    - name: Preview pending migrations without applying SQL or Vault changes
+      shell: bash
+      run: supabase db push --linked --dry-run --skip-vault
+    - name: Apply migrations
+      if: inputs.apply == 'true'
+      shell: bash
+      run: supabase db push --linked --skip-vault --yes

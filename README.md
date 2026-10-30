@@ -76,12 +76,27 @@ The migration workflow requires these GitHub Actions secrets:
   to the corresponding projects. The CLI expects a token starting with `sbp_`;
   project publishable or secret API keys do not replace this token.
 
-Production migrations run on matching pushes to `main`, including workflow or
-credential-validator changes. The manual workflow also targets production and
-only runs from `main`. Integration migrations require a matching pull request
-with the `run-migrations` label; adding that label triggers the workflow.
-Credential validation checks presence and the token prefix without printing
-secret values. A successful check does not verify remote access or passwords.
+Production migrations run automatically only when a push to `main` changes
+`supabase/migrations/**`. Workflow and documentation changes alone do not deploy.
+Manual runs from `main` select an environment and default to a dry run; applying
+requires explicitly selecting `apply`.
+
+Before merging, add `check-migrations` to a matching same-repository pull request
+to compare local/remote history and preview pending SQL in both environments.
+This label never applies migrations. `run-migrations` applies to integration only,
+and only when `check-migrations` is absent. Remove/re-add the appropriate label to
+rerun after updating secrets. Neither label is present on PR #172 during preparation.
+
+All remote jobs validate credentials, link using the environment's database
+password, list migration history and run `db push --dry-run --skip-vault` before
+any explicit apply. CLI 2.122.0 and Node.js 22 are pinned; operations for the same
+environment are serialized without cancelling an active migration. Credential
+tests run without secrets on every matching PR. Format validation does not verify
+remote access, passwords, or that a syntactically valid project ID is the intended
+destination.
+
+See [the token replacement and migration review guide](docs/supabase-deployment.md)
+for the pre-merge procedure and the four candidate migrations identified from CI.
 
 ## License
 
