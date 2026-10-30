@@ -1,59 +1,77 @@
 name: Supabase Migrations
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "supabase/migrations/**"
-  pull_request:
-    branches: [main]
-    paths:
-      - "supabase/migrations/**"
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: 'Aplicar las migraciones de main a producción antes de publicar manualmente en Vercel'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: supabase-${{ github.event_name == 'workflow_dispatch' && 'production' || 'integration' }}
+  cancel-in-progress: false
+
 jobs:
-  migrate-production:
-    name: Migrate Production
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: supabase/setup-cli@v3
-        with:
-          version: latest
-
-      - name: Link Supabase project
-        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Push migrations
-        run: supabase db push
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-
   migrate-integration:
     name: Migrate Integration
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-migrations')
-    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'dev' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    environment: integration
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
       - uses: supabase/setup-cli@v3
         with:
-          version: latest
-
-      - name: Link Supabase project
-        run: supabase link --project-ref ${{ secrets.INTEGRATION_SUPABASE_PROJECT_ID }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Push migrations
-        run: supabase db push
+          version: 2.122.0
+      - name: Apply reviewed integration migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.INTEGRATION_SUPABASE_DB_PASSWORD }}
+          PROJECT_ID: ${{ secrets.INTEGRATION_SUPABASE_PROJECT_ID }}
+          PRODUCTION_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          test -n "$PROJECT_ID" && test -n "$PRODUCTION_PROJECT_ID"
+          test "$PROJECT_ID" != "$PRODUCTION_PROJECT_ID"
+          test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD"
+          supabase link --project-ref "$PROJECT_ID"
+          supabase db push --yes
+
+  migrate-production:
+    name: Migrate Production
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_production
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.122.0
+      - name: Apply explicitly requested production migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          test -n "$PROJECT_ID" && test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD"
+          supabase link --project-ref "$PROJECT_ID"
+          supabase db push --yes

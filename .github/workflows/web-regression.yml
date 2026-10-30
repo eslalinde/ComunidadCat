@@ -1,13 +1,17 @@
 name: Web Regression
 
 on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: web-regression-${{ github.ref }}
+  group: web-regression-${{ github.event_name }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

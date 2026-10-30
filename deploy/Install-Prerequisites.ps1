@@ -317,11 +317,11 @@ Write-Host "  2. Abrir Docker Desktop y aceptar los terminos de servicio" -Foreg
 Write-Host "  3. Configurar Docker Desktop:" -ForegroundColor White
 Write-Host "     - General > 'Start Docker Desktop when you sign in' = ON" -ForegroundColor White
 Write-Host "     - Software Updates > 'Automatically check for updates' = OFF" -ForegroundColor White
-Write-Host "  4. Configurar rclone para Azure Blob Storage:" -ForegroundColor White
+Write-Host "  4. Opcional: configurar rclone para su proveedor de backups:" -ForegroundColor White
 Write-Host "     $rclonePath config" -ForegroundColor Yellow
-Write-Host "     - Remote name: azure-backup" -ForegroundColor White
-Write-Host "     - Type: azureblob" -ForegroundColor White
-Write-Host "     - SAS URL: (obtener desde Azure Portal)" -ForegroundColor White
+Write-Host "     - Remote name: backup" -ForegroundColor White
+Write-Host "     - Type: el proveedor de almacenamiento elegido" -ForegroundColor White
+Write-Host "     - El backup es local por defecto; use -RcloneRemote backup para subir una copia." -ForegroundColor White
 Write-Host "  5. Ejecutar Register-ScheduledTasks.ps1 como Administrador:" -ForegroundColor White
 Write-Host "     $InstallDir\scripts\Register-ScheduledTasks.ps1" -ForegroundColor Yellow
 Write-Host "  6. Probar el arranque:" -ForegroundColor White
