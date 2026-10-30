@@ -72,7 +72,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "4.1.12",
-    "electron": "45.0.0",
+    "electron": "45.1.0",
     "electron-builder": "^26.18.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.4.3",
