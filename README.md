@@ -91,9 +91,10 @@ All remote jobs validate credentials, link using the environment's database
 password, list migration history and run `db push --dry-run --skip-vault` before
 any explicit apply. CLI 2.122.0 and Node.js 22 are pinned; operations for the same
 environment are serialized without cancelling an active migration. Credential
-tests run without secrets on every matching PR. Format validation does not verify
-remote access, passwords, or that a syntactically valid project ID is the intended
-destination.
+tests run without secrets on every matching PR. Each configured project ID must
+match the confirmed target: production `fkezcibdjgbqyraxnmha`, integration
+`azfhawxpdrgrhnpgcwxa`. Format/target validation does not verify remote access or
+passwords; migration history must be inspected independently for each new project.
 
 See [the token replacement and migration review guide](docs/supabase-deployment.md)
 for the pre-merge procedure and the four candidate migrations identified from CI.

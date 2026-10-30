@@ -11,7 +11,7 @@ const valid = {
 };
 function check(overrides) {
   const result = spawnSync(process.execPath, [script], {
-    env: { ...process.env, ...valid, ...overrides }, encoding: 'utf8',
+    env: { ...process.env, EXPECTED_SUPABASE_PROJECT_ID: valid.SUPABASE_PROJECT_ID, ...valid, ...overrides }, encoding: 'utf8',
   });
   assert.ifError(result.error);
   return { status: result.status, output: result.stdout + result.stderr };
@@ -22,6 +22,17 @@ test('accepts a classic token without printing credentials', () => {
 });
 test('accepts a scoped token without assuming a fixed token length', () => {
   assert.deepEqual(check({ SUPABASE_ACCESS_TOKEN: 'sbp_fc_synthetic_scoped_value' }), { status: 0, output: '' });
+});
+test('rejects a different valid project ref before connecting', () => {
+  const result = check({ SUPABASE_PROJECT_ID: 'tsrqponmlkjihgfedcba' });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /destino confirmado/);
+  assert.ok(!result.output.includes('tsrqponmlkjihgfedcba'));
+});
+test('rejects an invalid expected target instead of disabling the target guard', () => {
+  const result = check({ EXPECTED_SUPABASE_PROJECT_ID: '' });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /destino confirmado/);
 });
 for (const name of Object.keys(valid)) {
   for (const value of ['', ' \n ']) {

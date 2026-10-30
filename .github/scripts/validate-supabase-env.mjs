@@ -8,6 +8,11 @@ for (const name of required) {
 }
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const project = process.env.SUPABASE_PROJECT_ID;
+const expectedProject = process.env.EXPECTED_SUPABASE_PROJECT_ID;
+if (expectedProject !== undefined && (!/^[a-z]{20}$/.test(expectedProject) || project !== expectedProject)) {
+  console.error('::error::SUPABASE_PROJECT_ID no coincide con el destino confirmado para este entorno. Actualiza el secreto antes de continuar.');
+  invalid = true;
+}
 if (project?.trim() && !/^[a-z]{20}$/.test(project)) {
   console.error('::error::SUPABASE_PROJECT_ID debe ser el identificador del proyecto (20 letras minúsculas), no una URL ni el identificador de la organización.');
   invalid = true;

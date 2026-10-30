@@ -17,12 +17,24 @@ El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
 - La conexión MCP disponible solo muestra otro proyecto y deniega acceso a la
   organización facilitada, `qtdfmxydesepydsvbmak`. No se consultaron ni modificaron
   bases ajenas para inferir el estado de ComunidadCat.
-- El propietario confirmó `zdmwekololwtdluvsxbd` como **integración**. El archivo
-  `env.cloud.local` apunta a ese mismo proyecto: no asumir que representa producción.
-  Falta identificar producción y cotejar los secretos del workflow y del frontend.
-  No se modificó ningún destino. Los valores de GitHub Secrets no se pueden
-  recuperar mediante su API. El intento de listar migraciones del proyecto de
-  integración mediante MCP también fue denegado por falta de permisos.
+- El propietario reemplazó los destinos anteriores por estos proyectos:
+
+  | Entorno | URL vigente | Secreto del ID en GitHub |
+  | --- | --- | --- |
+  | Integración | `https://azfhawxpdrgrhnpgcwxa.supabase.co` | `INTEGRATION_SUPABASE_PROJECT_ID=azfhawxpdrgrhnpgcwxa` |
+  | Producción | `https://fkezcibdjgbqyraxnmha.supabase.co` | `SUPABASE_PROJECT_ID=fkezcibdjgbqyraxnmha` |
+
+  El workflow valida cada secreto contra el ID esperado antes de conectar,
+  rechazando destinos antiguos o intercambiados. No se han actualizado secretos.
+  `env.cloud.local` aún referencia el antiguo `zdmwekololwtdluvsxbd`: actualizar
+  URL y clave pública juntas, usando las del nuevo proyecto de producción.
+  No reutilizar la clave del proyecto anterior. Los valores de GitHub Secrets
+  no se pueden recuperar mediante su API.
+
+**Los cuatro candidatos históricos no acotan las pendientes de estos proyectos
+nuevos.** Es necesario leer el historial de cada nuevo destino. Si está vacío,
+podrían faltar las 38 migraciones del repositorio, no solo las cuatro últimas.
+No se asume que los despliegues exitosos del proyecto anterior se hayan trasladado.
 
 ## Migraciones candidatas y su impacto
 
@@ -66,9 +78,8 @@ que el SQL pueda ejecutarse correctamente con los datos de producción.
 
 ## Corregir el token sin compartirlo
 
-1. Entrar en Supabase con la cuenta que tiene acceso a los proyectos de ComunidadCat
-   dentro de la organización indicada. Abrir cada proyecto y confirmar cuál es
-   producción y cuál integración: el ID de organización no es un ID de proyecto.
+1. Entrar en Supabase con la cuenta que tiene acceso a ambos proyectos confirmados
+   en la tabla. El ID de organización no es un ID de proyecto.
 2. Ir a [Account → Access Tokens](https://supabase.com/dashboard/account/tokens)
    y generar un Personal Access Token para GitHub Actions. Comienza por `sbp_`
    (los tokens con alcance pueden comenzar por `sbp_fc`). No usar claves
@@ -85,7 +96,12 @@ que el SQL pueda ejecutarse correctamente con los datos de producción.
 5. Confirmar `SUPABASE_PROJECT_ID` y `SUPABASE_DB_PASSWORD` para producción, y
    `INTEGRATION_SUPABASE_PROJECT_ID` y `INTEGRATION_SUPABASE_DB_PASSWORD` para integración.
    Cada ID debe coincidir con el proyecto esperado y cada contraseña con su base.
-   Confirmar también que URL/clave del frontend cloud correspondan a producción.
+   Actualizar también `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_DEFAULT_KEY` del build
+   cloud con URL/clave de producción; para integración, sus equivalentes
+   `INTEGRATION_SUPABASE_URL` e `INTEGRATION_SUPABASE_PUBLISHABLE_DEFAULT_KEY`.
+   Revisar las variables `NEXT_PUBLIC_SUPABASE_URL` y
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` del hosting web y recompilar:
+   el export estático incorpora estos valores durante el build.
 6. No revocar otros tokens de automatizaciones sin identificar sus consumidores.
    Si se reemplaza un PAT anterior, retirarlo cuando el nuevo pase la comprobación
    y se haya confirmado que ningún otro consumidor lo necesita.
@@ -122,6 +138,8 @@ secretos de Vault ni seed. No usa `--include-all` ni resetea bases.
 
 Comprobación local del validador: `node --test .github/scripts/validate-supabase-env.test.mjs`.
 Las pruebas usan valores sintéticos y no consultan Supabase ni necesitan secretos.
-Las 19 pruebas también pasaron en [Actions](https://github.com/eslalinde/ComunidadCat/actions/runs/41127656842).
+Las 21 pruebas actuales pasan localmente, incluidas las de rechazo de destinos
+incorrectos. Las 19 pruebas previas a este control también pasaron en
+[Actions](https://github.com/eslalinde/ComunidadCat/actions/runs/41127656842).
 Los jobs remotos quedaron omitidos porque el PR no tiene etiquetas de migración;
 ese resultado no valida las credenciales ni el estado de las bases cloud.
