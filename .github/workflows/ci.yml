@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "caminomanager/**"
+      - "supabase/**"
       - ".github/workflows/ci.yml"
       - "package.json"
       - "package-lock.json"
@@ -65,6 +66,35 @@ jobs:
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
       - run: npm run test:coverage
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vitest-coverage
+          path: caminomanager/coverage/
+          retention-days: 14
+
+  integration:
+    name: Database Integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci --prefix caminomanager
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Start isolated Supabase and apply migrations
+        run: supabase start
+      - name: Run transactional RLS and RPC contracts
+        run: npm run test:integration
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
 
   build:
     name: Build

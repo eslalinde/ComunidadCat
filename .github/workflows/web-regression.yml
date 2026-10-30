@@ -1,0 +1,58 @@
+name: Web Regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Chromium desktop and mobile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci --prefix caminomanager
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Start disposable backend with migrations and seed data
+        run: supabase start
+      - name: Configure local application credentials
+        shell: bash
+        run: |
+          supabase status -o json > "$RUNNER_TEMP/supabase-status.json"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const status = JSON.parse(fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'supabase-status.json'), 'utf8'));
+          if (!status.API_URL || !status.ANON_KEY) throw new Error('Missing local Supabase credentials');
+          if (new URL(status.API_URL).hostname !== '127.0.0.1') throw new Error('Expected local Supabase');
+          fs.appendFileSync(process.env.GITHUB_ENV, `NEXT_PUBLIC_SUPABASE_URL=${status.API_URL}\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${status.ANON_KEY}\n`);
+          NODE
+      - run: npm run test:integration
+      - run: npm run seed:e2e --prefix caminomanager
+      - run: npx playwright install --with-deps chromium
+        working-directory: caminomanager
+      - run: npm run test:e2e --prefix caminomanager
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: web-regression
+          path: |
+            caminomanager/e2e/playwright-report/
+            caminomanager/e2e/test-results/
+          retention-days: 14
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup

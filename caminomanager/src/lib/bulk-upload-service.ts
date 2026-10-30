@@ -250,16 +250,21 @@ export async function executeBulkUpload(
   }
 
   // Update actual_brothers count
-  const { data: brotherCount } = await supabase
+  const { count: brotherCount, error: countError } = await supabase
     .from('brothers')
     .select('id', { count: 'exact', head: true })
     .eq('community_id', communityId);
 
-  if (brotherCount !== null) {
-    await supabase
+  if (countError) {
+    errors.push(`Error consultando total de hermanos: ${countError.message}`);
+  } else if (brotherCount !== null) {
+    const { error: updateCountError } = await supabase
       .from('communities')
-      .update({ actual_brothers: brothersLinked })
+      .update({ actual_brothers: brotherCount })
       .eq('id', communityId);
+    if (updateCountError) {
+      errors.push(`Error actualizando total de hermanos: ${updateCountError.message}`);
+    }
   }
 
   onProgress?.({
