@@ -70,6 +70,9 @@ Las instrucciones para **desplegar las migraciones de la base de datos a Supabas
 
 ## Getting Started
 
+La estrategia de pruebas, comandos y matriz de automatización están en
+[docs/testing.md](../docs/testing.md).
+
 First, run the development server:
 
 ```bash

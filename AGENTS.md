@@ -151,10 +151,12 @@ npm run electron:build    # Production Electron installer (Windows)
 
 ## Testing
 
-Currently no formal test framework. When adding tests:
-- Use **Vitest** as the test runner (compatible with Next.js + Turbopack).
-- Use **React Testing Library** for component tests.
-- Place tests next to source files as `*.test.ts(x)` or in `__tests__/` directories.
+- Use **Vitest** and **React Testing Library**; import production code rather than copying its logic into tests.
+- Place tests next to source files as `*.test.ts(x)` or in `__tests__/` directories. Use real QueryClient instances and mock only external boundaries for hook tests.
+- Run `npm run test:coverage` from the root. Keep the broad application baseline and the stronger critical-module thresholds in `caminomanager/vitest.config.ts`.
+- Database integration contracts live in `supabase/tests/database/*.test.sql`; run `npm run test:integration` against local Supabase. Use transactional fixtures and ROLLBACK; never target production.
+- Playwright smoke: `npm run test:e2e:smoke`; seeded web regression: `npm run test:e2e:regression`. Electron uses `npm run test:electron` from `caminomanager`.
+- See `docs/testing.md` for prerequisites, coverage scope, the automation matrix, and known gaps.
 
 ## Git Workflow
 

@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - "caminomanager/**"
+      - "supabase/**"
+      - ".github/workflows/ci.yml"
+      - "package.json"
+      - "package-lock.json"
 
 concurrency:
   group: ci-${{ github.head_ref }}
@@ -16,7 +20,7 @@ permissions:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: caminomanager
@@ -24,7 +28,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
@@ -32,7 +36,7 @@ jobs:
 
   type-check:
     name: Type Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: caminomanager
@@ -40,7 +44,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
@@ -49,7 +53,7 @@ jobs:
   test:
     name: Test
     needs: [lint, type-check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: caminomanager
@@ -57,16 +61,45 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
       - run: npm run test:coverage
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vitest-coverage
+          path: caminomanager/coverage/
+          retention-days: 14
+
+  integration:
+    name: Database Integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci --prefix caminomanager
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Start isolated Supabase and apply migrations
+        run: supabase start
+      - name: Run transactional RLS and RPC contracts
+        run: npm run test:integration
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
 
   build:
     name: Build
     needs: [lint, type-check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: caminomanager
@@ -74,7 +107,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
@@ -83,9 +116,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-key
 
-  dependency-audit:
-    name: Dependency Audit
-    runs-on: ubuntu-latest
+  e2e-smoke:
+    name: Playwright Smoke
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: caminomanager
@@ -93,8 +126,37 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: caminomanager/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:smoke
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-key
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-smoke
+          path: |
+            caminomanager/e2e/playwright-report/
+            caminomanager/e2e/test-results/
+          retention-days: 7
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: caminomanager
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
           cache: npm
           cache-dependency-path: caminomanager/package-lock.json
       - run: npm ci
       - run: npm audit --audit-level=critical
+      - run: npm audit --prefix .. --package-lock-only --audit-level=critical

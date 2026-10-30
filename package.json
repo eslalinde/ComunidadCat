@@ -1,5 +1,10 @@
 {
   "scripts": {
+    "test": "npm --prefix caminomanager test",
+    "test:coverage": "npm --prefix caminomanager run test:coverage",
+    "test:integration": "npm --prefix caminomanager run test:integration",
+    "test:e2e:smoke": "npm --prefix caminomanager run test:e2e:smoke",
+    "test:e2e:regression": "npm --prefix caminomanager run test:e2e:regression",
     "dev:full": "concurrently \"cd supabase && npx supabase start\" \"cd caminomanager && npm run dev\" \"wait-on http://localhost:54321 http://localhost:3000 && start chrome http://localhost:54323 http://localhost:3000\"",
     "dev:chrome": "start chrome http://localhost:54323 http://localhost:3000",
     "dev:supabase": "cd supabase && npx supabase start",
@@ -8,8 +13,11 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "shadcn": "^3.8.5",
-    "supabase": "^2.109.1",
+    "shadcn": "4.23.0",
+    "supabase": "2.122.0",
     "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
