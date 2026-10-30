@@ -16,11 +16,13 @@ Proyecto: `comunidad-cat`, repositorio `eslalinde/ComunidadCat`.
 - Root Directory: `caminomanager` (el vercel.json está dentro de esta carpeta).
 - Production Branch: `main`, incluso cuando la rama predeterminada de GitHub sea `dev`.
 - Preview deployments habilitados, integración Git conectada.
+- Ignored Build Step: `if [ "$VERCEL_ENV" = "production" ]; then exit 0; else exit 1; fi`. Cancela builds productivos automáticos incluso antes de que vercel.json llegue a main.
+- Auto-assign Custom Production Domains desactivado: toda publicación productiva requiere promoción manual.
 - Variables Production: credenciales públicas del Supabase productivo y URL pública de producción.
 - Variables Preview: credenciales públicas del Supabase de integración. No reutilizar las productivas.
 - Mantener la protección de previews. Configurar los redirects de Auth para las URLs de cada ambiente.
 
-La configuración versionada solo entra en vigor cuando llega a las ramas remotas. Debe estar en `main` antes del siguiente merge de entrega; mientras tanto el proyecto puede conservar su comportamiento automático anterior.
+La configuración versionada entra en vigor al llegar a cada rama remota. El Ignored Build Step del proyecto bloquea builds productivos mientras se incorpora vercel.json a main.
 
 Referencia: [configuración Git de Vercel](https://vercel.com/docs/project-configuration/git-configuration).
 
@@ -29,7 +31,10 @@ Referencia: [configuración Git de Vercel](https://vercel.com/docs/project-confi
 1. Completar CI y revisión del PR `dev → main`, y hacer merge.
 2. Si hay migraciones, ejecutar `Supabase Migrations` desde Actions, seleccionando `main` y marcando `confirm_production`. Este paso modifica la base de datos y es independiente de Vercel; usar migraciones compatibles con la versión que sigue publicada.
 3. En Vercel, abrir el proyecto → Deployments → Create Deployment. Seleccionar `main` (o su SHA revisado) y el entorno Production.
-4. Verificar el commit, las variables del entorno y el resultado del despliegue. No promover el preview de `dev` como sustituto de la entrega de `main`.
+4. Si Vercel cancela el build por Ignored Build Step, usar Redeploy y desmarcar **Use project's Ignore Build Step** para esa ejecución manual. Verificar el SHA de main y el entorno Production.
+5. Revisar el build productivo y usar **Promote to Production** manualmente para asignar los dominios. No promover el preview de dev como sustituto de la entrega de main.
+
+El override manual está documentado en [Ignored Build Step](https://vercel.com/docs/project-configuration/project-settings#ignored-build-step).
 
 Referencia: [crear despliegues desde Git](https://vercel.com/docs/git).
 
@@ -47,7 +52,7 @@ Los jobs usan los environments `integration` y `production`. Restringir producti
 
 ## Protecciones y validación
 
-Ambas ramas deben requerir PR, impedir borrados y force pushes y conservar CodeQL. Tras publicar estos workflows, configurar como requeridos: `Release Source`, `Lint`, `Type Check`, `Test`, `Build`, `Database Integration`, `Playwright Smoke`, `Dependency Audit` y `Chromium desktop and mobile`.
+Ambas ramas deben requerir PR, impedir borrados y force pushes y conservar CodeQL. Checks requeridos configurados: `Release Source`, `Lint`, `Type Check`, `Test`, `Build`, `Database Integration`, `Playwright Smoke`, `Dependency Audit` y `Chromium desktop and mobile`.
 
 CI no tiene filtros de paths: los checks requeridos se ejecutan también para PR de documentación. Los PR externos no reciben secretos de despliegue. Dependabot apunta a `dev`. Electron mantiene su entrega independiente al publicar un release de GitHub.
 
