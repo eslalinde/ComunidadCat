@@ -42,11 +42,17 @@ Referencia: [crear despliegues desde Git](https://vercel.com/docs/git).
 
 `Supabase Migrations` escucha la finalización exitosa de CI para pushes a `dev` y aplica exactamente ese SHA al backend de integración. No aplica SQL de PR contra bases compartidas. La etiqueta `check-migrations` permite consultar el historial y realizar un dry-run en ambos entornos usando secretos de repositorio; los jobs de escritura conservan los environments protegidos. La concurrencia evita dos ejecuciones simultáneas sobre el mismo ambiente.
 
-Secretos de GitHub existentes:
+Secretos de GitHub requeridos:
 
 - Integración: `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD`.
 - Producción: `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`.
-- Autenticación CLI: `SUPABASE_ACCESS_TOKEN`.
+- Token de integración: `INTEGRATION_SUPABASE_ACCESS_TOKEN`.
+- Token de producción: `PRODUCTION_SUPABASE_ACCESS_TOKEN`.
+
+Usar un PAT distinto por proyecto. El workflow entrega el seleccionado al CLI
+como `SUPABASE_ACCESS_TOKEN`, sin recurrir al antiguo secreto compartido. Los
+checks de PR usan estos secretos de repositorio; revisar también posibles valores
+con el mismo nombre en los environments protegidos, que tienen precedencia.
 
 Los jobs usan los environments `integration` y `production`. Restringir production a `main` y configurar un revisor para las migraciones productivas. No se ejecutan migraciones productivas al hacer merge. El workflow comprueba que cada ID coincida con su destino confirmado.
 

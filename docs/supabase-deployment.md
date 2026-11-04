@@ -78,15 +78,28 @@ reconciliar su procedencia. No usar `migration repair`, `--include-all` ni un re
 remoto para forzar un resultado verde. El dry-run lista pendientes; no demuestra
 que el SQL pueda ejecutarse correctamente con los datos de producción.
 
-## Corregir el token sin compartirlo
+## Configurar un token por entorno
 
-1. Entrar en Supabase con la cuenta que tiene acceso a ambos proyectos confirmados
-   en la tabla. El ID de organización no es un ID de proyecto.
+| Secreto de repositorio | Proyecto autorizado |
+| --- | --- |
+| `INTEGRATION_SUPABASE_ACCESS_TOKEN` | `azfhawxpdrgrhnpgcwxa` |
+| `PRODUCTION_SUPABASE_ACCESS_TOKEN` | `fkezcibdjgbqyraxnmha` |
+
+El despliegue y el check de cada entorno usan exclusivamente su token. Internamente
+el CLI sigue recibiendo la variable estándar `SUPABASE_ACCESS_TOKEN`; eso no implica
+compartir el secreto. No existe fallback al secreto anterior: si falta uno de los
+nuevos, el validador falla antes de conectar. Si hay secretos del mismo nombre en
+GitHub Environments, alinear sus valores: los jobs protegidos usan esos overrides
+y los checks de PR usan secretos de repositorio.
+
+1. Entrar en Supabase con una cuenta que tenga acceso al proyecto correspondiente
+   a cada token. Pueden pertenecer a cuentas distintas si administran entornos distintos.
+   El ID de organización no es un ID de proyecto.
 2. Ir a [Account → Access Tokens](https://supabase.com/dashboard/account/tokens)
-   y generar un Personal Access Token para GitHub Actions. Comienza por `sbp_`
+   y generar dos Personal Access Tokens distintos para GitHub Actions. Comienzan por `sbp_`
    (los tokens con alcance pueden comenzar por `sbp_fc`). No usar claves
    `sb_publishable_`, `sb_secret_` ni el JWT `anon`/`service_role`.
-3. Si la cuenta permite tokens con alcance, seleccionar ambos proyectos y las
+3. Si la cuenta permite tokens con alcance, seleccionar solo el proyecto de cada token y las
    lecturas que requiere `supabase link`: **Project Settings**, **API Keys** y
    **API Key Secrets**. La contraseña de base de datos sigue siendo necesaria;
    los permisos del token no la reemplazan. El CLI documenta permisos adicionales
@@ -96,8 +109,8 @@ que el SQL pueda ejecutarse correctamente con los datos de producción.
    cuenta que lo creó tenga acceso a ese proyecto; un token no amplía los permisos
    de su propietario. La contraseña de base no corrige este rechazo de la API.
 4. En [GitHub → Settings → Secrets and variables → Actions](https://github.com/eslalinde/ComunidadCat/settings/secrets/actions),
-   editar el secreto de repositorio `SUPABASE_ACCESS_TOKEN` y pegar únicamente
-   el token, sin comillas, espacios, saltos de línea ni prefijo `Bearer`.
+   crear o actualizar los dos secretos de la tabla y pegar en cada uno únicamente
+   su token, sin comillas, espacios, saltos de línea ni prefijo `Bearer`.
    No guardarlo en archivos del repo, comentarios, logs o conversaciones.
 5. Confirmar `SUPABASE_PROJECT_ID` y `SUPABASE_DB_PASSWORD` para producción, y
    `INTEGRATION_SUPABASE_PROJECT_ID` y `INTEGRATION_SUPABASE_DB_PASSWORD` para integración.
@@ -128,7 +141,7 @@ Referencias: [Personal Access Tokens](https://supabase.com/docs/guides/platform/
 | Manual desde main, `confirm_production` marcado | Producción | Sí, con aprobación del environment cuando corresponda |
 | Push/merge a main | Ninguno | No |
 
-Después de corregir el alcance del token, quitar y volver a añadir
+Después de configurar los dos tokens, quitar y volver a añadir
 `check-migrations` al PR #172. Revisar ambos jobs de inspección. Estos usan secretos
 de repositorio para lecturas, sin desplegar ni consumir aprobaciones de los jobs
 que escriben. No se modifican las protecciones de `integration`/`production`.
@@ -147,4 +160,6 @@ Comprobación local del validador: `node --test .github/scripts/validate-supabas
 Las pruebas usan valores sintéticos y no consultan Supabase ni necesitan secretos.
 Las 21 pruebas del validador pasaron localmente y en la comprobación remota
 [41755847018](https://github.com/eslalinde/ComunidadCat/actions/runs/41755847018).
-El resultado de producción continúa fallando por autorización, no por tests.
+Esos resultados remotos corresponden al token compartido anterior. Tras configurar
+los tokens separados, repetir ambos checks; no trasladar el éxito previo de
+integración a una credencial nueva ni dar por resuelto el acceso a producción.

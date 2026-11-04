@@ -72,9 +72,16 @@ The migration workflow requires these GitHub Actions secrets:
 
 - Production: `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`.
 - Integration: `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD`.
-- Both environments: `SUPABASE_ACCESS_TOKEN`, a personal access token with access
-  to the corresponding projects. The CLI expects a token starting with `sbp_`;
-  project publishable or secret API keys do not replace this token.
+- Production token: `PRODUCTION_SUPABASE_ACCESS_TOKEN`.
+- Integration token: `INTEGRATION_SUPABASE_ACCESS_TOKEN`.
+
+Create separate personal access tokens scoped to their corresponding project.
+Both write jobs and read-only checks select only that environment's token and map
+it to the CLI variable `SUPABASE_ACCESS_TOKEN`. There is no fallback to the old
+shared GitHub secret of that name. Missing environment tokens fail validation.
+The CLI expects a token starting with `sbp_`; project publishable or secret API
+keys do not replace it. Configure the two named repository secrets for preflight;
+if a protected GitHub environment overrides either name, keep its value aligned.
 
 Integration migrations run only after a successful push CI run on `dev`, using
 that exact commit. Production migrations require a manual run from `main` and
