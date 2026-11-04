@@ -22,6 +22,10 @@ runs:
     - name: Compare local and remote migration history
       shell: bash
       run: supabase migration list --linked
+    - name: Inspect schema metadata and counts without modifying the database
+      if: inputs.apply != 'true'
+      shell: bash
+      run: node .github/scripts/inspect-supabase-schema.mjs
     - name: Preview pending migrations without applying SQL or Vault changes
       shell: bash
       run: supabase db push --linked --dry-run --skip-vault
