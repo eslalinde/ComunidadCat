@@ -5,16 +5,22 @@ El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
 
 ## Lo comprobado y lo que falta confirmar
 
-- [Comprobación remota del 3 de noviembre](https://github.com/eslalinde/ComunidadCat/actions/runs/41755847018):
+- [Inspección remota del 3 de noviembre, 21:18 Bogotá](https://github.com/eslalinde/ComunidadCat/actions/runs/41759849441):
   **integración tiene las 38 versiones del repositorio registradas**, sin versiones
   extra ni pendientes. El dry-run respondió `Remote database is up to date`.
   Pasaron validación de ID/token, enlace, autenticación de base y listado.
   El paso de aplicación quedó omitido; esta revisión no aplicó SQL.
-- **Producción** pasó validación de ID y formato de credenciales, pero falló en
-  `supabase link`: `Your account does not have the necessary privileges to access
-  this endpoint`. No se pudo comprobar su contraseña de base ni su historial.
-  Revisar el alcance del PAT sobre el proyecto productivo y los permisos de su
-  propietario antes de reemplazar el secreto. El error ya no es de formato.
+- **Producción está sin inicializar para ComunidadCat**. No hay tablas, vistas,
+  secuencias, funciones, enums/dominios, políticas ni triggers de la aplicación en
+  `public`; tampoco hay esquemas adicionales de la aplicación ni
+  `supabase_migrations`. Los objetos encontrados pertenecen a los servicios de
+  Supabase. Los conteos de `auth.users`, `storage.buckets` y `storage.objects`
+  son cero. No se detectó un esquema de ComunidadCat que reconciliar.
+- Ambos PAT separados, con **Connection Pooling: Read**, permiten enlazar y
+  autenticar la conexión PostgreSQL. Producción lista **las 38 migraciones como
+  pendientes**, desde `20250516212944_init-schema.sql`; el dry-run no las ejecuta.
+  La inspección mostró `transaction_read_only = on` y terminó en `ROLLBACK`.
+  El paso de aplicación quedó omitido en ambos entornos.
 - La conexión MCP sigue mostrando solo otro proyecto; el resultado de integración
   se obtuvo desde GitHub Actions con los secretos actualizados por el propietario.
 
@@ -34,9 +40,10 @@ El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
   no se pueden recuperar mediante su API.
 
 Las cuatro migraciones identificadas anteriormente como candidatas históricas
-ya constan en integración. No se puede extrapolar ese resultado a producción:
-sus pendientes siguen sin confirmar. El historial y el dry-run no demuestran
-por sí solos ausencia de cambios manuales de esquema ni verifican el frontend.
+ya constan en integración. En producción están pendientes junto con las otras 34.
+Corresponde inicializar la base mediante el flujo manual de producción; no usar
+`migration repair` para marcar como aplicadas migraciones que todavía no se han
+ejecutado. Esta inspección no aplicó SQL de las migraciones ni verificó el frontend.
 
 ## Últimas cuatro migraciones revisadas y su impacto
 
@@ -134,7 +141,7 @@ Referencias: [Personal Access Tokens](https://supabase.com/docs/guides/platform/
 | Disparador | Entorno | ¿Aplica SQL? |
 | --- | --- | --- |
 | PR a dev/main sin `check-migrations` | Ninguno; solo tests del validador | No |
-| PR con `check-migrations` | Producción e integración | No; listado y dry-run |
+| PR con `check-migrations` | Producción e integración | No; historial, inventario y dry-run |
 | PR con `run-migrations` | Ninguno por esa etiqueta | No; ya no se admite escritura desde PR |
 | CI exitoso de un push a dev del propio repo | Integración, SHA exacto validado | Sí, después del dry-run y respetando el environment |
 | CI fallido, de un PR, de otra rama o de otro repo | Ninguno | No |
@@ -150,8 +157,14 @@ que escriben. No se modifican las protecciones de `integration`/`production`.
 El PR apunta a `dev`. Su merge inicia CI y, si pasa, el workflow vigente puede
 aplicar pendientes en integración. En la comprobación actual no hay pendientes,
 pero debe revisarse cualquier SQL que llegue entretanto a dev. Producción sigue
-requiriendo promoción de dev a main y ejecución manual explícita. Mantener #172
-como borrador hasta comprobar el acceso remoto a producción.
+requiriendo promoción de dev a main y ejecución manual explícita. El acceso a
+producción quedó verificado; su inicialización es una operación posterior al PR.
+
+Las comprobaciones sin aplicación incluyen un inventario con `psql`, disponible
+en el runner Ubuntu, usando el pooler de sesión descubierto por `supabase link`.
+Se valida que corresponda al proyecto esperado. La contraseña se pasa por entorno;
+la inspección usa una transacción de solo lectura, timeout y `ROLLBACK`, y muestra
+metadatos y conteos, nunca registros de usuarios ni cuerpos de funciones.
 
 Las operaciones por entorno se serializan y no se cancelan durante una migración.
 Se fija CLI 2.122.0 y se usa `--skip-vault`; este workflow despliega SQL, no sincroniza
@@ -160,7 +173,6 @@ secretos de Vault ni seed. No usa `--include-all` ni resetea bases.
 Comprobación local del validador: `node --test .github/scripts/validate-supabase-env.test.mjs`.
 Las pruebas usan valores sintéticos y no consultan Supabase ni necesitan secretos.
 Las 21 pruebas del validador pasaron localmente y en la comprobación remota
-[41755847018](https://github.com/eslalinde/ComunidadCat/actions/runs/41755847018).
-Esos resultados remotos corresponden al token compartido anterior. Tras configurar
-los tokens separados, repetir ambos checks; no trasladar el éxito previo de
-integración a una credencial nueva ni dar por resuelto el acceso a producción.
+[41759849441](https://github.com/eslalinde/ComunidadCat/actions/runs/41759849441),
+que también completó la inspección y el dry-run de ambos proyectos con sus PAT
+separados. Repetir la revisión si cambia el esquema o llegan nuevas migraciones.
