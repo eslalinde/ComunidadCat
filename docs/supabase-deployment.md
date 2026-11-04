@@ -1,22 +1,23 @@
 # Revisión del despliegue de Supabase
 
-Estado revisado el 30 de octubre de 2026, sobre `main` con el PR #231 incluido.
+Estado revisado el 3 de noviembre de 2026 (Bogotá), sobre `dev` con #231 y #232 incluidos.
 El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
 
 ## Lo comprobado y lo que falta confirmar
 
-- Último despliegue de producción exitoso disponible en Actions:
-  [13 de marzo, 22:15 Bogotá](https://github.com/eslalinde/ComunidadCat/actions/runs/23079194733),
-  commit `a851311894e7f59adbb30f044f74e28be38dd6cc`.
-- [El despliegue del 27 de octubre](https://github.com/eslalinde/ComunidadCat/actions/runs/40515870768)
-  falló al enlazar el proyecto: `Invalid access token format`. No llegó al paso
-  que aplica migraciones. El secreto del token figura actualizado el 7 de agosto.
-- Hay cuatro archivos de migración adicionales respecto del último despliegue
-  exitoso. Son **candidatas pendientes**, no un inventario remoto confirmado:
-  pudieron aplicarse manualmente o mediante otro sistema.
-- La conexión MCP disponible solo muestra otro proyecto y deniega acceso a la
-  organización facilitada, `qtdfmxydesepydsvbmak`. No se consultaron ni modificaron
-  bases ajenas para inferir el estado de ComunidadCat.
+- [Comprobación remota del 3 de noviembre](https://github.com/eslalinde/ComunidadCat/actions/runs/41755847018):
+  **integración tiene las 38 versiones del repositorio registradas**, sin versiones
+  extra ni pendientes. El dry-run respondió `Remote database is up to date`.
+  Pasaron validación de ID/token, enlace, autenticación de base y listado.
+  El paso de aplicación quedó omitido; esta revisión no aplicó SQL.
+- **Producción** pasó validación de ID y formato de credenciales, pero falló en
+  `supabase link`: `Your account does not have the necessary privileges to access
+  this endpoint`. No se pudo comprobar su contraseña de base ni su historial.
+  Revisar el alcance del PAT sobre el proyecto productivo y los permisos de su
+  propietario antes de reemplazar el secreto. El error ya no es de formato.
+- La conexión MCP sigue mostrando solo otro proyecto; el resultado de integración
+  se obtuvo desde GitHub Actions con los secretos actualizados por el propietario.
+
 - El propietario reemplazó los destinos anteriores por estos proyectos:
 
   | Entorno | URL vigente | Secreto del ID en GitHub |
@@ -25,18 +26,19 @@ El PR #172 no incorpora SQL nuevo: completa el workflow y su diagnóstico.
   | Producción | `https://fkezcibdjgbqyraxnmha.supabase.co` | `SUPABASE_PROJECT_ID=fkezcibdjgbqyraxnmha` |
 
   El workflow valida cada secreto contra el ID esperado antes de conectar,
-  rechazando destinos antiguos o intercambiados. No se han actualizado secretos.
+  rechazando destinos antiguos o intercambiados. Los IDs configurados pasaron
+  esa comprobación en ambos entornos; el agente no modificó secretos.
   `env.cloud.local` aún referencia el antiguo `zdmwekololwtdluvsxbd`: actualizar
   URL y clave pública juntas, usando las del nuevo proyecto de producción.
   No reutilizar la clave del proyecto anterior. Los valores de GitHub Secrets
   no se pueden recuperar mediante su API.
 
-**Los cuatro candidatos históricos no acotan las pendientes de estos proyectos
-nuevos.** Es necesario leer el historial de cada nuevo destino. Si está vacío,
-podrían faltar las 38 migraciones del repositorio, no solo las cuatro últimas.
-No se asume que los despliegues exitosos del proyecto anterior se hayan trasladado.
+Las cuatro migraciones identificadas anteriormente como candidatas históricas
+ya constan en integración. No se puede extrapolar ese resultado a producción:
+sus pendientes siguen sin confirmar. El historial y el dry-run no demuestran
+por sí solos ausencia de cambios manuales de esquema ni verifican el frontend.
 
-## Migraciones candidatas y su impacto
+## Últimas cuatro migraciones revisadas y su impacto
 
 | Archivo en `supabase/migrations/` | Cambio | Qué verificar antes/después de aplicar |
 | --- | --- | --- |
@@ -113,24 +115,25 @@ Referencias: [Personal Access Tokens](https://supabase.com/docs/guides/platform/
 
 | Disparador | Entorno | ¿Aplica SQL? |
 | --- | --- | --- |
-| PR sin etiquetas | Ninguno; solo tests del validador | No |
+| PR a dev/main sin `check-migrations` | Ninguno; solo tests del validador | No |
 | PR con `check-migrations` | Producción e integración | No; listado y dry-run |
-| PR con `run-migrations`, sin `check-migrations` | Integración | Sí, después del dry-run |
-| Ambas etiquetas | Producción e integración | No; prevalece la comprobación |
-| Manual desde `main`, `apply` desmarcado (predeterminado) | Entorno seleccionado | No |
-| Manual desde `main`, `apply` marcado | Entorno seleccionado | Sí |
-| Push a `main` que cambia archivos SQL de migración | Producción | Sí |
-| Merge de #172, que solo cambia infraestructura/docs | Ninguno | No |
+| PR con `run-migrations` | Ninguno por esa etiqueta | No; ya no se admite escritura desde PR |
+| CI exitoso de un push a dev del propio repo | Integración, SHA exacto validado | Sí, después del dry-run y respetando el environment |
+| CI fallido, de un PR, de otra rama o de otro repo | Ninguno | No |
+| Manual desde main, `confirm_production` desmarcado | Producción | No; también respeta las protecciones del environment |
+| Manual desde main, `confirm_production` marcado | Producción | Sí, con aprobación del environment cuando corresponda |
+| Push/merge a main | Ninguno | No |
 
-Después de actualizar el secreto, añadir `check-migrations` al PR #172. Si ya
-está presente, quitarla y añadirla de nuevo. Revisar ambos jobs: validación,
-enlace, historial y dry-run deben pasar. No añadir `run-migrations` como prueba
-de credenciales: esa etiqueta autoriza escrituras en integración.
+Después de corregir el alcance del token, quitar y volver a añadir
+`check-migrations` al PR #172. Revisar ambos jobs de inspección. Estos usan secretos
+de repositorio para lecturas, sin desplegar ni consumir aprobaciones de los jobs
+que escriben. No se modifican las protecciones de `integration`/`production`.
 
-Antes de desplegar, confirmar el listado remoto, revisar el impacto de los grants
-y probar la aplicación en integración. Mantener #172 como borrador hasta completar
-la comprobación remota. Tras el merge, la ejecución manual desde `main` permite
-aplicar las pendientes al entorno elegido cuando se autorice el despliegue.
+El PR apunta a `dev`. Su merge inicia CI y, si pasa, el workflow vigente puede
+aplicar pendientes en integración. En la comprobación actual no hay pendientes,
+pero debe revisarse cualquier SQL que llegue entretanto a dev. Producción sigue
+requiriendo promoción de dev a main y ejecución manual explícita. Mantener #172
+como borrador hasta comprobar el acceso remoto a producción.
 
 Las operaciones por entorno se serializan y no se cancelan durante una migración.
 Se fija CLI 2.122.0 y se usa `--skip-vault`; este workflow despliega SQL, no sincroniza
@@ -138,8 +141,6 @@ secretos de Vault ni seed. No usa `--include-all` ni resetea bases.
 
 Comprobación local del validador: `node --test .github/scripts/validate-supabase-env.test.mjs`.
 Las pruebas usan valores sintéticos y no consultan Supabase ni necesitan secretos.
-Las 21 pruebas actuales pasan localmente, incluidas las de rechazo de destinos
-incorrectos. Las 19 pruebas previas a este control también pasaron en
-[Actions](https://github.com/eslalinde/ComunidadCat/actions/runs/41127656842).
-Los jobs remotos quedaron omitidos porque el PR no tiene etiquetas de migración;
-ese resultado no valida las credenciales ni el estado de las bases cloud.
+Las 21 pruebas del validador pasaron localmente y en la comprobación remota
+[41755847018](https://github.com/eslalinde/ComunidadCat/actions/runs/41755847018).
+El resultado de producción continúa fallando por autorización, no por tests.

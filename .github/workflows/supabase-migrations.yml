@@ -1,27 +1,20 @@
 name: Supabase Migrations
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
   workflow_dispatch:
     inputs:
-      target:
-        description: Entorno que se comprobará
-        type: choice
-        options: [integration, production]
-        default: integration
+      confirm_production:
+        description: Aplicar las migraciones de main a producción (desmarcado solo comprueba)
         required: true
-      apply:
-        description: Aplicar las migraciones pendientes (desmarcado solo comprueba)
         type: boolean
         default: false
-        required: true
-  push:
-    branches: [main]
-    # Workflow/documentation changes alone must not deploy pending SQL.
-    paths:
-      - "supabase/migrations/**"
   pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, labeled]
+    branches: [dev, main]
+    types: [opened, synchronize, reopened, labeled, edited]
     paths:
       - "supabase/migrations/**"
       - ".github/workflows/supabase-migrations.yml"
@@ -34,9 +27,16 @@ permissions:
 jobs:
   validate:
     name: Migration credential tests
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'dev' && github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -46,10 +46,9 @@ jobs:
     name: Production migration plan / apply
     needs: validate
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.target == 'production') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'check-migrations'))
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    environment: production
     timeout-minutes: 15
     concurrency:
       group: supabase-production
@@ -61,18 +60,21 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/supabase-migrate
         with:
-          apply: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply) }}
+          apply: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production }}
 
   migrate-integration:
     name: Integration migration plan / apply
     needs: validate
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.target == 'integration') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
-      (contains(github.event.pull_request.labels.*.name, 'check-migrations') || contains(github.event.pull_request.labels.*.name, 'run-migrations')))
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'dev' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-24.04
+    environment: integration
     timeout-minutes: 15
     concurrency:
       group: supabase-integration
@@ -84,7 +86,48 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.INTEGRATION_SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
       - uses: ./.github/actions/supabase-migrate
         with:
-          # The read-only label wins if both labels are present.
-          apply: ${{ (github.event_name == 'workflow_dispatch' && inputs.apply) || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-migrations') && !contains(github.event.pull_request.labels.*.name, 'check-migrations')) }}
+          apply: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'dev' && github.event.workflow_run.head_repository.full_name == github.repository }}
+
+  preflight:
+    name: Check ${{ matrix.target }} migrations (read-only)
+    needs: validate
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'check-migrations')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: integration
+            project_secret: INTEGRATION_SUPABASE_PROJECT_ID
+            password_secret: INTEGRATION_SUPABASE_DB_PASSWORD
+            expected_project: azfhawxpdrgrhnpgcwxa
+          - target: production
+            project_secret: SUPABASE_PROJECT_ID
+            password_secret: SUPABASE_DB_PASSWORD
+            expected_project: fkezcibdjgbqyraxnmha
+    concurrency:
+      group: supabase-${{ matrix.target }}
+      cancel-in-progress: false
+    # Repository credentials are used only for inspection. Write jobs above retain
+    # the protected environments and their existing deployment approvals.
+    env:
+      EXPECTED_SUPABASE_PROJECT_ID: ${{ matrix.expected_project }}
+      SUPABASE_PROJECT_ID: ${{ secrets[matrix.project_secret] }}
+      SUPABASE_DB_PASSWORD: ${{ secrets[matrix.password_secret] }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/supabase-migrate
+        with:
+          apply: 'false'

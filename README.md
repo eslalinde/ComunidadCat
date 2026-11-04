@@ -76,16 +76,16 @@ The migration workflow requires these GitHub Actions secrets:
   to the corresponding projects. The CLI expects a token starting with `sbp_`;
   project publishable or secret API keys do not replace this token.
 
-Production migrations run automatically only when a push to `main` changes
-`supabase/migrations/**`. Workflow and documentation changes alone do not deploy.
-Manual runs from `main` select an environment and default to a dry run; applying
-requires explicitly selecting `apply`.
+Integration migrations run only after a successful push CI run on `dev`, using
+that exact commit. Production migrations require a manual run from `main` and
+explicitly selecting `confirm_production`; an unchecked manual run only previews.
+Write jobs retain the protected `integration` and `production` environments.
 
 Before merging, add `check-migrations` to a matching same-repository pull request
 to compare local/remote history and preview pending SQL in both environments.
-This label never applies migrations. `run-migrations` applies to integration only,
-and only when `check-migrations` is absent. Remove/re-add the appropriate label to
-rerun after updating secrets. Neither label is present on PR #172 during preparation.
+This inspection uses repository credentials without creating a deployment and
+never applies migrations. `run-migrations` no longer authorizes PR writes.
+Remove/re-add `check-migrations` to rerun after updating secrets.
 
 All remote jobs validate credentials, link using the environment's database
 password, list migration history and run `db push --dry-run --skip-vault` before
@@ -97,8 +97,12 @@ match the confirmed target: production `fkezcibdjgbqyraxnmha`, integration
 passwords; migration history must be inspected independently for each new project.
 
 See [the token replacement and migration review guide](docs/supabase-deployment.md)
-for the pre-merge procedure and the four candidate migrations identified from CI.
+for the pre-merge procedure and the latest remote migration findings.
 
 ## License
 
 All rights reserved.
+
+## Entornos y entregas
+
+Consulte [la guía de CI/CD](docs/deployment.md): PR a dev, previews automáticos y producción manual desde main en Vercel.

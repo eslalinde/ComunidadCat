@@ -143,5 +143,5 @@ autoUpdater.on('update-downloaded', (info) => {
 
 - Never bypass context isolation
 - Always handle errors in IPC handlers
-- Degrade gracefully in web mode (the same codebase runs on SWA)
+- Degrade gracefully in web mode (the same codebase runs on Vercel)
 - Test both web and Electron builds after changes
