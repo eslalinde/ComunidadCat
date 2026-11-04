@@ -91,6 +91,10 @@ que el SQL pueda ejecutarse correctamente con los datos de producción.
    **API Key Secrets**. La contraseña de base de datos sigue siendo necesaria;
    los permisos del token no la reemplazan. El CLI documenta permisos adicionales
    para ramas/pooler cuando correspondan. No ampliar permisos a otros proyectos.
+   Ante el rechazo productivo observado, confirmar específicamente que
+   `fkezcibdjgbqyraxnmha` esté incluido. Si el PAT es clásico, comprobar que la
+   cuenta que lo creó tenga acceso a ese proyecto; un token no amplía los permisos
+   de su propietario. La contraseña de base no corrige este rechazo de la API.
 4. En [GitHub → Settings → Secrets and variables → Actions](https://github.com/eslalinde/ComunidadCat/settings/secrets/actions),
    editar el secreto de repositorio `SUPABASE_ACCESS_TOKEN` y pegar únicamente
    el token, sin comillas, espacios, saltos de línea ni prefijo `Bearer`.
