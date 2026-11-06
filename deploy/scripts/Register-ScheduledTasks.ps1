@@ -140,7 +140,7 @@ Register-ScheduledTask `
     -Trigger $trigger `
     -Action $action `
     -Settings $settings `
-    -Description "Backup diario de ComunidadCat a las 2:00 AM con upload a Azure" `
+    -Description "Backup diario de ComunidadCat a las 2:00 AM con almacenamiento local" `
     -RunLevel Limited | Out-Null
 
 Write-Host "  [OK] Registrada: $taskName" -ForegroundColor Green

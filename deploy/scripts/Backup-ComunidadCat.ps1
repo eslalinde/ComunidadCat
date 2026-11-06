@@ -1,31 +1,31 @@
 <#
 .SYNOPSIS
-    Realiza backup diario de la base de datos y lo sube a Azure Blob Storage.
+    Realiza backup diario de la base de datos y lo sube a almacenamiento remoto opcional.
 
 .DESCRIPTION
     1. pg_dump via docker exec (schemas: public + auth)
     2. Compresion GZip nativa de PowerShell
-    3. Upload a Azure via rclone
+    3. Upload a almacenamiento remoto via rclone
     4. Limpieza de backups locales (>7 dias) y remotos (>30 dias)
 
 .PARAMETER InstallDir
     Directorio de instalacion. Default: C:\ComunidadCat
 
-.PARAMETER SkipAzure
-    Si se especifica, no sube a Azure (solo backup local).
+.PARAMETER SkipRemote
+    Si se especifica, no sube a almacenamiento remoto (solo backup local).
 
 .PARAMETER RcloneRemote
-    Nombre del remote de rclone. Default: azure-backup
+    Nombre del remote de rclone. Vacio por defecto: backup solo local.
 
-.PARAMETER AzureContainer
-    Nombre del container en Azure. Default: comunidadcat-backups
+.PARAMETER RemoteFolder
+    Nombre del container en almacenamiento remoto. Default: comunidadcat-backups
 #>
 
 param(
     [string]$InstallDir = "C:\ComunidadCat",
-    [switch]$SkipAzure,
-    [string]$RcloneRemote = "azure-backup",
-    [string]$AzureContainer = "comunidadcat-backups"
+    [switch]$SkipRemote,
+    [string]$RcloneRemote = "",
+    [string]$RemoteFolder = "comunidadcat-backups"
 )
 
 $ErrorActionPreference = "Continue"
@@ -126,10 +126,10 @@ try {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Upload a Azure via rclone
+# 4. Upload a almacenamiento remoto via rclone
 # ---------------------------------------------------------------------------
-if (!$SkipAzure) {
-    Log "Subiendo backup a Azure Blob Storage..."
+if (!$SkipRemote -and $RcloneRemote) {
+    Log "Subiendo backup a almacenamiento remoto opcional..."
 
     $rclonePath = "$InstallDir\rclone\rclone.exe"
     if (!(Test-Path $rclonePath)) {
@@ -142,12 +142,12 @@ if (!$SkipAzure) {
         # Check if remote is configured
         $remotes = & $rclonePath listremotes 2>&1
         if ($remotes -match "$RcloneRemote`:") {
-            $remotePath = "${RcloneRemote}:${AzureContainer}"
+            $remotePath = "${RcloneRemote}:${RemoteFolder}"
             $uploadOutput = & $rclonePath copy $gzFile $remotePath --log-level INFO 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Log "Backup subido a $remotePath/$(Split-Path $gzFile -Leaf)"
             } else {
-                Log "Error subiendo a Azure: $uploadOutput" "ERROR"
+                Log "Error subiendo a almacenamiento remoto: $uploadOutput" "ERROR"
             }
         } else {
             Log "Remote '$RcloneRemote' no configurado en rclone. Ejecute: $rclonePath config" "WARN"
@@ -155,7 +155,7 @@ if (!$SkipAzure) {
         }
     }
 } else {
-    Log "SkipAzure activo, backup solo local"
+    Log "Backup solo local (sin remote configurado o con SkipRemote)"
 }
 
 # ---------------------------------------------------------------------------
@@ -176,12 +176,12 @@ Log "Backups locales eliminados: $removed"
 # ---------------------------------------------------------------------------
 # 6. Limpiar backups remotos viejos (>30 dias)
 # ---------------------------------------------------------------------------
-if (!$SkipAzure -and $rclonePath -and (Test-Path $rclonePath)) {
+if (!$SkipRemote -and $RcloneRemote -and $rclonePath -and (Test-Path $rclonePath)) {
     Log "Limpiando backups remotos viejos (>30 dias)..."
 
     $remotes = & $rclonePath listremotes 2>&1
     if ($remotes -match "$RcloneRemote`:") {
-        $remotePath = "${RcloneRemote}:${AzureContainer}"
+        $remotePath = "${RcloneRemote}:${RemoteFolder}"
         $deleteOutput = & $rclonePath delete $remotePath --min-age 30d --log-level INFO 2>&1
         if ($LASTEXITCODE -eq 0) {
             Log "Limpieza remota completada"
