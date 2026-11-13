@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCrud, type UseCrudOptions } from '@/hooks/useCrud';
+import { useCountryOptions } from '@/hooks/useEntityOptions';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Country } from '@/types/database';
 import { toast } from 'sonner';
@@ -66,6 +67,25 @@ beforeEach(() => {
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); });
 
 describe('useCrud con React Query real', () => {
+  it('actualiza el selector de países después de crear el primer país', async () => {
+    listResponse = { data: [], error: null, count: 0 };
+    const { result } = setup();
+    const { result: countryOptions } = renderHook(useCountryOptions, {
+      wrapper: ({ children }) => createElement(QueryClientProvider, { client }, children),
+    });
+    await waitFor(() => expect(countryOptions.current.loading).toBe(false));
+    expect(countryOptions.current.options).toEqual([]);
+
+    listResponse = { data: countries, error: null, count: 1 };
+    await act(async () => {
+      await result.current.create({ name: 'Colombia', code: 'CO' });
+    });
+
+    await waitFor(() => expect(countryOptions.current.options).toEqual([
+      { value: 1, label: 'Colombia' },
+    ]));
+  });
+
   it('construye joins con alias explícito y nombre de tabla por defecto', async () => {
     setup({ foreignKeys: [
       { foreignKey: 'country_id', tableName: 'countries', displayField: 'name', alias: 'country' },
