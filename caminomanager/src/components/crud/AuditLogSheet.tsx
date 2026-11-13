@@ -223,8 +223,22 @@ const TABLE_OPTIONS = [
 
 // ── AuditLogSheet ──
 
-export function AuditLogSheet({ communityId }: { communityId: number }) {
-  const [open, setOpen] = useState(false);
+interface AuditLogSheetProps {
+  communityId: number;
+  /** Controlled mode: when provided, the parent owns the open state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in trigger button (e.g. when opened from a menu). */
+  hideTrigger?: boolean;
+}
+
+export function AuditLogSheet({ communityId, open: openProp, onOpenChange, hideTrigger }: AuditLogSheetProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   const { entries, isLoading, hasMore, filters, updateFilters, loadMore, personNames, teamNames } =
     useAuditLog(communityId, open);
 
@@ -246,16 +260,19 @@ export function AuditLogSheet({ communityId }: { communityId: number }) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <History className="h-4 w-4" />
-          <span className="hidden sm:inline">Historial</span>
-        </Button>
-      </SheetTrigger>
+      {!hideTrigger && (
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            aria-label="Historial de cambios"
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Historial</span>
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent side="right" className="sm:max-w-lg w-full flex flex-col">
         <SheetHeader>
           <SheetTitle>Historial de Cambios</SheetTitle>

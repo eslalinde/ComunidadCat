@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { friendlyError } from "@/lib/supabaseErrors";
@@ -71,6 +71,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
   size = "default",
 }: DynamicEntityModalProps<T>) {
   const schema = useMemo(() => buildZodSchema(fields), [fields]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -322,6 +323,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
 
   const onSubmit = async (data: Record<string, unknown>) => {
     const prepared = prepareFormData(data, fields);
+    setSubmitError(null);
 
     try {
       await onSave(
@@ -329,7 +331,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
       );
     } catch (error: any) {
       console.error("Error saving entity:", error);
-      alert(friendlyError(error, "Error al guardar. Por favor, intenta de nuevo."));
+      setSubmitError(friendlyError(error, "Error al guardar. Por favor, intenta de nuevo."));
     }
   };
 
@@ -547,6 +549,15 @@ export function DynamicEntityModal<T extends BaseEntity>({
                 </Fragment>
               );
             })}
+
+            {submitError && (
+              <div
+                role="alert"
+                className="col-span-full rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {submitError}
+              </div>
+            )}
 
             <DialogFooter
               className="col-span-full mt-2 w-full gap-3 border-t border-gray-100 pt-4 sm:justify-end"

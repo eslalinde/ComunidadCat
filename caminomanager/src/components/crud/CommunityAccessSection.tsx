@@ -33,10 +33,20 @@ import { toast } from 'sonner';
 
 interface Props {
   communityId: number;
+  /** Controlled mode: when provided, the parent owns the open state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in trigger button (e.g. when opened from a menu). */
+  hideTrigger?: boolean;
 }
 
-export function CommunityAccessSection({ communityId }: Props) {
-  const [open, setOpen] = useState(false);
+export function CommunityAccessSection({ communityId, open: openProp, onOpenChange, hideTrigger }: Props) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   const {
     accessUsers,
     loading,
@@ -89,16 +99,19 @@ export function CommunityAccessSection({ communityId }: Props) {
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Usuarios</span>
-          </Button>
-        </SheetTrigger>
+        {!hideTrigger && (
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              aria-label="Usuarios con acceso"
+            >
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Usuarios</span>
+            </Button>
+          </SheetTrigger>
+        )}
         <SheetContent side="right" className="sm:max-w-md w-full flex flex-col">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">

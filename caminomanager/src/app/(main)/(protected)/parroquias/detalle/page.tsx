@@ -6,13 +6,19 @@ import { useParishData } from '@/hooks/useParishData';
 import { PriestsList } from '@/components/crud/PriestsList';
 import { ParishCatechesisHistory } from '@/components/crud/ParishCatechesisHistory';
 import { DynamicEntityModal } from '@/components/crud/DynamicEntityModal';
-import { parishConfig } from '@/config/entities';
+import { communityConfig, parishConfig } from '@/config/entities';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { canEditCommunity } from '@/lib/permissions';
+import { createResponsablesTeam } from '@/lib/communityTeams';
+import { queryKeys } from '@/lib/queryKeys';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit, MapPin, Phone, Mail, Church, Users, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Phone, Mail, Church, Users, ChevronRight, Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { Parish } from '@/types/database';
+import { Community, Parish } from '@/types/database';
 import { routes } from '@/lib/routes';
 
 function getStepColor(orderNum?: number): string {
@@ -29,6 +35,11 @@ function ParishDetailContent() {
   const parishId = parseInt(searchParams.get('id') as string);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
+  const [isCreatingCommunity, setIsCreatingCommunity] = useState(false);
+  const queryClient = useQueryClient();
+  const { userScope } = useAuth();
+  const showCreateCommunity = canEditCommunity(userScope);
 
   const {
     parish,
@@ -69,6 +80,43 @@ function ParishDetailContent() {
       throw err;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCreateCommunity = async (data: Omit<Community, 'id' | 'created_at' | 'updated_at'>) => {
+    setIsCreatingCommunity(true);
+    try {
+      const supabase = createClient();
+      const { data: created, error: insertError } = await supabase
+        .from('communities')
+        .insert({ ...data, parish_id: data.parish_id ?? parishId })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      if (!created?.id) {
+        throw new Error('No tienes permisos para crear comunidades. Contacta al administrador.');
+      }
+
+      try {
+        await createResponsablesTeam({ id: created.id, number: created.number });
+      } catch (teamError) {
+        console.error('Error creating responsables team:', teamError);
+        toast.warning('La comunidad se creó, pero no se pudo crear el equipo de responsables. Puedes crearlo desde la ficha.');
+      }
+
+      toast.success('Comunidad creada');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.parish.communities(parishId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.crud.table('communities') }),
+      ]);
+      setIsCreateCommunityOpen(false);
+      router.push(routes.comunidad(created.id));
+    } catch (err) {
+      console.error('Error creating community:', err);
+      throw err;
+    } finally {
+      setIsCreatingCommunity(false);
     }
   };
 
@@ -183,7 +231,20 @@ function ParishDetailContent() {
         {/* Communities with step badges */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Comunidades ({communities.length})</CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-lg">Comunidades ({communities.length})</CardTitle>
+              {showCreateCommunity && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCreateCommunityOpen(true)}
+                  disabled={loading || !parish?.id}
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar comunidad
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -254,6 +315,21 @@ function ParishDetailContent() {
         loading={isSaving}
         size={parishConfig.formSize}
       />
+
+      {/* Modal para crear comunidad con la parroquia ya seleccionada */}
+      {showCreateCommunity && (
+        <DynamicEntityModal
+          key={`community-create-${isCreateCommunityOpen ? 'open' : 'closed'}`}
+          open={isCreateCommunityOpen}
+          onClose={() => setIsCreateCommunityOpen(false)}
+          onSave={handleCreateCommunity}
+          initial={{ parish_id: parishId } as unknown as Community}
+          fields={communityConfig.fields}
+          title={`Agregar comunidad a ${parish?.name ?? 'la parroquia'}`}
+          loading={isCreatingCommunity}
+          size={communityConfig.formSize}
+        />
+      )}
     </div>
   );
 }
