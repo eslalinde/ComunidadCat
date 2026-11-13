@@ -44,7 +44,7 @@ describe.each(cases)('Selección de $name', (testCase) => {
     if (testCase.name === 'sacerdote') { fireEvent.click(screen.getByText('Párroco')); fireEvent.click(screen.getByText('Vicario')); fireEvent.click(screen.getByText('Párroco')); }
     fireEvent.click(screen.getByRole('button', { name: testCase.button }));
     await waitFor(() => expect(close).toHaveBeenCalledOnce());
-    expect(select).toHaveBeenCalledWith(...(testCase.name === 'sacerdote' ? [1, true] : [1]));
+    expect(select).toHaveBeenCalledWith(...(testCase.name === 'sacerdote' ? [1, true] : testCase.name === 'hermano' ? [[1]] : [1]));
     if (testCase.name === 'sacerdote') expect(mock.calls).toContainEqual({ table: 'people', method: 'eq', args: ['person_type_id', 3] });
   });
   it('mantiene abierto al fallar la operación y permite cancelar', async () => {
@@ -85,6 +85,18 @@ describe('Selección de hermanos para equipo', () => {
     await waitFor(() => expect(select).toHaveBeenCalledWith([1, 2]));
     if (fails) { await screen.findByText('Permiso denegado'); expect(close).not.toHaveBeenCalled(); }
     else await waitFor(() => expect(close).toHaveBeenCalledOnce());
+  });
+  it('permite marcar varios hermanos y entrega todas sus personas', async () => {
+    render(<SelectBrotherForTeamModal open onClose={close} onSelect={select} brothers={brothers} teamMembers={[]} />);
+    fireEvent.click(screen.getByText('José y María')); fireEvent.click(screen.getByText('Pedro'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar 2 al Equipo' }));
+    await waitFor(() => expect(select).toHaveBeenCalledWith([1, 2, 3]));
+    await waitFor(() => expect(close).toHaveBeenCalledOnce());
+  });
+  it('desmarcar quita la persona de la selección', () => {
+    render(<SelectBrotherForTeamModal open onClose={close} onSelect={select} brothers={brothers} teamMembers={[]} />);
+    fireEvent.click(screen.getByText('Pedro')); fireEvent.click(screen.getByText('Pedro'));
+    expect(screen.getByRole('button', { name: 'Agregar al Equipo' })).toBeDisabled();
   });
   it('informa lista vacía y cierra con Escape', () => {
     render(<SelectBrotherForTeamModal open onClose={close} onSelect={select} brothers={[]} teamMembers={[]} />);

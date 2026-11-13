@@ -10,6 +10,7 @@ import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
+import { formatLocalDate, todayLocalISO } from '@/lib/dates';
 import { ClipboardList, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,10 +83,7 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
   const invalidateVisits = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.community.visits(communityId) });
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No especificada';
-    return new Date(dateString).toLocaleDateString('es-CO');
-  };
+  const formatDate = (dateString?: string) => formatLocalDate(dateString);
 
   const handleAdd = async (data: any) => {
     setIsSaving(true);
@@ -285,7 +283,7 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAdd}
         initial={{
-          visit_date: new Date().toISOString().split('T')[0],
+          visit_date: todayLocalISO(),
           visitor_name: defaultVisitorName || '',
         } as any}
         fields={visitFormFields}

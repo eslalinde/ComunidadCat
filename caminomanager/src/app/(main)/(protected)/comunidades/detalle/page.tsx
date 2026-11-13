@@ -13,6 +13,7 @@ import { CommunityPrintView } from '@/components/crud/CommunityPrintView';
 import { DynamicEntityModal } from '@/components/crud/DynamicEntityModal';
 import { communityConfig } from '@/config/entities';
 import { SelectBrotherForTeamModal } from '@/components/crud/SelectBrotherForTeamModal';
+import { EditPersonModal } from '@/components/crud/EditPersonModal';
 import { Button } from '@/components/ui/button';
 import { MergeCommunityModal } from '@/components/crud/MergeCommunityModal';
 import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
@@ -58,6 +59,7 @@ function CommunityDetailContent() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [addToTeamId, setAddToTeamId] = useState<number | null>(null);
+  const [editPersonIds, setEditPersonIds] = useState<number[] | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -314,22 +316,36 @@ function CommunityDetailContent() {
   };
 
   const handleAddBrotherToTeam = async (personIds: number[]) => {
-    if (!addToTeamId) return;
+    if (!addToTeamId || personIds.length === 0) return;
     const supabase = createClient();
 
-    for (const personId of personIds) {
-      const { error } = await supabase.from('belongs').insert({
+    // Skip people already in the team (e.g. one spouse of a marriage) and insert in one call.
+    const existing = new Set((teamMembers[addToTeamId] || []).map((m) => m.person_id));
+    const rows = personIds
+      .filter((personId) => !existing.has(personId))
+      .map((personId) => ({
         person_id: personId,
         team_id: addToTeamId,
         community_id: communityId,
         is_responsible_for_the_team: false,
-      });
+      }));
 
+    if (rows.length > 0) {
+      const { error } = await supabase.from('belongs').insert(rows);
       if (error) throw error;
     }
 
+    toast.success('Miembros agregados al equipo');
     await invalidateTeamMembers();
   };
+
+  const handlePersonUpdated = async () => {
+    await Promise.all([invalidateBrothers(), invalidateTeamMembers(), invalidateDetail()]);
+  };
+
+  const handleEditMember = showManageTeams
+    ? (_personId: number, personIds: number[]) => setEditPersonIds(personIds)
+    : undefined;
 
   if (error) {
     return (
@@ -443,6 +459,7 @@ function CommunityDetailContent() {
                       communityId={communityId}
                       onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
                       onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
+                      onEditMember={handleEditMember}
                     />
                   </div>
                 ))
@@ -484,6 +501,7 @@ function CommunityDetailContent() {
                         communityId={communityId}
                         onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
                         onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
+                        onEditMember={handleEditMember}
                       />
                     </div>
                   ))}
@@ -564,6 +582,7 @@ function CommunityDetailContent() {
               teamMembers={teamMembers}
               onDelete={showManageBrothers ? invalidateBrothers : undefined}
               onAdd={showManageBrothers ? invalidateBrothers : undefined}
+              onPersonUpdated={handlePersonUpdated}
             />
           </div>
         </div>
@@ -607,6 +626,13 @@ function CommunityDetailContent() {
           teamMembers={addToTeamId ? teamMembers[addToTeamId] || [] : []}
         />
       )}
+
+      {/* Modal para editar datos de un miembro de equipo */}
+      <EditPersonModal
+        personIds={editPersonIds}
+        onClose={() => setEditPersonIds(null)}
+        onSaved={handlePersonUpdated}
+      />
 
       {/* Diálogo de confirmación de eliminación */}
       {showDelete && (

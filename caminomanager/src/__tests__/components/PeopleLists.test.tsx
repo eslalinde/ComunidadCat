@@ -14,7 +14,7 @@ vi.mock('@/components/crud/ConfirmDeleteDialog', () => ({ ConfirmDeleteDialog: (
 vi.mock('@/components/crud/DynamicEntityModal', () => ({ DynamicEntityModal: (p: Parameters<typeof FormDouble>[0]) => <FormDouble {...p} /> }));
 interface SelectionProps { open: boolean; onClose: () => void; onSelect: (id: number, role: boolean) => Promise<void> }
 function Selection({ open, onClose, onSelect }: SelectionProps) { return open ? <><button onClick={() => { void onSelect(42, true).catch(() => toast.error('Error de selección')); }}>Seleccionar persona</button><button onClick={onClose}>Cerrar selección</button></> : null; }
-vi.mock('@/components/crud/SelectBrotherModal', () => ({ SelectBrotherModal: (p: SelectionProps) => <Selection {...p} /> }));
+vi.mock('@/components/crud/SelectBrotherModal', () => ({ SelectBrotherModal: ({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (ids: number[]) => Promise<void> }) => open ? <><button onClick={() => { void onSelect([42, 43]).catch(() => toast.error('Error de selección')); }}>Seleccionar persona</button><button onClick={onClose}>Cerrar selección</button></> : null }));
 vi.mock('@/components/crud/SelectPriestModal', () => ({ SelectPriestModal: (p: SelectionProps) => <Selection {...p} /> }));
 vi.mock('@/components/crud/MarriageModal', () => ({ MarriageModal: ({ open, onSuccess, onClose }: { open: boolean; onSuccess: (a?: number, b?: number) => void; onClose: () => void }) => open ? <><button onClick={() => onSuccess(42, 43)}>Matrimonio creado</button><button onClick={() => onSuccess()}>Sin identificadores</button><button onClick={onClose}>Cerrar matrimonio</button></> : null }));
 vi.mock('@/components/bulk-upload/BulkUploadWizard', () => ({ BulkUploadWizard: ({ open, onClose, onComplete }: { open: boolean; onClose: () => void; onComplete: () => void }) => open ? <><button onClick={onComplete}>Carga terminada</button><button onClick={onClose}>Cerrar carga</button></> : null }));
@@ -43,7 +43,7 @@ describe('BrothersList', () => {
   it.each([false, true])('agrega persona existente, error=%s', async (fails) => {
     brothers(); fireEvent.click(screen.getByText('Agregar Existente')); if (fails) responses.brothers.error = { message: 'denied' };
     fireEvent.click(screen.getByText('Seleccionar persona')); await waitFor(() => expect(fails ? toast.error : refresh).toHaveBeenCalled());
-    expect(mock.calls).toContainEqual({ table: 'brothers', method: 'insert', args: [{ person_id: 42, community_id: 10 }] }); fireEvent.click(screen.getByText('Cerrar selección'));
+    expect(mock.calls).toContainEqual({ table: 'brothers', method: 'insert', args: [[{ person_id: 42, community_id: 10 }, { person_id: 43, community_id: 10 }]] }); fireEvent.click(screen.getByText('Cerrar selección'));
   });
   it.each(['ok', 'people', 'brothers'])('crea persona y relación, error=%s', async (scenario) => {
     brothers(); menu('Hermano individual'); if (responses[scenario]) responses[scenario].error = { message: 'denied' };
