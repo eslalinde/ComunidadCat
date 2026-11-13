@@ -304,6 +304,7 @@ export function useCrud<T extends BaseEntity>({
     },
     onSuccess: () => {
       toast.success('Registro creado correctamente');
+      return queryClient.invalidateQueries({ queryKey: queryKeys.options.table(tableName) });
     },
     onError: (err: any, _variables, context) => {
       const message = friendlyError(err);
@@ -344,6 +345,7 @@ export function useCrud<T extends BaseEntity>({
     },
     onSuccess: () => {
       toast.success('Registro actualizado correctamente');
+      return queryClient.invalidateQueries({ queryKey: queryKeys.options.table(tableName) });
     },
     onError: (err: any, _variables, context) => {
       const message = friendlyError(err);
@@ -381,6 +383,7 @@ export function useCrud<T extends BaseEntity>({
     },
     onSuccess: () => {
       toast.success('Registro eliminado correctamente');
+      return queryClient.invalidateQueries({ queryKey: queryKeys.options.table(tableName) });
     },
     onError: (err: any, _variables, context) => {
       const message = friendlyError(err);
