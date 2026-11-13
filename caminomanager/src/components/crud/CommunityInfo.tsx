@@ -8,9 +8,13 @@ interface CommunityInfoProps {
   community: Community | null;
   loading?: boolean;
   onEdit?: () => void;
+  /** People currently listed as brothers, shown next to the manual count. */
+  brothersInList?: number;
+  /** When true, the stage is changed from the step log, not the edit form. */
+  stageFromStepLog?: boolean;
 }
 
-export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps) {
+export function CommunityInfo({ community, loading, onEdit, brothersInList, stageFromStepLog }: CommunityInfoProps) {
   if (loading) {
     return (
       <Card>
@@ -72,9 +76,9 @@ export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps
           <CardTitle>Información de la Comunidad</CardTitle>
           {onEdit && (
             <Button
-              variant="outline"
               onClick={onEdit}
               className="flex items-center gap-2 print-hidden"
+              size="sm"
             >
               <Edit className="h-4 w-4" />
               Editar
@@ -83,7 +87,7 @@ export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fecha de Nacimiento</label>
             <p className="text-sm text-gray-700">
@@ -101,11 +105,14 @@ export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps
             <p className="text-sm text-gray-700">{community.born_brothers || 'No especificado'}</p>
           </div>
 
-          <div />
+          <div className="hidden sm:block" />
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Etapa Actual</label>
             <p className="text-sm text-gray-700">{community.step_way?.name || 'No especificada'}</p>
+            {stageFromStepLog && (
+              <p className="text-xs text-muted-foreground">Se actualiza desde la Bitácora</p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -116,9 +123,14 @@ export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hermanos Actuales</label>
             <p className="text-sm font-semibold text-gray-700">{community.actual_brothers || 'No especificado'}</p>
+            {brothersInList !== undefined && brothersInList !== (community.actual_brothers ?? 0) && (
+              <p className="text-xs text-muted-foreground">
+                {brothersInList} {brothersInList === 1 ? 'persona registrada' : 'personas registradas'} en la lista
+              </p>
+            )}
           </div>
 
-          <div className="space-y-1 col-span-3">
+          <div className="space-y-1 col-span-2 sm:col-span-3">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Equipo de Catequistas</label>
             <p className="text-sm text-gray-700">{catechistTeamLabel || 'No asignado'}</p>
           </div>

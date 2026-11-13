@@ -149,28 +149,40 @@ test.describe('Comunidades — visibilidad de acciones en el detalle', () => {
         page.getByRole('button', { name: /Imprimir/ }),
         expected.imprimir, 'Imprimir', roleKey,
       );
-      await expectCount(
-        page,
-        page.getByRole('button', { name: /Fusionar/ }),
-        expected.fusionar, 'Fusionar', roleKey,
-      );
-      await expectCount(
-        page,
-        page.getByRole('button', { name: /Usuarios/ }),
-        expected.usuarios, 'Usuarios (acceso)', roleKey,
-      );
-      await expectCount(
-        page,
-        page.getByRole('button', { name: /Historial/ }),
-        expected.historial, 'Historial (auditoría)', roleKey,
-      );
-      // Hay también "Eliminar Equipo" dentro de TeamSection; "Eliminar" exacto
-      // sólo coincide con el botón del encabezado de la comunidad.
-      await expectCount(
-        page,
-        page.getByRole('button', { name: 'Eliminar', exact: true }),
-        expected.eliminar, 'Eliminar comunidad', roleKey,
-      );
+      // Fusionar, Usuarios, Historial y Eliminar viven en el menú "Más acciones";
+      // el botón del menú sólo aparece si el rol tiene al menos una de ellas.
+      const expectsMoreMenu =
+        expected.fusionar || expected.usuarios || expected.historial || expected.eliminar;
+      const moreButton = page.getByRole('button', { name: 'Más acciones' });
+      await expectCount(page, moreButton, expectsMoreMenu, 'Más acciones', roleKey);
+
+      if (expectsMoreMenu) {
+        await moreButton.click();
+        const menu = page.getByRole('menu');
+        await expect(menu).toBeVisible();
+        await expectCount(
+          page,
+          menu.getByRole('menuitem', { name: /Fusionar/ }),
+          expected.fusionar, 'Fusionar', roleKey,
+        );
+        await expectCount(
+          page,
+          menu.getByRole('menuitem', { name: /Usuarios con acceso/ }),
+          expected.usuarios, 'Usuarios (acceso)', roleKey,
+        );
+        await expectCount(
+          page,
+          menu.getByRole('menuitem', { name: /Historial de cambios/ }),
+          expected.historial, 'Historial (auditoría)', roleKey,
+        );
+        await expectCount(
+          page,
+          menu.getByRole('menuitem', { name: 'Eliminar', exact: true }),
+          expected.eliminar, 'Eliminar comunidad', roleKey,
+        );
+        await page.keyboard.press('Escape');
+        await expect(menu).toBeHidden();
+      }
 
       // ── Bitácora ─────────────────────────────────────────────────────────
       // Hay dos textos "Bitácora" en el DOM: la tarjeta visible (data-slot

@@ -4,7 +4,8 @@ import NationalTeamPage from '@/app/(main)/(protected)/equipo-nacional/page';
 import ParishDetailPage from '@/app/(main)/(protected)/parroquias/detalle/page';
 import type { Belongs, Community, Parish, Team } from '@/types/database';
 import { FormDouble } from '../helpers/modalDoubles';
-import { createTableMock, type QueryResponse } from '../helpers/queryHarness';
+import { createQueryHarness, createTableMock, type QueryResponse } from '../helpers/queryHarness';
+import { toast } from 'sonner';
 const mocks = vi.hoisted(() => ({ selectionFailed: vi.fn(), from: vi.fn(), push: vi.fn(), refreshTeam: vi.fn(), invalidateDetail: vi.fn(), invalidatePriests: vi.fn(), team: null as Team | null, members: [] as Belongs[], communities: [] as Community[], parish: null as Parish | null, loading: false, error: '' }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }), useSearchParams: () => new URLSearchParams('id=10') }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => ({ from: mocks.from }) }));
@@ -15,8 +16,13 @@ vi.mock('@/components/crud/PriestsList', () => ({ PriestsList: ({ onRefresh }: {
 vi.mock('@/components/crud/ParishCatechesisHistory', () => ({ ParishCatechesisHistory: ({ parishId, parishName }: { parishId: number; parishName: string }) => <span>Historial {parishId}: {parishName}</span> }));
 vi.mock('@/components/crud/TeamSection', () => ({ TeamSection: ({ onEditMember, onDelete }: { onEditMember: (id: number) => void; onDelete: () => void }) => <><button onClick={() => onEditMember(7)}>Editar miembro</button><button onClick={() => onEditMember(999)}>Miembro sin persona</button><button onClick={onDelete}>Equipo modificado</button></> }));
 vi.mock('@/components/crud/SelectPersonForTeamModal', () => ({ SelectPersonForTeamModal: ({ open, onClose, onSelect, excludePersonIds }: { open: boolean; onClose: () => void; onSelect: (id: number) => Promise<void>; excludePersonIds: number[] }) => open ? <><span>Excluidos: {excludePersonIds.join(',')}</span><button onClick={() => { void onSelect(42).catch(mocks.selectionFailed); }}>Seleccionar persona</button><button onClick={onClose}>Cerrar selección</button></> : null }));
+const authRole = vi.hoisted(() => ({ current: 'admin' }));
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ userScope: { role: authRole.current } }) }));
 let responses: Record<string, QueryResponse>; let transport: ReturnType<typeof createTableMock>;
+let queryWrapper: ReturnType<typeof createQueryHarness>['wrapper'];
+const renderParish = () => render(<ParishDetailPage />, { wrapper: queryWrapper });
 beforeEach(() => {
+  queryWrapper = createQueryHarness().wrapper; authRole.current = 'admin';
   vi.clearAllMocks(); vi.spyOn(console, 'error').mockImplementation(() => {}); mocks.loading = false; mocks.error = ''; mocks.team = { id: 1, name: 'Nacional', team_type_id: 3, community_id: null };
   mocks.members = [{ id: 2, person_id: 7, person: { id: 7, person_name: 'Juan' }, team_id: 1, community_id: null, is_responsible_for_the_team: false }];
   mocks.communities = [0, 2, 5, 8, 10].map((order, i) => ({ id: i + 1, number: String(i + 1), actual_brothers: i ? 10 : undefined, step_way: { name: `Etapa ${order}`, order_num: order }, parish: { name: 'San José', city_id: 1 } }));
@@ -37,7 +43,25 @@ describe('Equipo nacional', () => {
   it('muestra carga, ausencia de equipo y error', () => { mocks.team = null; mocks.loading = true; const view = render(<NationalTeamPage />); expect(screen.getByText('Cargando equipo...')).toBeVisible(); expect(screen.getByText('Crear Nueva Persona')).toBeDisabled(); mocks.loading = false; mocks.communities = []; view.rerender(<NationalTeamPage />); expect(screen.getByText(/no está asignado como catequista/)).toBeVisible(); mocks.error = 'Sin permiso'; view.rerender(<NationalTeamPage />); expect(screen.getByText('Sin permiso')).toBeVisible(); });
 });
 describe('Detalle parroquial', () => {
-  it('muestra contactos, totales, etapas y navegación', () => { render(<ParishDetailPage />); expect(screen.getByText('40')).toBeVisible(); expect(screen.getByText('Norte, Bogotá')).toBeVisible(); for (const order of [0, 2, 5, 8, 10]) expect(screen.getByText(`Etapa ${order}`)).toBeVisible(); fireEvent.click(screen.getByText('#1')); expect(mocks.push).toHaveBeenCalledWith('/comunidades/detalle?id=1'); fireEvent.click(screen.getByText('Parroquias')); expect(mocks.push).toHaveBeenCalledWith('/parroquias'); fireEvent.click(screen.getByText('Recargar sacerdotes')); expect(mocks.invalidatePriests).toHaveBeenCalledOnce(); expect(screen.getByText('Historial 10: San José')).toBeVisible(); });
-  it.each(['ok', 'zero', 'error'])('actualiza sólo si el servidor confirma filas afectadas: %s', async (scenario) => { render(<ParishDetailPage />); fireEvent.click(screen.getByText('Editar')); if (scenario === 'zero') responses.parishes.data = []; if (scenario === 'error') responses.parishes.error = { message: 'denied' }; save({ name: 'San Pedro' }); if (scenario === 'ok') await waitFor(() => expect(mocks.invalidateDetail).toHaveBeenCalledOnce()); else { await screen.findByText('Error al guardar'); expect(mocks.invalidateDetail).not.toHaveBeenCalled(); fireEvent.click(screen.getByText('Cerrar formulario')); } expect(transport.calls).toContainEqual({ table: 'parishes', method: 'eq', args: ['id', 10] }); });
-  it('maneja datos no disponibles, carga y error', () => { mocks.parish = null; mocks.communities = []; mocks.loading = true; const view = render(<ParishDetailPage />); expect(screen.getByText('Cargando...')).toBeVisible(); mocks.loading = false; view.rerender(<ParishDetailPage />); expect(screen.getByText('No hay comunidades en esta parroquia')).toBeVisible(); fireEvent.click(screen.getByText('Editar')); save({}); expect(mocks.from).not.toHaveBeenCalled(); mocks.error = 'Sin permiso'; view.rerender(<ParishDetailPage />); expect(screen.getByText('Sin permiso')).toBeVisible(); });
+  it('muestra contactos, totales, etapas y navegación', () => { renderParish(); expect(screen.getByText('40')).toBeVisible(); expect(screen.getByText('Norte, Bogotá')).toBeVisible(); for (const order of [0, 2, 5, 8, 10]) expect(screen.getByText(`Etapa ${order}`)).toBeVisible(); fireEvent.click(screen.getByText('#1')); expect(mocks.push).toHaveBeenCalledWith('/comunidades/detalle?id=1'); fireEvent.click(screen.getByText('Parroquias')); expect(mocks.push).toHaveBeenCalledWith('/parroquias'); fireEvent.click(screen.getByText('Recargar sacerdotes')); expect(mocks.invalidatePriests).toHaveBeenCalledOnce(); expect(screen.getByText('Historial 10: San José')).toBeVisible(); });
+  it.each(['ok', 'zero', 'error'])('actualiza sólo si el servidor confirma filas afectadas: %s', async (scenario) => { renderParish(); fireEvent.click(screen.getByText('Editar')); if (scenario === 'zero') responses.parishes.data = []; if (scenario === 'error') responses.parishes.error = { message: 'denied' }; save({ name: 'San Pedro' }); if (scenario === 'ok') await waitFor(() => expect(mocks.invalidateDetail).toHaveBeenCalledOnce()); else { await screen.findByText('Error al guardar'); expect(mocks.invalidateDetail).not.toHaveBeenCalled(); fireEvent.click(screen.getByText('Cerrar formulario')); } expect(transport.calls).toContainEqual({ table: 'parishes', method: 'eq', args: ['id', 10] }); });
+  it.each([false, true])('crea comunidad con la parroquia y su equipo de responsables, falla equipo=%s', async (teamFails) => {
+    responses.communities = { data: { id: 77, number: '7' }, error: null };
+    responses.teams = { data: null, error: teamFails ? { message: 'denied' } : null };
+    renderParish(); fireEvent.click(screen.getByText('Agregar comunidad'));
+    expect(screen.getByText('Agregar comunidad a San José')).toBeVisible();
+    save({ number: '7' });
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/comunidades/detalle?id=77'));
+    expect(transport.calls).toContainEqual({ table: 'communities', method: 'insert', args: [{ number: '7', parish_id: 10 }] });
+    expect(transport.calls).toContainEqual({ table: 'teams', method: 'insert', args: [{ name: 'Equipo de Responsables - Comunidad 7', team_type_id: 4, community_id: 77 }] });
+    expect(teamFails ? toast.warning : toast.success).toHaveBeenCalled();
+  });
+  it('no crea la comunidad si el servidor la rechaza y oculta el botón sin permiso', async () => {
+    responses.communities = { data: null, error: { message: 'denied' } };
+    const view = renderParish(); fireEvent.click(screen.getByText('Agregar comunidad')); save({ number: '7' });
+    await screen.findByText('Error al guardar'); expect(mocks.push).not.toHaveBeenCalled();
+    authRole.current = 'viewer'; view.rerender(<ParishDetailPage />);
+    expect(screen.queryByText('Agregar comunidad')).not.toBeInTheDocument();
+  });
+  it('maneja datos no disponibles, carga y error', () => { mocks.parish = null; mocks.communities = []; mocks.loading = true; const view = renderParish(); expect(screen.getByText('Cargando...')).toBeVisible(); mocks.loading = false; view.rerender(<ParishDetailPage />); expect(screen.getByText('No hay comunidades en esta parroquia')).toBeVisible(); fireEvent.click(screen.getByText('Editar')); save({}); expect(mocks.from).not.toHaveBeenCalled(); mocks.error = 'Sin permiso'; view.rerender(<ParishDetailPage />); expect(screen.getByText('Sin permiso')).toBeVisible(); });
 });
