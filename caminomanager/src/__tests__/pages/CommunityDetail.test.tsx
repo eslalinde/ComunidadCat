@@ -210,6 +210,7 @@ vi.mock('@/components/ui/button', () => ({
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
   DropdownMenuTrigger: ({ children, asChild }: any) => asChild ? children : <span>{children}</span>,
+  DropdownMenuSeparator: () => <hr />,
   DropdownMenuContent: ({ children }: any) => <div data-testid="dropdown-content">{children}</div>,
   DropdownMenuItem: ({ children, onClick }: any) => (
     <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
@@ -219,6 +220,9 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 vi.mock('lucide-react', () => ({
   ArrowLeft: () => <span data-testid="arrow-left-icon" />,
   ChevronDown: () => <span data-testid="chevron-down-icon" />,
+  History: () => <span data-testid="history-icon" />,
+  MoreHorizontal: () => <span data-testid="more-icon" />,
+  Users: () => <span data-testid="users-icon" />,
   Merge: () => <span data-testid="merge-icon" />,
   Plus: () => <span data-testid="plus-icon" />,
   Printer: () => <span data-testid="printer-icon" />,
@@ -269,9 +273,9 @@ vi.mock('@/components/crud/CommunityPrintView', () => ({
 }));
 
 vi.mock('@/components/crud/DynamicEntityModal', () => ({
-  DynamicEntityModal: ({ open, onClose, onSave }: any) => (
+  DynamicEntityModal: ({ open, onClose, onSave, fields }: any) => (
     open ? (
-      <div data-testid="edit-modal">
+      <div data-testid="edit-modal" data-fields={(fields ?? []).map((f: any) => f.name).join(",")}>
         <button data-testid="edit-modal-close" onClick={onClose}>Cerrar</button>
         <button data-testid="edit-modal-save" onClick={() => onSave({})}>Guardar</button>
       </div>
@@ -319,7 +323,7 @@ vi.mock('@/components/crud/CommunityVisits', () => ({
 }));
 
 vi.mock('@/config/entities', () => ({
-  communityConfig: { fields: [] },
+  communityConfig: { fields: [{ name: 'number' }, { name: 'step_way_id' }, { name: 'last_step_way_date' }] },
 }));
 
 // ---------------------------------------------------------------------------
@@ -677,6 +681,21 @@ describe('CommunityDetailPage - Interactions', () => {
 
     await user.click(screen.getByTestId('community-info-edit'));
     expect(screen.getByTestId('edit-modal')).toBeInTheDocument();
+  });
+
+  it('edit modal leaves the stage to the step log', async () => {
+    const user = userEvent.setup();
+    render(<CommunityDetailPage />);
+
+    await user.click(screen.getByTestId('community-info-edit'));
+    expect(screen.getByTestId('edit-modal')).toHaveAttribute('data-fields', 'number');
+  });
+
+  it('header actions live in the "Más acciones" menu', () => {
+    render(<CommunityDetailPage />);
+    expect(screen.getByText('Más')).toBeInTheDocument();
+    expect(screen.getByText('Usuarios con acceso')).toBeInTheDocument();
+    expect(screen.getByText('Historial de cambios')).toBeInTheDocument();
   });
 
   it('clicking "Eliminar" opens delete dialog', async () => {

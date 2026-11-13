@@ -35,3 +35,11 @@ it.each([false, true])('revoca sólo concesiones explícitas con confirmación, 
 });
 it('explica ausencia de accesos', () => { mocks.accessUsers = []; setup(); expect(screen.getByText('No hay usuarios con acceso especial a esta comunidad.')).toBeVisible(); });
 it('muestra carga de usuarios antes de conceder acceso', () => { mocks.loadingUsers = true; setup(); fireEvent.click(screen.getByText('Agregar usuario')); expect(screen.getByText('Cargando usuarios...')).toBeVisible(); expect(screen.getByText('Otorgar acceso')).toBeDisabled(); });
+it('modo controlado: sin botón propio, abre desde el padre y avisa al cerrar', () => {
+  const onOpenChange = vi.fn();
+  render(<CommunityAccessSection communityId={10} open hideTrigger onOpenChange={onOpenChange} />);
+  expect(screen.queryByRole('button', { name: 'Usuarios con acceso' })).not.toBeInTheDocument();
+  expect(screen.getByText('Agregar usuario')).toBeVisible();
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  expect(onOpenChange).toHaveBeenCalledWith(false);
+});
