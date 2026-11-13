@@ -28,7 +28,8 @@ interface TeamSectionProps {
   communityId: number | null;
   onDelete?: () => void;
   onAddMember?: () => void;
-  onEditMember?: (personId: number) => void;
+  /** personIds holds both spouses when the row is a marriage. */
+  onEditMember?: (personId: number, personIds: number[]) => void;
 }
 
 interface MergedMember {
@@ -152,7 +153,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
   })();
 
   // Verificar si ya existe un responsable en el equipo
-  const hasResponsible = mergedMembers.some(member => member.isResponsible);
+  const currentResponsible = mergedMembers.find(member => member.isResponsible) ?? null;
+  const hasResponsible = currentResponsible !== null;
 
   const handleDeleteMember = async () => {
     if (!memberToDelete) return;
@@ -469,9 +471,10 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onEditMember(member.personIds[0])}
+                              onClick={() => onEditMember(member.personIds[0], member.personIds)}
                               disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                              title="Editar persona"
+                              title="Editar datos de la persona"
+                              aria-label={`Editar datos de ${member.name}`}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -493,8 +496,9 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                               size="icon"
                               className="text-green-600 hover:bg-green-50"
                               onClick={() => setMemberToAssignResponsible(member)}
-                              disabled={hasResponsible || assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
-                              title={hasResponsible ? "Ya existe un responsable en el equipo. Quita la responsabilidad del actual para asignar a otro." : "Asignar responsabilidad"}
+                              disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
+                              title={hasResponsible ? "Hacer responsable (reemplaza al responsable actual)" : "Asignar responsabilidad"}
+                              aria-label={`Hacer responsable a ${member.name}`}
                             >
                               <Crown className="h-4 w-4" />
                             </Button>
@@ -581,7 +585,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
               <DialogTitle>¿Asignar responsabilidad?</DialogTitle>
               <DialogDescription>
                 ¿Estás seguro de que deseas asignar la responsabilidad a {memberToAssignResponsible?.name}?
-                {hasResponsible && ' Esto quitará la responsabilidad del responsable actual.'}
+                {currentResponsible && ` ${currentResponsible.name} pasará a ser corresponsable y seguirá en el equipo.`}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-3">
@@ -597,7 +601,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                 onClick={handleAssignResponsible}
                 disabled={assigningResponsibleId !== null}
               >
-                {assigningResponsibleId ? 'Asignando...' : 'Asignar Responsabilidad'}
+                {assigningResponsibleId ? 'Asignando...' : hasResponsible ? 'Cambiar Responsable' : 'Asignar Responsabilidad'}
               </Button>
             </DialogFooter>
         </DialogContent>
