@@ -1,6 +1,7 @@
 import { Community, Team, Belongs, Parish, CommunityStepLog, Brother } from '@/types/database';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { getCarismaLabel, CARISMA_GROUP_ORDER } from '@/config/carisma';
+import { formatLocalDate, yearsSince } from '@/lib/dates';
 
 export type PrintMode = 'ficha' | 'hermanos' | 'todo';
 
@@ -204,8 +205,7 @@ function mergeTeamMembers(members: Belongs[]): MergedTeamMember[] {
 }
 
 function formatDate(dateString?: string): string {
-  if (!dateString) return 'No especificada';
-  return new Date(dateString).toLocaleDateString('es-CO', {
+  return formatLocalDate(dateString, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -213,15 +213,8 @@ function formatDate(dateString?: string): string {
 }
 
 function calculateYears(dateString?: string): string {
-  if (!dateString) return '';
-  const birthDate = new Date(dateString);
-  const today = new Date();
-  let years = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    years -= 1;
-  }
-  return `${years} a\u00f1os`;
+  const years = yearsSince(dateString);
+  return years === null ? '' : `${years} a\u00f1os`;
 }
 
 export function CommunityPrintView({

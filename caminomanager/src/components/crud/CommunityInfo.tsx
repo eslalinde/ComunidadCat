@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Community } from '@/types/database';
 import { Edit } from 'lucide-react';
+import { formatLocalDate, yearsSince } from '@/lib/dates';
 
 interface CommunityInfoProps {
   community: Community | null;
@@ -61,25 +62,8 @@ export function CommunityInfo({ community, loading, onEdit }: CommunityInfoProps
     return parts.length > 0 ? parts.join(' - ') : team.name;
   })();
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No especificada';
-    return new Date(dateString).toLocaleDateString('es-CO');
-  };
-
-  const calculateYears = (dateString?: string) => {
-    if (!dateString) return '';
-    const birthDate = new Date(dateString);
-    const today = new Date();
-    const years = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    // Si aún no ha cumplido años este año, restar 1
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      return years - 1;
-    }
-    
-    return years;
-  };
+  const formatDate = (dateString?: string) => formatLocalDate(dateString);
+  const calculateYears = (dateString?: string) => yearsSince(dateString) ?? '';
 
   return (
     <Card>
