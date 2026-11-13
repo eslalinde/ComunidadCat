@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCrud } from '@/hooks/useCrud';
 import { useEntityOptions } from '@/hooks/useEntityOptions';
+import { formatLocalDate, todayLocalISO } from '@/lib/dates';
 import { CommunityStepLog as CommunityStepLogType } from '@/types/database';
 import { Plus, Calendar, User, FileText, CheckCircle, XCircle } from 'lucide-react';
 
@@ -22,7 +23,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEntry, setNewEntry] = useState<Partial<CommunityStepLogType>>({
     community_id: communityId,
-    date_of_step: new Date().toISOString().split('T')[0],
+    date_of_step: todayLocalISO(),
     outcome: undefined,
   });
 
@@ -59,7 +60,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
       await create(newEntry as Omit<CommunityStepLogType, 'id' | 'created_at' | 'updated_at'>);
       setNewEntry({
         community_id: communityId,
-        date_of_step: new Date().toISOString().split('T')[0],
+        date_of_step: todayLocalISO(),
         outcome: undefined,
       });
       setShowAddForm(false);
@@ -68,10 +69,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No especificada';
-    return new Date(dateString).toLocaleDateString('es-CO');
-  };
+  const formatDate = (dateString?: string) => formatLocalDate(dateString);
 
   const getOutcomeBadge = (outcome?: boolean) => {
     if (outcome === true) {

@@ -23,7 +23,7 @@ const save = (data: Record<string, unknown>) => {
 };
 beforeEach(() => {
   vi.clearAllMocks(); harness = createQueryHarness();
-  responses = { inventory_item_types: ok([{ id: 1, name: 'Cáliz' }]), community_inventory: ok([]), community_visits: ok([]), community_step_log: ok(), communities: ok() };
+  responses = { inventory_item_types: ok([{ id: 1, name: 'Cáliz' }]), community_inventory: ok([]), community_visits: ok([]), community_step_log: ok(), communities: ok([{ id: 10 }]) };
   mock = createTableMock(responses); db.from.mockImplementation(mock.from);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -115,6 +115,15 @@ describe('bitácora compacta', () => {
     if (outcome === 'true') expect(mock.calls).toContainEqual({ table: 'communities', method: 'update', args: [{ step_way_id: 2, last_step_way_date: '2026-10-30', actual_brothers: 20 }] });
     if (!outcome) expect(mock.calls.some((c) => c.table === 'communities')).toBe(false);
     expect(refresh).toHaveBeenCalled();
+  });
+  it('avisa si el registro se guardó pero la comunidad no se actualizó', async () => {
+    responses.communities = ok([]);
+    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+    save({ outcome: 'true', step_way_id: '2', date_of_step: '2026-10-30' });
+    await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringContaining('no se pudo actualizar la etapa')));
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByLabelText('Agregar Registro a la Bitácora')).not.toBeInTheDocument();
   });
   it('presenta carga, vacío y modo lectura sin acciones de escritura', () => {
     const view = setup({ loading: true }); expect(screen.queryByText('Agregar')).not.toBeInTheDocument();

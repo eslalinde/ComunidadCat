@@ -37,9 +37,9 @@ describe('TeamSection', () => {
     expect(screen.getAllByText('Juan y Ana')).toHaveLength(1);
     expect(screen.getByText('300')).toBeVisible();
     expect(screen.getByRole('link', { name: 'San José' })).toHaveAttribute('href', '/parroquias/detalle?id=5');
-    expect(screen.getByTitle(/Ya existe un responsable/)).toBeDisabled();
+    expect(screen.getByTitle(/reemplaza al responsable actual/)).toBeEnabled();
     fireEvent.click(screen.getByTitle('Agregar miembro al equipo')); expect(add).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getAllByTitle('Editar persona')[0]); expect(edit).toHaveBeenCalledWith(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Editar datos de Juan y Ana' })); expect(edit).toHaveBeenCalledWith(1, [1, 2]);
     view.rerender(<TeamSection team={{ ...team, team_type_id: 4 }} members={members} parishes={[]} communityId={10} />);
     expect(screen.getByText('Equipo de Responsables')).toBeVisible();
     expect(screen.queryByTitle('Eliminar equipo completo')).not.toBeInTheDocument();
@@ -80,6 +80,17 @@ describe('TeamSection', () => {
     await waitFor(() => expect(fails ? toast.error : toast.success).toHaveBeenCalled());
     expect(mock.calls.filter((c) => c.method === 'update')).toHaveLength(fails ? 1 : 2);
     expect(mock.calls).toContainEqual({ table: 'belongs', method: 'update', args: [{ is_responsible_for_the_team: true }] });
+  });
+  it('cambia de responsable en dos clics y el anterior queda como corresponsable', async () => {
+    setup(); responses.belongs.data = [{ id: 11 }, { id: 12 }];
+    fireEvent.click(screen.getByRole('button', { name: 'Hacer responsable a Pedro' }));
+    expect(screen.getByText(/Juan y Ana pasará a ser corresponsable/)).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar Responsable' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Responsabilidad asignada'));
+    expect(mock.calls).toContainEqual({ table: 'belongs', method: 'in', args: ['id', [11, 12]] });
+    expect(mock.calls).toContainEqual({ table: 'belongs', method: 'update', args: [{ is_responsible_for_the_team: false }] });
+    expect(mock.calls).toContainEqual({ table: 'belongs', method: 'eq', args: ['id', 13] });
+    expect(refresh).toHaveBeenCalledOnce();
   });
   it.each(['ok', 'belongs', 'parish_teams', 'teams', 'zero'])('borra equipo en orden y detiene errores en %s', async (scenario) => {
     setup(); fireEvent.click(screen.getByTitle('Eliminar equipo completo')); fireEvent.click(screen.getByText('Cancelar borrado'));
