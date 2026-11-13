@@ -1,0 +1,82 @@
+name: Vercel Production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: vercel-production
+      cancel-in-progress: false
+    steps:
+      - name: Check that the tested commit is still current
+        id: main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$current_sha" == "$TESTED_SHA" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Se omite el despliegue porque main ya avanzó."
+          fi
+
+      - name: Deploy the tested commit and verify production aliases
+        if: steps.main.outputs.current == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          REPO_ID: ${{ github.event.repository.id }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          : "${VERCEL_TOKEN:?Configura el secreto VERCEL_TOKEN}"
+          : "${VERCEL_PROJECT_ID:?Configura la variable VERCEL_PROJECT_ID}"
+          scope=""
+          if [[ -n "$VERCEL_TEAM_ID" ]]; then
+            scope="?teamId=$VERCEL_TEAM_ID"
+          fi
+
+          payload=$(jq -n --arg project "$VERCEL_PROJECT_ID" \
+            --argjson repoId "$REPO_ID" --arg sha "$TESTED_SHA" \
+            '{name: "comunidad-cat", project: $project, target: "production",
+              gitSource: {type: "github", repoId: $repoId, sha: $sha, ref: "main"}}')
+          deployment=$(curl --fail-with-body --silent --show-error --max-time 60 \
+            --header "Authorization: Bearer $VERCEL_TOKEN" \
+            --header "Content-Type: application/json" --data "$payload" \
+            "https://api.vercel.com/v13/deployments$scope")
+          deployment_id=$(jq -er '.id' <<< "$deployment")
+          echo "Despliegue de $TESTED_SHA en Vercel: $deployment_id"
+
+          for attempt in {1..80}; do
+            deployment=$(curl --fail-with-body --silent --show-error --max-time 30 \
+              --retry 2 --retry-max-time 30 \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v13/deployments/$deployment_id$scope")
+            if jq -e '.readyState == "READY" and .aliasAssigned == true' <<< "$deployment" >/dev/null; then
+              echo "Producción publicada: $deployment_id"
+              exit 0
+            fi
+            if jq -e '.readyState == "ERROR" or .readyState == "CANCELED" or .aliasError != null' <<< "$deployment" >/dev/null; then
+              echo "::error::Vercel no pudo publicar el despliegue $deployment_id."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Vercel no confirmó la publicación de $deployment_id dentro del tiempo previsto."
+          exit 1

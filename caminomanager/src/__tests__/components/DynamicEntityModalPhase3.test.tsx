@@ -208,4 +208,28 @@ describe('formularios complejos con ReUI', () => {
     const footer = screen.getByRole('button', { name: 'Guardar' }).parentElement;
     expect(footer).toHaveClass('col-span-full', 'w-full', 'sm:justify-end');
   });
+
+  it('muestra el error de guardado dentro del formulario, sin alert()', async () => {
+    const user = userEvent.setup();
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onSave = vi.fn()
+      .mockRejectedValueOnce(new Error('Permiso denegado: operación rechazada'))
+      .mockResolvedValueOnce(undefined);
+    render(
+      <DynamicEntityModal
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        fields={[{ name: 'name', label: 'Nombre', type: 'text', required: false }]}
+        title="Probar"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Permiso denegado/);
+    expect(alertSpy).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    alertSpy.mockRestore();
+  });
 });

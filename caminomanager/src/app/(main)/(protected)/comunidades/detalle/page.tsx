@@ -13,16 +13,18 @@ import { CommunityPrintView } from '@/components/crud/CommunityPrintView';
 import { DynamicEntityModal } from '@/components/crud/DynamicEntityModal';
 import { communityConfig } from '@/config/entities';
 import { SelectBrotherForTeamModal } from '@/components/crud/SelectBrotherForTeamModal';
+import { EditPersonModal } from '@/components/crud/EditPersonModal';
 import { Button } from '@/components/ui/button';
 import { MergeCommunityModal } from '@/components/crud/MergeCommunityModal';
 import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 import { AuditLogSheet } from '@/components/crud/AuditLogSheet';
-import { ArrowLeft, ChevronDown, Merge, Plus, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, History, Merge, MoreHorizontal, Plus, Printer, Trash2, Users } from 'lucide-react';
 import { friendlyError } from '@/lib/supabaseErrors';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PrintMode } from '@/components/crud/CommunityPrintView';
@@ -30,6 +32,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
 import { Community } from '@/types/database';
 import { routes } from '@/lib/routes';
+import { createCatequistasTeam, createResponsablesTeam } from '@/lib/communityTeams';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   canEditCommunity,
@@ -58,6 +61,7 @@ function CommunityDetailContent() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [addToTeamId, setAddToTeamId] = useState<number | null>(null);
+  const [editPersonIds, setEditPersonIds] = useState<number[] | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -78,6 +82,8 @@ function CommunityDetailContent() {
   const showPrintTodo = canPrintTodo(userScope);
   const showAnyPrint = showPrintFicha || showPrintHermanos || showPrintTodo;
   const showCommunityAccess = canManageCommunityAccess(userScope);
+  const [isAccessOpen, setIsAccessOpen] = useState(false);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
   const showVisits = useFeatureFlag('community_visits');
   const showInventory = useFeatureFlag('community_inventory');
 
@@ -141,6 +147,23 @@ function CommunityDetailContent() {
     };
   }, [community]);
 
+  // The step log is the single way to advance a stage, so the history stays
+  // complete. The edit form only keeps the stage fields when the user cannot
+  // record step log entries.
+  const stageFromStepLog = showStepLog && canEditStepLog(userScope);
+  const communityEditFields = useMemo(
+    () =>
+      stageFromStepLog
+        ? communityConfig.fields.filter(
+            (f) => f.name !== 'step_way_id' && f.name !== 'last_step_way_date'
+          )
+        : communityConfig.fields,
+    [stageFromStepLog]
+  );
+
+  const canShowMerge = showMerge && !!community?.parish_id;
+  const showMoreMenu = showCommunityAccess || showAuditLog || canShowMerge || showDelete;
+
   const handleEdit = () => {
     setIsEditModalOpen(true);
   };
@@ -189,19 +212,7 @@ function CommunityDetailContent() {
     if (!community?.id) return;
 
     try {
-      const supabase = createClient();
-      const { error: teamError } = await supabase
-        .from('teams')
-        .insert({
-          name: `Equipo de Responsables - Comunidad ${community.number}`,
-          team_type_id: 4, // Responsables
-          community_id: community.id
-        })
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
+      await createResponsablesTeam({ id: community.id, number: community.number });
       toast.success('Equipo de responsables creado');
       await invalidateTeams();
     } catch (err) {
@@ -214,24 +225,10 @@ function CommunityDetailContent() {
     if (!community?.id) return;
 
     try {
-      const supabase = createClient();
-
-      // Contar cuántos equipos de catequistas ya existen para numerarlos
-      const existingCatequistasCount = teams.catequistas.length;
-      const teamNumber = existingCatequistasCount + 1;
-
-      const { error: teamError } = await supabase
-        .from('teams')
-        .insert({
-          name: `Equipo de Catequistas ${teamNumber} - Comunidad ${community.number}`,
-          team_type_id: 3, // Catequistas
-          community_id: community.id
-        })
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
+      await createCatequistasTeam(
+        { id: community.id, number: community.number },
+        teams.catequistas.length
+      );
       toast.success('Equipo de catequistas creado');
       await invalidateTeams();
     } catch (err) {
@@ -314,22 +311,36 @@ function CommunityDetailContent() {
   };
 
   const handleAddBrotherToTeam = async (personIds: number[]) => {
-    if (!addToTeamId) return;
+    if (!addToTeamId || personIds.length === 0) return;
     const supabase = createClient();
 
-    for (const personId of personIds) {
-      const { error } = await supabase.from('belongs').insert({
+    // Skip people already in the team (e.g. one spouse of a marriage) and insert in one call.
+    const existing = new Set((teamMembers[addToTeamId] || []).map((m) => m.person_id));
+    const rows = personIds
+      .filter((personId) => !existing.has(personId))
+      .map((personId) => ({
         person_id: personId,
         team_id: addToTeamId,
         community_id: communityId,
         is_responsible_for_the_team: false,
-      });
+      }));
 
+    if (rows.length > 0) {
+      const { error } = await supabase.from('belongs').insert(rows);
       if (error) throw error;
     }
 
+    toast.success('Miembros agregados al equipo');
     await invalidateTeamMembers();
   };
+
+  const handlePersonUpdated = async () => {
+    await Promise.all([invalidateBrothers(), invalidateTeamMembers(), invalidateDetail()]);
+  };
+
+  const handleEditMember = showManageTeams
+    ? (_personId: number, personIds: number[]) => setEditPersonIds(personIds)
+    : undefined;
 
   if (error) {
     return (
@@ -346,89 +357,128 @@ function CommunityDetailContent() {
       {/* Screen view - hidden when printing */}
       <div className="print:hidden">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push(routes.comunidades)}
-              className="flex items-center gap-2"
-              size="sm"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Regresar a Comunidades</span>
-              <span className="sm:hidden">Volver</span>
-            </Button>
-            {showAnyPrint && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2" size="sm">
-                    <Printer className="h-4 w-4" />
-                    <span className="hidden sm:inline">Imprimir</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {showPrintFicha && (
-                    <DropdownMenuItem onClick={() => handlePrint('ficha')}>
-                      Ficha completa
-                    </DropdownMenuItem>
-                  )}
-                  {showPrintHermanos && (
-                    <DropdownMenuItem onClick={() => handlePrint('hermanos')}>
-                      Lista de hermanos
-                    </DropdownMenuItem>
-                  )}
-                  {showPrintTodo && (
-                    <DropdownMenuItem onClick={() => handlePrint('todo')}>
-                      Todo
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {showMerge && community?.parish_id && (
-              <Button
-                variant="outline"
-                onClick={() => setIsMergeModalOpen(true)}
-                className="flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
-                size="sm"
-              >
-                <Merge className="h-4 w-4" />
-                <span className="hidden sm:inline">Fusionar</span>
-              </Button>
-            )}
-            {showCommunityAccess && (
-              <CommunityAccessSection communityId={communityId} />
-            )}
-            {showAuditLog && (
-              <AuditLogSheet communityId={communityId} />
-            )}
-            {showDelete && (
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="flex items-center gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
-                disabled={loading}
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Eliminar</span>
-              </Button>
-            )}
+        <div className="mb-6 space-y-3">
+          <Button
+            variant="ghost"
+            onClick={() => router.push(routes.comunidades)}
+            className="-ml-2 flex items-center gap-2 text-muted-foreground"
+            size="sm"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Regresar a Comunidades
+          </Button>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-foreground">
+                Comunidad {community?.number || 'Cargando...'}
+              </h1>
+              <p className="mt-1 text-muted-foreground">
+                {community?.parish?.name || 'Parroquia no especificada'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {showAnyPrint && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2" size="sm" aria-label="Imprimir">
+                      <Printer className="h-4 w-4" />
+                      <span className="hidden sm:inline">Imprimir</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {showPrintFicha && (
+                      <DropdownMenuItem onClick={() => handlePrint('ficha')}>
+                        Ficha completa
+                      </DropdownMenuItem>
+                    )}
+                    {showPrintHermanos && (
+                      <DropdownMenuItem onClick={() => handlePrint('hermanos')}>
+                        Lista de hermanos
+                      </DropdownMenuItem>
+                    )}
+                    {showPrintTodo && (
+                      <DropdownMenuItem onClick={() => handlePrint('todo')}>
+                        Todo
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {showMoreMenu && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2" size="sm" aria-label="Más acciones">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="hidden sm:inline">Más</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-48">
+                    {showCommunityAccess && (
+                      <DropdownMenuItem onClick={() => setIsAccessOpen(true)}>
+                        <Users className="h-4 w-4" />
+                        Usuarios con acceso
+                      </DropdownMenuItem>
+                    )}
+                    {showAuditLog && (
+                      <DropdownMenuItem onClick={() => setIsAuditOpen(true)}>
+                        <History className="h-4 w-4" />
+                        Historial de cambios
+                      </DropdownMenuItem>
+                    )}
+                    {canShowMerge && (
+                      <DropdownMenuItem onClick={() => setIsMergeModalOpen(true)}>
+                        <Merge className="h-4 w-4" />
+                        Fusionar
+                      </DropdownMenuItem>
+                    )}
+                    {showDelete && (
+                      <>
+                        {(showCommunityAccess || showAuditLog || canShowMerge) && <DropdownMenuSeparator />}
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setIsDeleteDialogOpen(true)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Comunidad {community?.number || 'Cargando...'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {community?.parish?.name || 'Parroquia no especificada'}
-          </p>
+          {showCommunityAccess && (
+            <CommunityAccessSection
+              communityId={communityId}
+              open={isAccessOpen}
+              onOpenChange={setIsAccessOpen}
+              hideTrigger
+            />
+          )}
+          {showAuditLog && (
+            <AuditLogSheet
+              communityId={communityId}
+              open={isAuditOpen}
+              onOpenChange={setIsAuditOpen}
+              hideTrigger
+            />
+          )}
         </div>
 
         {/* Main Content - 50/50 Split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left: Community Info + Teams */}
           <div className="space-y-6">
-            <CommunityInfo community={community} loading={loading} onEdit={showEdit ? handleEdit : undefined} />
+            <CommunityInfo
+              community={community}
+              loading={loading}
+              onEdit={showEdit ? handleEdit : undefined}
+              brothersInList={mergedBrothers.reduce((n, b) => n + b.personIds.length, 0)}
+              stageFromStepLog={stageFromStepLog}
+            />
 
             {/* Responsables Team */}
             <div>
@@ -443,29 +493,20 @@ function CommunityDetailContent() {
                       communityId={communityId}
                       onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
                       onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
+                      onEditMember={handleEditMember}
                     />
                   </div>
                 ))
               ) : showManageTeams ? (
-                <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <div className="text-center space-y-4">
-                    <p className="text-gray-500 text-lg">No hay equipo de responsables</p>
-                    <p className="text-gray-400 text-sm">Crea el equipo de responsables para comenzar</p>
-                    <Button
-                      variant="outline"
-                      onClick={handleCreateResponsablesTeam}
-                      className="flex items-center gap-2"
-                      disabled={loading}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Crear Equipo de Responsables
-                    </Button>
-                  </div>
-                </div>
+                <EmptyTeamRow
+                  title="No hay equipo de responsables"
+                  hint="Créalo para asignar al responsable y los corresponsables."
+                  actionLabel="Crear Equipo de Responsables"
+                  onAction={handleCreateResponsablesTeam}
+                  disabled={loading}
+                />
               ) : (
-                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-500">No hay equipo de responsables</p>
-                </div>
+                <EmptyTeamRow title="No hay equipo de responsables" />
               )}
             </div>
 
@@ -484,6 +525,7 @@ function CommunityDetailContent() {
                         communityId={communityId}
                         onDelete={showManageTeams ? async () => { await invalidateTeams(); await invalidateTeamMembers(); } : undefined}
                         onAddMember={showManageTeams ? () => setAddToTeamId(team.id!) : undefined}
+                        onEditMember={handleEditMember}
                       />
                     </div>
                   ))}
@@ -502,25 +544,15 @@ function CommunityDetailContent() {
                   )}
                 </>
               ) : showManageTeams ? (
-                <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <div className="text-center space-y-4">
-                    <p className="text-gray-500 text-lg">No hay equipos de catequistas</p>
-                    <p className="text-gray-400 text-sm">Crea el primer equipo de catequistas para comenzar</p>
-                    <Button
-                      variant="outline"
-                      onClick={handleCreateCatequistasTeam}
-                      className="flex items-center gap-2"
-                      disabled={loading}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Crear Equipo de Catequistas
-                    </Button>
-                  </div>
-                </div>
+                <EmptyTeamRow
+                  title="No hay equipos de catequistas"
+                  hint="Crea el equipo que catequizará a la comunidad."
+                  actionLabel="Crear Equipo de Catequistas"
+                  onAction={handleCreateCatequistasTeam}
+                  disabled={loading}
+                />
               ) : (
-                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-500">No hay equipos de catequistas</p>
-                </div>
+                <EmptyTeamRow title="No hay equipos de catequistas" />
               )}
             </div>
           </div>
@@ -564,6 +596,7 @@ function CommunityDetailContent() {
               teamMembers={teamMembers}
               onDelete={showManageBrothers ? invalidateBrothers : undefined}
               onAdd={showManageBrothers ? invalidateBrothers : undefined}
+              onPersonUpdated={handlePersonUpdated}
             />
           </div>
         </div>
@@ -590,7 +623,7 @@ function CommunityDetailContent() {
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleSave}
           initial={communityEditInitial}
-          fields={communityConfig.fields}
+          fields={communityEditFields}
           title="Editar Comunidad"
           loading={isSaving}
           size={communityConfig.formSize}
@@ -607,6 +640,13 @@ function CommunityDetailContent() {
           teamMembers={addToTeamId ? teamMembers[addToTeamId] || [] : []}
         />
       )}
+
+      {/* Modal para editar datos de un miembro de equipo */}
+      <EditPersonModal
+        personIds={editPersonIds}
+        onClose={() => setEditPersonIds(null)}
+        onSaved={handlePersonUpdated}
+      />
 
       {/* Diálogo de confirmación de eliminación */}
       {showDelete && (
@@ -636,6 +676,35 @@ function CommunityDetailContent() {
           parishId={community.parish_id}
           onSuccess={refreshCommunity}
         />
+      )}
+    </div>
+  );
+}
+
+function EmptyTeamRow({
+  title,
+  hint,
+  actionLabel,
+  onAction,
+  disabled,
+}: {
+  title: string;
+  hint?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-dashed bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-medium text-foreground">{title}</p>
+        {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+      </div>
+      {actionLabel && onAction && (
+        <Button variant="outline" size="sm" onClick={onAction} disabled={disabled} className="shrink-0">
+          <Plus className="h-4 w-4" />
+          {actionLabel}
+        </Button>
       )}
     </div>
   );

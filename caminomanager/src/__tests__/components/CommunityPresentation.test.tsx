@@ -58,6 +58,16 @@ describe('Fichas y listas imprimibles', () => {
     view.rerender(<CommunityInfo community={null} loading />); expect(screen.getByText('Cargando información...')).toBeInTheDocument();
     view.rerender(<CommunityInfo community={null} />); expect(screen.getByText('No se encontró información de la comunidad')).toBeInTheDocument();
   });
+  it('indica que la etapa viene de la bitácora y compara hermanos registrados', () => {
+    const view = render(<CommunityInfo community={{ number: '1', actual_brothers: 20 }} brothersInList={18} stageFromStepLog />);
+    expect(screen.getByText('Se actualiza desde la Bitácora')).toBeVisible();
+    expect(screen.getByText('18 personas registradas en la lista')).toBeVisible();
+    view.rerender(<CommunityInfo community={{ number: '1', actual_brothers: 20 }} brothersInList={20} />);
+    expect(screen.queryByText('Se actualiza desde la Bitácora')).not.toBeInTheDocument();
+    expect(screen.queryByText(/registradas en la lista/)).not.toBeInTheDocument();
+    view.rerender(<CommunityInfo community={{ number: '1' }} brothersInList={1} />);
+    expect(screen.getByText('1 persona registrada en la lista')).toBeVisible();
+  });
   it('muestra datos geográficos y estados vacíos de parroquia', () => {
     const edit = vi.fn(); const view = render(<ParishInfo parish={parish} onEdit={edit} />);
     for (const value of ['San José', 'Bogotá', 'Colombia', 'Cundinamarca', 'Norte', 'p@example.com']) expect(screen.getByText(value)).toBeInTheDocument();
