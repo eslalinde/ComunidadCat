@@ -377,13 +377,14 @@ INSERT INTO public.people (id, person_name, phone, mobile, email, person_type_id
 UPDATE public.people SET is_itinerante = true WHERE id IN (61, 201, 202, 203, 204);
 
 -- ------------------------------------------------------------
--- Team types
+-- Team types (also inserted by migration 20261113200000)
 -- ------------------------------------------------------------
 INSERT INTO public.team_types (id, name, order_num) VALUES
   (1, 'Catequistas de la Nación', 1),
   (2, 'Itinerantes', 2),
   (3, 'Catequistas', 3),
-  (4, 'Responsables', 4);
+  (4, 'Responsables', 4)
+ON CONFLICT DO NOTHING;
 
 -- ------------------------------------------------------------
 -- Teams
