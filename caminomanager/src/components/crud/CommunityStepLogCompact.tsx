@@ -12,6 +12,7 @@ import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
+import { formatLocalDate, todayLocalISO } from '@/lib/dates';
 
 interface CommunityStepLogCompactProps {
   communityId: number;
@@ -33,10 +34,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
   const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 4;
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No especificada';
-    return new Date(dateString).toLocaleDateString('es-CO');
-  };
+  const formatDate = (dateString?: string) => formatLocalDate(dateString);
 
   const getDotColor = (outcome?: boolean) => {
     if (outcome === true) return 'bg-green-500';
@@ -81,7 +79,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
       // Si el paso está "Cerrada" y tiene step_way_id, actualizar etapa
       if (outcomeValue === true && data.step_way_id) {
         communityUpdate.step_way_id = parseInt(data.step_way_id, 10);
-        communityUpdate.last_step_way_date = data.date_of_step || new Date().toISOString().split('T')[0];
+        communityUpdate.last_step_way_date = data.date_of_step || todayLocalISO();
       }
 
       // Actualizar hermanos actuales si se proporcionó
@@ -90,14 +88,28 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
       }
 
       // Hacer un solo update a la comunidad si hay algo que actualizar
+      let communityUpdateFailed = false;
       if (Object.keys(communityUpdate).length > 0) {
-        await supabase
+        const { data: updatedRows, error: updateError } = await supabase
           .from('communities')
           .update(communityUpdate)
-          .eq('id', communityId);
+          .eq('id', communityId)
+          .select('id');
+        if (updateError || !updatedRows || updatedRows.length === 0) {
+          console.error('Error updating community from step log:', updateError);
+          communityUpdateFailed = true;
+        }
       }
 
-      toast.success('Registro agregado a la bitácora');
+      // The log entry is already saved: close the modal either way so the user
+      // does not resubmit and duplicate it, but say what was not updated.
+      if (communityUpdateFailed) {
+        toast.warning(
+          'El registro se guardó en la bitácora, pero no se pudo actualizar la etapa o los hermanos de la comunidad. Edita la comunidad para corregirlo.'
+        );
+      } else {
+        toast.success('Registro agregado a la bitácora');
+      }
       setIsAddModalOpen(false);
       onStepLogAdded?.();
     } catch (error) {
@@ -340,7 +352,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddEntry}
         initial={{
-          date_of_step: new Date().toISOString().split('T')[0],
+          date_of_step: todayLocalISO(),
           principal_catechist_name: defaultCatechistName || '',
           brothers_count: actualBrothers || '',
         } as any}
@@ -359,7 +371,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         description={`¿Estás seguro de que deseas eliminar este registro de la Comunidad ${communityNumber}?`}
         preview={[
           `Paso: ${entryToDelete?.step_way?.name || 'Sin paso'}`,
-          `Fecha: ${entryToDelete?.date_of_step ? new Date(entryToDelete.date_of_step).toLocaleDateString('es-CO') : 'No especificada'}`,
+          `Fecha: ${formatLocalDate(entryToDelete?.date_of_step)}`,
           ...(entryToDelete?.notes ? [`Notas: ${entryToDelete.notes}`] : []),
         ]}
         loading={isDeleting}

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp } from 'lucide-react';
+import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -17,6 +17,7 @@ import { CARISMA_GROUP_ORDER } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { DropdownMenu } from 'radix-ui';
 import { BulkUploadWizard } from '@/components/bulk-upload/BulkUploadWizard';
+import { EditPersonModal } from './EditPersonModal';
 
 interface BrothersListProps {
   brothers: MergedBrother[];
@@ -26,6 +27,8 @@ interface BrothersListProps {
   teamMembers: Record<number, Belongs[]>;
   onDelete?: () => void;
   onAdd?: () => void;
+  /** Called after a brother's personal data is edited. Defaults to onAdd. */
+  onPersonUpdated?: () => void | Promise<void>;
 }
 
 interface CarismaGroup {
@@ -33,7 +36,7 @@ interface CarismaGroup {
   brothers: MergedBrother[];
 }
 
-export function BrothersList({ brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd }: BrothersListProps) {
+export function BrothersList({ brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -42,6 +45,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
   const [isSaving, setIsSaving] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [brotherToDelete, setBrotherToDelete] = useState<MergedBrother | null>(null);
+  const [editPersonIds, setEditPersonIds] = useState<number[] | null>(null);
 
   const [now] = useState(() => Date.now());
 
@@ -144,17 +148,23 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
     }
   };
 
-  const handleSelectExistingBrother = async (personId: number) => {
+  const handleSelectExistingBrothers = async (personIds: number[]) => {
+    if (personIds.length === 0) return;
     const supabase = createClient();
     const { error } = await supabase
       .from('brothers')
-      .insert({
+      .insert(personIds.map((personId) => ({
         person_id: personId,
         community_id: communityId,
-      });
+      })));
 
     if (error) throw error;
 
+    toast.success(
+      personIds.length === 1
+        ? 'Hermano agregado a la comunidad'
+        : `${personIds.length} hermanos agregados a la comunidad`
+    );
     // Refresh the community data
     if (onAdd) {
       onAdd();
@@ -377,15 +387,29 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                             <TableCell className="py-1.5">{brother.celular || '-'}</TableCell>
                             {onDelete && (
                               <TableCell className="py-1.5">
-                                <Button
-                                  variant={isInTeam ? "secondary" : "outline"}
-                                  className={!isInTeam ? "text-destructive border-destructive/50 hover:bg-destructive/10" : ""}
-                                  onClick={() => handleRequestDelete(brother)}
-                                  disabled={isInTeam || isDeleting}
-                                  title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setEditPersonIds(brother.personIds)}
+                                    disabled={isDeleting}
+                                    title="Editar datos"
+                                    aria-label={`Editar datos de ${brother.name}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRequestDelete(brother)}
+                                    disabled={isInTeam || isDeleting}
+                                    title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
+                                    aria-label={`Eliminar a ${brother.name} de la comunidad`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             )}
                           </TableRow>
@@ -405,8 +429,15 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
     <SelectBrotherModal
       open={isSelectModalOpen}
       onClose={() => setIsSelectModalOpen(false)}
-      onSelect={handleSelectExistingBrother}
+      onSelect={handleSelectExistingBrothers}
       communityId={communityId}
+    />
+
+    {/* Modal para editar datos de un hermano (o de uno de los cónyuges) */}
+    <EditPersonModal
+      personIds={editPersonIds}
+      onClose={() => setEditPersonIds(null)}
+      onSaved={onPersonUpdated ?? onAdd}
     />
 
     {/* Modal para crear nuevo hermano */}

@@ -27,6 +27,12 @@ export const queryKeys = {
       ['community', 'parishPriest', parishId] as const,
   },
 
+  // Personas
+  people: {
+    all: ['people'] as const,
+    detail: (ids: number[]) => ['people', 'detail', ids] as const,
+  },
+
   // Detalle de parroquia
   parish: {
     all: ['parish'] as const,
