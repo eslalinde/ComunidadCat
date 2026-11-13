@@ -3,9 +3,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCrud, type UseCrudOptions } from '@/hooks/useCrud';
-import { useCountryOptions } from '@/hooks/useEntityOptions';
+import {
+  useAllCityOptions,
+  useAllParishOptions,
+  useCountryOptions,
+  useStateOptions,
+} from '@/hooks/useEntityOptions';
 import { queryKeys } from '@/lib/queryKeys';
-import type { Country } from '@/types/database';
+import type { City, Country, Parish, State } from '@/types/database';
 import { toast } from 'sonner';
 
 const db = vi.hoisted(() => ({ from: vi.fn() }));
@@ -67,22 +72,54 @@ beforeEach(() => {
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); });
 
 describe('useCrud con React Query real', () => {
-  it('actualiza el selector de países después de crear el primer país', async () => {
+  it.each([
+    {
+      tableName: 'countries',
+      selector: 'país en el formulario de departamentos',
+      useOptions: useCountryOptions,
+      record: { name: 'Colombia', code: 'CO' } satisfies Country,
+    },
+    {
+      tableName: 'states',
+      selector: 'departamento en el formulario de ciudades',
+      useOptions: () => useStateOptions(1),
+      record: { name: 'Antioquia', country_id: 1 } satisfies State,
+    },
+    {
+      tableName: 'cities',
+      selector: 'ciudad en el formulario de parroquias',
+      useOptions: useAllCityOptions,
+      record: { name: 'Medellín', country_id: 1, state_id: 1 } satisfies City,
+    },
+    {
+      tableName: 'parishes',
+      selector: 'parroquia en el formulario de comunidades',
+      useOptions: useAllParishOptions,
+      record: { name: 'San José', city_id: 1 } satisfies Parish,
+    },
+  ])('muestra el primer $selector', async ({ tableName, useOptions, record }) => {
     listResponse = { data: [], error: null, count: 0 };
-    const { result } = setup();
-    const { result: countryOptions } = renderHook(useCountryOptions, {
-      wrapper: ({ children }) => createElement(QueryClientProvider, { client }, children),
-    });
-    await waitFor(() => expect(countryOptions.current.loading).toBe(false));
-    expect(countryOptions.current.options).toEqual([]);
+    const wrapper = ({ children }: PropsWithChildren) =>
+      createElement(QueryClientProvider, { client }, children);
+    const { result } = renderHook(
+      () => useCrud<Country | State | City | Parish>({ tableName, searchFields: ['name'] }),
+      { wrapper },
+    );
+    const previousSelector = renderHook(useOptions, { wrapper });
+    await waitFor(() => expect(previousSelector.result.current.loading).toBe(false));
+    expect(previousSelector.result.current.options).toEqual([]);
+    previousSelector.unmount();
 
-    listResponse = { data: countries, error: null, count: 1 };
+    const saved = { ...record, id: 1 };
+    listResponse = { data: [saved], error: null, count: 1 };
+    mutationResponse = Promise.resolve({ data: saved, error: null, count: 1 });
     await act(async () => {
-      await result.current.create({ name: 'Colombia', code: 'CO' });
+      await result.current.create(record);
     });
 
-    await waitFor(() => expect(countryOptions.current.options).toEqual([
-      { value: 1, label: 'Colombia' },
+    const nextSelector = renderHook(useOptions, { wrapper });
+    await waitFor(() => expect(nextSelector.result.current.options).toEqual([
+      { value: saved.id, label: saved.name },
     ]));
   });
 
