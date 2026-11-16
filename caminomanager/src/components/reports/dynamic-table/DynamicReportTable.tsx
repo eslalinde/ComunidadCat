@@ -1,20 +1,15 @@
 "use client";
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 import { useState, useCallback } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getGroupedRowModel,
-  getExpandedRowModel,
-  getFacetedUniqueValues,
-  getPaginationRowModel,
-  flexRender,
+  useTable,
+  FlexRender,
   SortingState,
   ColumnFiltersState,
   ExpandedState,
   PaginationState,
-  VisibilityState,
+  ColumnVisibilityState,
   Row,
   type Table as TanStackTable,
 } from "@tanstack/react-table";
@@ -49,7 +44,7 @@ import { ColumnFilter } from "./ColumnFilter";
 import { GroupingControls } from "./GroupingControls";
 import { ColumnVisibilityControl } from "./ColumnVisibilityControl";
 
-export function DynamicReportTable<TData>({
+export function DynamicReportTable<TData extends RowData>({
   config,
   data,
   loading,
@@ -65,7 +60,7 @@ export function DynamicReportTable<TData>({
   );
   const [expanded, setExpanded] = useState<ExpandedState>(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
     config.dataGrid?.defaultColumnVisibility ?? {}
   );
   const [pagination, setPagination] = useState<PaginationState>({
@@ -73,7 +68,8 @@ export function DynamicReportTable<TData>({
     pageSize: config.dataGrid?.pageSize ?? 10,
   });
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns: config.columns,
     state: {
@@ -92,15 +88,7 @@ export function DynamicReportTable<TData>({
     onExpandedChange: setExpanded,
     onColumnVisibilityChange: setColumnVisibility,
     ...(config.dataGrid ? { onPaginationChange: setPagination } : {}),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getGroupedRowModel: getGroupedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    ...(config.dataGrid
-      ? { getPaginationRowModel: getPaginationRowModel() }
-      : {}),
+    manualPagination: !config.dataGrid,
     enableGrouping: true,
   });
 
@@ -260,10 +248,7 @@ export function DynamicReportTable<TData>({
                                 }`}
                                 onClick={header.column.getToggleSortingHandler()}
                               >
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
+                                <FlexRender header={header} />
                                 {header.column.getCanSort() && (
                                   <span className="ml-1">
                                     {header.column.getIsSorted() === "asc" ? (
@@ -315,26 +300,14 @@ export function DynamicReportTable<TData>({
                               ) : (
                                 <ChevronRight className="h-4 w-4" />
                               )}
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}{" "}
+                              <FlexRender cell={cell} />{" "}
                               <span className="text-gray-500 font-normal text-xs">
                                 ({row.subRows.length})
                               </span>
                             </button>
-                          ) : cell.getIsAggregated() ? (
-                            flexRender(
-                              cell.column.columnDef.aggregatedCell ??
-                                cell.column.columnDef.cell,
-                              cell.getContext()
-                            )
-                          ) : cell.getIsPlaceholder() ? null : (
-                            flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )
-                          )}
+                          ) : (
+                      <FlexRender cell={cell} />
+                    )}
                         </TableCell>
                       );
                     })}
@@ -354,7 +327,7 @@ export function DynamicReportTable<TData>({
             <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <span>
-                  Página {table.getState().pagination.pageIndex + 1} de{" "}
+                  Página {table.state.pagination.pageIndex + 1} de{" "}
                   {Math.max(1, table.getPageCount())} · {filteredLeafRowCount}{" "}
                   registros
                 </span>
@@ -362,7 +335,7 @@ export function DynamicReportTable<TData>({
                   <span className="sr-only sm:not-sr-only">Filas:</span>
                   <select
                     aria-label="Filas por página"
-                    value={table.getState().pagination.pageSize}
+                    value={table.state.pagination.pageSize}
                     onChange={(event) => table.setPageSize(Number(event.target.value))}
                     className="h-9 rounded-md border bg-background px-2 text-foreground"
                   >
@@ -409,10 +382,10 @@ export function DynamicReportTable<TData>({
   );
 }
 
-function AggregationFooter<TData>({
+function AggregationFooter<TData extends RowData>({
   table,
 }: {
-  table: TanStackTable<TData>;
+  table: TanStackTable<AppTableFeatures, TData>;
 }) {
   const allRows = table.getFilteredRowModel().flatRows;
   const visibleColumns = table.getVisibleLeafColumns();
@@ -478,7 +451,7 @@ function AggregationFooter<TData>({
   );
 }
 
-function countLeafRows<TData>(row: Row<TData>): number {
+function countLeafRows<TData extends RowData>(row: Row<AppTableFeatures, TData>): number {
   if (row.subRows && row.subRows.length > 0) {
     return row.subRows.reduce((count, subRow) => count + countLeafRows(subRow), 0);
   }

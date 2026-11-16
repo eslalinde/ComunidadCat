@@ -1,4 +1,5 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
 import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
@@ -26,9 +27,9 @@ function getDefaultDates() {
   return { start, end };
 }
 
-const columnHelper = createColumnHelper<ParishCatechesisRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, ParishCatechesisRow>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("diocese_name", {
     header: "Diócesis",
     cell: (info) => info.getValue(),
@@ -87,7 +88,7 @@ const columns = [
       filterType: "text",
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const reportConfig: DynamicReportConfig<ParishCatechesisRow> = {
   title: "Catequesis por Parroquia",

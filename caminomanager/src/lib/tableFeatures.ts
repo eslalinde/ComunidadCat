@@ -1,0 +1,50 @@
+import {
+  aggregationFns,
+  columnFacetingFeature,
+  columnFilteringFeature,
+  columnGroupingFeature,
+  columnVisibilityFeature,
+  createExpandedRowModel,
+  createFacetedRowModel,
+  createFacetedUniqueValues,
+  createFilteredRowModel,
+  createGroupedRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  filterFns,
+  globalFilteringFeature,
+  rowAggregationFeature,
+  rowExpandingFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  sortFns,
+  tableFeatures,
+} from '@tanstack/react-table';
+
+// Shared contract for DataGrid, reports and their column definitions. Tables
+// whose data is processed externally opt out with the manual* options.
+export const appTableFeatures = tableFeatures({
+  columnFacetingFeature,
+  columnFilteringFeature,
+  columnGroupingFeature,
+  columnVisibilityFeature,
+  globalFilteringFeature,
+  rowAggregationFeature,
+  rowExpandingFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  filteredRowModel: createFilteredRowModel(),
+  groupedRowModel: createGroupedRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  expandedRowModel: createExpandedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  facetedRowModel: createFacetedRowModel(),
+  facetedUniqueValues: createFacetedUniqueValues(),
+  aggregationFns,
+  filterFns,
+  sortFns,
+});
+
+export type AppTableFeatures = typeof appTableFeatures;

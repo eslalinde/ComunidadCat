@@ -1,12 +1,9 @@
 "use client"
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
 
 import * as React from "react"
 import {
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
@@ -62,7 +59,7 @@ const cityRows: City[] = [
   { name: "Quito", department: "Pichincha", country: "Ecuador" },
 ]
 
-const cityColumns: ColumnDef<City>[] = [
+const cityColumns: ColumnDef<AppTableFeatures, City>[] = [
   { accessorKey: "name", header: "Ciudad" },
   { accessorKey: "department", header: "Departamento" },
   { accessorKey: "country", header: "País" },
@@ -76,20 +73,14 @@ export function ReuiLab() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  // TanStack Table devuelve una instancia mutable por diseño; el laboratorio
-  // necesita conservar ese contrato para compararlo con el DataGrid candidato.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: cityRows,
     columns: cityColumns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 4 } },
+    initialState: { pagination: { pageIndex: 0, pageSize: 4 } },
   })
 
   return (
@@ -208,7 +199,7 @@ export function ReuiLab() {
             <DataGrid table={table} emptyMessage="No hay ciudades que coincidan" />
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+                Página {table.state.pagination.pageIndex + 1} de {table.getPageCount()}
               </p>
               <div className="flex gap-2">
                 <Button

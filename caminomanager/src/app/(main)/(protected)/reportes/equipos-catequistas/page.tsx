@@ -1,4 +1,5 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   DynamicReportTable,
@@ -10,9 +11,9 @@ import {
   CatechistTeamRow,
 } from "@/hooks/useCatechistTeamsReport";
 
-const columnHelper = createColumnHelper<CatechistTeamRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, CatechistTeamRow>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("diocese_name", {
     header: "Arquidiócesis/Diócesis",
     cell: (info) => info.getValue(),
@@ -72,7 +73,7 @@ const columns = [
       enableGrouping: true,
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const reportConfig: DynamicReportConfig<CatechistTeamRow> = {
   title: "Equipos de Catequistas",

@@ -1,4 +1,5 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   DynamicReportTable,
@@ -7,9 +8,9 @@ import {
 } from "@/components/reports/dynamic-table";
 import { usePriestsReport, PriestRow } from "@/hooks/usePriestsReport";
 
-const columnHelper = createColumnHelper<PriestRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, PriestRow>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("priest_name", {
     header: "Nombre del Presbítero",
     cell: (info) => info.getValue(),
@@ -92,7 +93,7 @@ const columns = [
       filterType: "text",
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const reportConfig: DynamicReportConfig<PriestRow> = {
   title: "Presbíteros",

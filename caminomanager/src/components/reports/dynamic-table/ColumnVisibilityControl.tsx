@@ -1,4 +1,6 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 
 import { Columns3 } from "lucide-react";
 import { type Table } from "@tanstack/react-table";
@@ -13,11 +15,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toSentenceCase } from "@/lib/text-format";
 
-interface ColumnVisibilityControlProps<TData> {
-  table: Table<TData>;
+interface ColumnVisibilityControlProps<TData extends RowData> {
+  table: Table<AppTableFeatures, TData>;
 }
 
-export function ColumnVisibilityControl<TData>({
+export function ColumnVisibilityControl<TData extends RowData>({
   table,
 }: ColumnVisibilityControlProps<TData>) {
   const columns = table
