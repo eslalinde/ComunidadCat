@@ -50,7 +50,13 @@ describe('BrothersList', () => {
     fireEvent.change(screen.getByLabelText('Datos del formulario'), { target: { value: JSON.stringify({ person_name: 'Nuevo' }) } }); fireEvent.click(screen.getByText('Guardar formulario'));
     await waitFor(() => expect(scenario === 'ok' ? toast.success : toast.error).toHaveBeenCalled());
     expect(refresh).toHaveBeenCalledTimes(scenario === 'ok' ? 1 : 0); expect(db.from).toHaveBeenCalledTimes(scenario === 'people' ? 1 : 2);
-    fireEvent.click(screen.getByText('Cerrar formulario'));
+    // A successful save closes the form so the same person cannot be saved twice; errors keep it open.
+    if (scenario === 'ok') {
+      await waitFor(() => expect(screen.queryByText('Guardar formulario')).not.toBeInTheDocument());
+    } else {
+      expect(screen.getByText('Guardar formulario')).toBeVisible();
+      fireEvent.click(screen.getByText('Cerrar formulario'));
+    }
   });
   it.each([false, true])('añade ambos cónyuges tras crearlos, error=%s', async (fails) => {
     brothers(); menu('Matrimonio'); fireEvent.click(screen.getByText('Sin identificadores')); expect(db.from).not.toHaveBeenCalled();
