@@ -42,7 +42,7 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.99.2",
     "@tanstack/react-query": "^5.107.1",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-serve": "^3.0.1",

@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createColumnHelper } from '@tanstack/react-table';
 import { describe, expect, it, vi } from 'vitest';
@@ -16,11 +17,11 @@ interface ReportRow {
   members: number;
 }
 
-const columnHelper = createColumnHelper<ReportRow>();
-const columns = [
+const columnHelper = createColumnHelper<AppTableFeatures, ReportRow>();
+const columns = columnHelper.columns([
   columnHelper.accessor('diocese', {
     header: 'Diócesis',
-    meta: { filterType: 'select' } satisfies DynamicColumnMeta,
+    meta: { filterType: 'select', enableGrouping: true } satisfies DynamicColumnMeta,
   }),
   columnHelper.accessor('parish', {
     header: 'Parroquia',
@@ -38,7 +39,7 @@ const columns = [
       aggregationLabel: 'Total',
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const data: ReportRow[] = Array.from({ length: 7 }, (_, index) => ({
   diocese: index < 5 ? 'Medellín' : 'Bogotá',
@@ -56,6 +57,47 @@ const config: DynamicReportConfig<ReportRow> = {
 };
 
 describe('DynamicReportTable con DataGrid', () => {
+  it('agrupa, agrega y expande sin perder las filas originales', async () => {
+    const user = userEvent.setup();
+    render(
+      <DynamicReportTable
+        config={{ ...config, defaultGrouping: ['diocese'], dataGrid: { pageSize: 20 } }}
+        data={data}
+        loading={false}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    const group = screen.getByRole('button', { name: /Medellín.*5/ });
+    expect(within(group.closest('tr')!).getByText('15')).toBeVisible();
+    expect(screen.getByText('Comunidad 1')).toBeVisible();
+    await user.click(group);
+    expect(screen.queryByText('Comunidad 1')).not.toBeInTheDocument();
+    expect(screen.getByText('Comunidad 6')).toBeVisible();
+    expect(screen.getByText('Total: 28')).toBeVisible();
+    await user.click(group);
+    expect(screen.getByText('Comunidad 1')).toBeVisible();
+  });
+
+  it('muestra todas las filas sin paginación y actualiza los datos', () => {
+    const unpaginated = { ...config, dataGrid: undefined };
+    const manyRows = Array.from({ length: 15 }, (_, index) => ({
+      ...data[0],
+      parish: `Parroquia ${index + 1}`,
+      community: `Comunidad ${index + 1}`,
+    }));
+    const { rerender } = render(
+      <DynamicReportTable config={unpaginated} data={manyRows} loading={false} onRefresh={vi.fn()} />,
+    );
+    expect(screen.getByText('Comunidad 15')).toBeVisible();
+    expect(screen.getByText('Mostrando 15 registros')).toBeVisible();
+    rerender(
+      <DynamicReportTable config={unpaginated} data={data} loading={false} onRefresh={vi.fn()} />,
+    );
+    expect(screen.queryByText('Comunidad 15')).not.toBeInTheDocument();
+    expect(screen.getByText('Mostrando 7 registros')).toBeVisible();
+  });
+
   it('pagina los resultados y conserva el orden accesible', async () => {
     const user = userEvent.setup();
     render(

@@ -1,10 +1,10 @@
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
 import { useRef, useState } from 'react';
 import {
   functionalUpdate,
-  getCoreRowModel,
   type ColumnDef,
   type SortingState,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { DataGrid } from '@/components/ui/data-grid';
@@ -162,7 +162,7 @@ export function EntityTable<T extends BaseEntity>({
     </div>
   );
 
-  const dataGridColumns: ColumnDef<T>[] = [
+  const dataGridColumns: ColumnDef<AppTableFeatures, T>[] = [
     ...columns.map((column) => ({
       id: String(column.key),
       accessorFn: (item: T) => item[column.key],
@@ -182,7 +182,9 @@ export function EntityTable<T extends BaseEntity>({
   const sorting: SortingState = [
     { id: String(sort.field), desc: !sort.asc },
   ];
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
+    manualPagination: true,
     data,
     columns: dataGridColumns,
     state: { sorting },
@@ -193,7 +195,6 @@ export function EntityTable<T extends BaseEntity>({
       const nextColumn = nextSorting[0];
       if (nextColumn) onSort(nextColumn.id as keyof T);
     },
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (

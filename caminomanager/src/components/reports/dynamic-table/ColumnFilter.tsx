@@ -1,14 +1,16 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 import { Column } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { DynamicColumnMeta } from "./types";
 
-interface ColumnFilterProps<TData> {
-  column: Column<TData, unknown>;
+interface ColumnFilterProps<TData extends RowData> {
+  column: Column<AppTableFeatures, TData, unknown>;
 }
 
-export function ColumnFilter<TData>({ column }: ColumnFilterProps<TData>) {
+export function ColumnFilter<TData extends RowData>({ column }: ColumnFilterProps<TData>) {
   const meta = column.columnDef.meta as DynamicColumnMeta | undefined;
   const filterType = meta?.filterType;
 

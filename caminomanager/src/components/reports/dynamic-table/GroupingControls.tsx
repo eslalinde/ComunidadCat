@@ -1,16 +1,18 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 import { Column } from "@tanstack/react-table";
 import { X, Layers } from "lucide-react";
 import { DynamicColumnMeta } from "./types";
 import { toSentenceCase } from "@/lib/text-format";
 
-interface GroupingControlsProps<TData> {
-  allColumns: Column<TData, unknown>[];
+interface GroupingControlsProps<TData extends RowData> {
+  allColumns: Column<AppTableFeatures, TData, unknown>[];
   grouping: string[];
   onGroupingChange: (grouping: string[]) => void;
 }
 
-export function GroupingControls<TData>({
+export function GroupingControls<TData extends RowData>({
   allColumns,
   grouping,
   onGroupingChange,

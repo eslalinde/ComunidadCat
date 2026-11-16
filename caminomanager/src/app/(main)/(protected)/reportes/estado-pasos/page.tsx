@@ -1,11 +1,10 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   createColumnHelper,
-  getCoreRowModel,
-  getSortedRowModel,
   type SortingState,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
 import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -42,9 +41,57 @@ interface MatrixRow {
   total: number;
 }
 
-const matrixColumnHelper = createColumnHelper<MatrixRow>();
+const matrixColumnHelper = createColumnHelper<AppTableFeatures, MatrixRow>();
 
 const toOrdinal = (num: string) => `${num}ª`;
+
+async function fetchMatrixData(): Promise<{ communities: CommunityRow[]; stepWays: StepWay[] } | undefined> {
+  try {
+    const supabase = createClient();
+
+    const [commRes, stepsRes] = await Promise.all([
+      supabase
+        .from("communities")
+        .select(
+          `
+          id,
+          number,
+          parish_id,
+          step_way_id,
+          parish:parishes(name),
+          step_way:step_ways(name)
+        `
+        )
+        .order("number"),
+      supabase
+        .from("step_ways")
+        .select("id, name, order_num")
+        .order("order_num", { ascending: true }),
+    ]);
+
+    if (commRes.error) {
+      console.error("Error fetching communities:", commRes.error);
+      return;
+    }
+    if (stepsRes.error) {
+      console.error("Error fetching step_ways:", stepsRes.error);
+      return;
+    }
+
+    const rows: CommunityRow[] = (commRes.data || []).map((c: any) => ({
+      id: c.id,
+      number: c.number,
+      parish_id: c.parish_id,
+      parish_name: (c.parish as any)?.name || "Sin Parroquia",
+      step_way_id: c.step_way_id,
+      step_way_name: (c.step_way as any)?.name || null,
+    }));
+
+    return { communities: rows, stepWays: stepsRes.data || [] };
+  } catch (err) {
+    console.error("Error in fetchData:", err);
+  }
+}
 
 export default function ReporteEstadoPasos() {
   const [communities, setCommunities] = useState<CommunityRow[]>([]);
@@ -55,61 +102,18 @@ export default function ReporteEstadoPasos() {
     { id: "parishName", desc: false },
   ]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const supabase = createClient();
 
-      const [commRes, stepsRes] = await Promise.all([
-        supabase
-          .from("communities")
-          .select(
-            `
-            id,
-            number,
-            parish_id,
-            step_way_id,
-            parish:parishes(name),
-            step_way:step_ways(name)
-          `
-          )
-          .order("number"),
-        supabase
-          .from("step_ways")
-          .select("id, name, order_num")
-          .order("order_num", { ascending: true }),
-      ]);
-
-      if (commRes.error) {
-        console.error("Error fetching communities:", commRes.error);
-        return;
-      }
-      if (stepsRes.error) {
-        console.error("Error fetching step_ways:", stepsRes.error);
-        return;
-      }
-
-      const rows: CommunityRow[] = (commRes.data || []).map((c: any) => ({
-        id: c.id,
-        number: c.number,
-        parish_id: c.parish_id,
-        parish_name: (c.parish as any)?.name || "Sin Parroquia",
-        step_way_id: c.step_way_id,
-        step_way_name: (c.step_way as any)?.name || null,
-      }));
-
-      setCommunities(rows);
-      setStepWays(stepsRes.data || []);
-    } catch (err) {
-      console.error("Error in fetchData:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadData = useCallback(() => fetchMatrixData()
+    .then((result) => {
+      if (!result) return;
+      setCommunities(result.communities);
+      setStepWays(result.stepWays);
+    })
+    .finally(() => setLoading(false)), []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    void loadData();
+  }, [loadData]);
 
   // Build the matrix data
   const { parishes, matrix, totalsByStep, totalsByParish, grandTotal } =
@@ -189,7 +193,7 @@ export default function ReporteEstadoPasos() {
   );
 
   const matrixColumns = useMemo(
-    () => [
+    () => matrixColumnHelper.columns([
       matrixColumnHelper.accessor("parishName", {
         header: "Parroquia",
       }),
@@ -206,17 +210,17 @@ export default function ReporteEstadoPasos() {
       matrixColumnHelper.accessor("total", {
         header: "Total",
       }),
-    ],
+    ]),
     [stepWays]
   );
 
-  const matrixTable = useReactTable({
+  const matrixTable = useTable({
+    features: appTableFeatures,
+    manualPagination: true,
     data: matrixRows,
     columns: matrixColumns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   const handleExportCSV = () => {
@@ -290,7 +294,10 @@ export default function ReporteEstadoPasos() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchData} disabled={loading}>
+          <Button variant="outline" onClick={() => {
+            setLoading(true);
+            void loadData();
+          }} disabled={loading}>
             <RefreshCw
               className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />

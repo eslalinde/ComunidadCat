@@ -1,4 +1,6 @@
-import { Table, Row } from "@tanstack/react-table";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
+import { constructAggregationFn, Table, Row } from "@tanstack/react-table";
 import { DynamicColumnMeta } from "./types";
 import { toSentenceCase } from "@/lib/text-format";
 
@@ -16,8 +18,8 @@ function escapeCSVValue(value: unknown): string {
   return stringValue;
 }
 
-export function exportTableToCSV<TData>(
-  table: Table<TData>,
+export function exportTableToCSV<TData extends RowData>(
+  table: Table<AppTableFeatures, TData>,
   fileName: string
 ) {
   const visibleColumns = table
@@ -39,8 +41,8 @@ export function exportTableToCSV<TData>(
   // Get only leaf (non-grouped) rows for export
   const rows = table.getFilteredRowModel().rows;
 
-  function flattenRows(rows: Row<TData>[]): Row<TData>[] {
-    const result: Row<TData>[] = [];
+  function flattenRows(rows: Row<AppTableFeatures, TData>[]): Row<AppTableFeatures, TData>[] {
+    const result: Row<AppTableFeatures, TData>[] = [];
     for (const row of rows) {
       if (row.subRows && row.subRows.length > 0) {
         result.push(...flattenRows(row.subRows));
@@ -78,25 +80,19 @@ export function exportTableToCSV<TData>(
   URL.revokeObjectURL(url);
 }
 
-export function getAggregationFn(type: DynamicColumnMeta["aggregationType"]) {
-  switch (type) {
-    case "count":
-      return (_columnId: string, _leafRows: Row<any>[], childRows: Row<any>[]) =>
-        childRows.length;
-    case "sum":
-      return (columnId: string, _leafRows: Row<any>[], childRows: Row<any>[]) =>
-        childRows.reduce(
-          (sum, row) => sum + (Number(row.getValue(columnId)) || 0),
-          0
-        );
-    case "uniqueCount":
-      return (columnId: string, _leafRows: Row<any>[], childRows: Row<any>[]) => {
-        const unique = new Set(
-          childRows.map((row) => row.getValue(columnId)).filter(Boolean)
-        );
-        return unique.size;
-      };
-    default:
-      return undefined;
-  }
+export function getAggregationFn<TData extends RowData, TValue = unknown>(type: DynamicColumnMeta["aggregationType"]) {
+  if (!type) return undefined;
+
+  return constructAggregationFn<AppTableFeatures, TData, TValue, number>({
+    aggregate: ({ rows, getValue }) => {
+      switch (type) {
+        case "count":
+          return rows.length;
+        case "sum":
+          return rows.reduce((sum, row) => sum + (Number(getValue(row)) || 0), 0);
+        case "uniqueCount":
+          return new Set(rows.map((row) => getValue(row)).filter(Boolean)).size;
+      }
+    },
+  });
 }
