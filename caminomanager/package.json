@@ -83,7 +83,7 @@
     "tsx": "^4.22.4",
     "tw-animate-css": "^1.3.0",
     "typescript": "^5",
-    "vitest": "4.1.12"
+    "vitest": "5.1.0"
   },
   "engines": {
     "node": ">=22.12.0"
