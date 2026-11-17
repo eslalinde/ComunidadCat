@@ -123,13 +123,23 @@ jobs:
     # the protected environments and their existing deployment approvals.
     env:
       EXPECTED_SUPABASE_PROJECT_ID: ${{ matrix.expected_project }}
-      SUPABASE_PROJECT_ID: ${{ secrets[matrix.project_secret] }}
-      SUPABASE_DB_PASSWORD: ${{ secrets[matrix.password_secret] }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets[matrix.token_secret] }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/supabase-migrate
+      - if: matrix.target == 'integration'
+        uses: ./.github/actions/supabase-migrate
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.INTEGRATION_SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.INTEGRATION_SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.INTEGRATION_SUPABASE_ACCESS_TOKEN }}
+        with:
+          apply: 'false'
+      - if: matrix.target == 'production'
+        uses: ./.github/actions/supabase-migrate
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PRODUCTION_SUPABASE_ACCESS_TOKEN }}
         with:
           apply: 'false'
