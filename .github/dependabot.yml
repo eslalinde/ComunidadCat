@@ -9,6 +9,10 @@ updates:
     reviewers:
       - eslalinde
     groups:
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
       production-dependencies:
         dependency-type: production
         update-types:
