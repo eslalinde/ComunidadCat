@@ -18,6 +18,7 @@ import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { DropdownMenu } from 'radix-ui';
 import { BulkUploadWizard } from '@/components/bulk-upload/BulkUploadWizard';
 import { EditPersonModal } from './EditPersonModal';
+import { Hint } from '@/components/ui/tooltip';
 
 interface BrothersListProps {
   brothers: MergedBrother[];
@@ -259,16 +260,17 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
             </div>
             {onAdd && (
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsBulkUploadOpen(true)}
-                  className="flex items-center gap-2"
-                  title="Carga masiva desde archivo CSV"
-                >
-                  <FileUp className="h-4 w-4" />
-                  <span className="hidden sm:inline">Carga Masiva</span>
-                </Button>
+                <Hint label="Carga masiva desde archivo CSV">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsBulkUploadOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileUp className="h-4 w-4" />
+                    <span className="hidden sm:inline">Carga Masiva</span>
+                  </Button>
+                </Hint>
                 <Button
                   variant="outline"
                   size="sm"
@@ -368,7 +370,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                             <TableCell className="font-medium pl-8 py-1.5">
                               <div className="flex items-center gap-1.5">
                                 {isNew(brother.createdAt) && (
-                                  <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                                  <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                                   </span>
@@ -390,27 +392,47 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                             {onDelete && (
                               <TableCell className="py-1.5">
                                 <div className="flex justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setEditPersonIds(brother.personIds)}
-                                    disabled={isDeleting}
-                                    title="Editar datos"
-                                    aria-label={`Editar datos de ${brother.name}`}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRequestDelete(brother)}
-                                    disabled={isInTeam || isDeleting}
-                                    title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
-                                    aria-label={`Eliminar a ${brother.name} de la comunidad`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <Hint label="Editar datos">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditPersonIds(brother.personIds)}
+                                      disabled={isDeleting}
+                                      aria-label={`Editar datos de ${brother.name}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </Hint>
+                                  {isInTeam ? (
+                                    // Disabled buttons get no pointer/focus events, so a
+                                    // focusable wrapper carries the explanation instead.
+                                    <Hint label="Este hermano está asociado a un equipo y no puede ser eliminado" asLabel={false}>
+                                      <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="pointer-events-none text-destructive"
+                                          disabled
+                                          aria-label={`Eliminar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </span>
+                                    </Hint>
+                                  ) : (
+                                    <Hint label="Eliminar hermano de la comunidad">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleRequestDelete(brother)}
+                                        disabled={isDeleting}
+                                        aria-label={`Eliminar a ${brother.name} de la comunidad`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </Hint>
+                                  )}
                                 </div>
                               </TableCell>
                             )}

@@ -1,6 +1,13 @@
 'use client';
 
 import { FormAlert } from "@/components/ui/form-alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -215,21 +222,20 @@ export function MergeCommunityModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Seleccionar comunidad a absorber:</FormLabel>
-                    <FormControl>
-                      <select
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={loading}
-                      >
-                        <option value="">-- Seleccionar comunidad --</option>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <FormControl>
+                        <SelectTrigger onBlur={field.onBlur}>
+                          <SelectValue placeholder="Seleccionar comunidad" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
                         {communities.map((c) => (
-                          <option key={c.id} value={String(c.id)}>
+                          <SelectItem key={c.id} value={String(c.id)}>
                             Comunidad {c.number} ({c.actual_brothers ?? 0} hermanos)
-                          </option>
+                          </SelectItem>
                         ))}
-                      </select>
-                    </FormControl>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

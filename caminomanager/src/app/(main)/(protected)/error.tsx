@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
-import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { AlertTriangle, ChevronRight, RotateCcw, Home } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { routes } from "@/lib/routes";
 
 export default function Error({
@@ -52,14 +53,17 @@ export default function Error({
         </div>
 
         {process.env.NODE_ENV === "development" && error.message && (
-          <details className="mt-6 text-left">
-            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-500">
+          <Collapsible className="mt-6 text-left">
+            <CollapsibleTrigger className="group inline-flex items-center gap-1 rounded text-xs text-gray-400 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <ChevronRight aria-hidden="true" className="size-3.5 transition-transform group-data-[state=open]:rotate-90 motion-reduce:transition-none" />
               Detalles del error (solo desarrollo)
-            </summary>
-            <pre className="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg overflow-auto max-h-32">
-              {error.message}
-            </pre>
-          </details>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <pre className="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg overflow-auto max-h-32">
+                {error.message}
+              </pre>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
     </div>

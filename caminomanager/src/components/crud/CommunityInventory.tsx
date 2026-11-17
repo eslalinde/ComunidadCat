@@ -14,6 +14,7 @@ import { Package, ExternalLink, Plus, Trash2, Pencil } from 'lucide-react';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuth } from '@/contexts/AuthContext';
 import type { CommunityInventoryItem, InventoryItemType, FormField } from '@/types/database';
+import { Hint } from '@/components/ui/tooltip';
 
 function useInventoryItemTypes() {
   return useQuery({
@@ -288,24 +289,26 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-gray-500 hover:text-gray-700 hover:bg-gray-100 -mt-1"
-              onClick={() => setEntryToEdit(item)}
-              title="Editar elemento"
-            >
-              <Pencil className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 -mt-1"
-              onClick={() => setEntryToDelete(item)}
-              title="Eliminar elemento"
-            >
-              <Trash2 className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
-            </Button>
+            <Hint label="Editar elemento">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-gray-500 hover:text-gray-700 hover:bg-gray-100 -mt-1"
+                onClick={() => setEntryToEdit(item)}
+              >
+                <Pencil className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+              </Button>
+            </Hint>
+            <Hint label="Eliminar elemento">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 -mt-1"
+                onClick={() => setEntryToDelete(item)}
+              >
+                <Trash2 className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+              </Button>
+            </Hint>
           </div>
         </div>
       </div>

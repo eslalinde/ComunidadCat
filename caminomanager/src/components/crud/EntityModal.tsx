@@ -16,7 +16,14 @@ import {
   RequiredMark,
 } from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from '@/types/database';
-import { X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buildZodSchema, buildDefaultValues, prepareFormData } from '@/lib/form-schema';
 
 interface EntityModalProps<T extends BaseEntity> {
@@ -62,22 +69,13 @@ export function EntityModal<T extends BaseEntity>({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Cerrar"
-        >
-          <X className="w-5 h-5 text-gray-400" />
-        </button>
-
-        <h2 className="text-xl font-bold mb-5 pr-8">{title}</h2>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Los campos marcados con * son obligatorios.</DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
           <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -152,7 +150,7 @@ export function EntityModal<T extends BaseEntity>({
               />
             ))}
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end mt-6 pt-4 border-t border-gray-100">
+            <DialogFooter className="mt-6 gap-3 border-t border-gray-100 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -164,10 +162,10 @@ export function EntityModal<T extends BaseEntity>({
               <Button type="submit" disabled={loading}>
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
-            </div>
+            </DialogFooter>
           </FormRoot>
         </Form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

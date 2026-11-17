@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Shield, Search, RefreshCw, UserPlus } from "lucide-react";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { Hint } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import {
@@ -329,12 +330,14 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell>
                         {isCurrentUser ? (
-                          <Badge
-                            className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
-                            title="No puedes cambiar tu propio rol"
-                          >
-                            {getRoleLabel(user.role)}
-                          </Badge>
+                          <Hint label="No puedes cambiar tu propio rol" asLabel={false}>
+                            <Badge
+                              tabIndex={0}
+                              className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
+                            >
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                          </Hint>
                         ) : (
                           <Select
                             value={user.role}
@@ -394,12 +397,14 @@ export default function AdminPage() {
 
                     <div>
                       {isCurrentUser ? (
-                        <Badge
-                          className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
-                          title="No puedes cambiar tu propio rol"
-                        >
-                          {getRoleLabel(user.role)}
-                        </Badge>
+                        <Hint label="No puedes cambiar tu propio rol" asLabel={false}>
+                          <Badge
+                            tabIndex={0}
+                            className={`${getRoleBadgeClass(user.role)} cursor-not-allowed`}
+                          >
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </Hint>
                       ) : (
                         <Select
                           value={user.role}

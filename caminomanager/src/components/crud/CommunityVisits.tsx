@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuth } from '@/contexts/AuthContext';
 import type { CommunityVisit } from '@/types/database';
 import type { FormField } from '@/types/database';
+import { Hint } from '@/components/ui/tooltip';
 
 const visitFormFields: FormField[] = [
   {
@@ -211,15 +212,16 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                               </p>
                             )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                            onClick={() => setEntryToDelete(visit)}
-                            title="Eliminar visita"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Hint label="Eliminar visita">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              onClick={() => setEntryToDelete(visit)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </Hint>
                         </div>
                       </div>
                     ))}
@@ -260,15 +262,16 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                       {visit.description}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                    onClick={() => setEntryToDelete(visit)}
-                    title="Eliminar visita"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  <Hint label="Eliminar visita">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                      onClick={() => setEntryToDelete(visit)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </Hint>
                 </div>
               </div>
             ))}

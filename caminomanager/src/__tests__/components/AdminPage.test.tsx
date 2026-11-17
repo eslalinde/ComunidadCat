@@ -32,7 +32,7 @@ describe('Administración', () => {
   it.each([false, true])('busca y muestra alcances sin permitir cambiar rol propio, móvil=%s', async (mobile) => {
     mocks.mobile = mobile; mocks.users.push({ ...user, id: 'zone', email: 'zona@example.com', zone_id: 3 }, { ...user, id: 'community', email: 'com@example.com', community_id: 4 }); setup();
     await screen.findByText('Administración de Usuarios'); await screen.findByText('Zona: Norte'); expect(screen.getByText('Com. 7 (San José)')).toBeVisible();
-    expect(screen.getByTitle('No puedes cambiar tu propio rol')).toBeVisible();
+    fireEvent.focus(screen.getAllByText('Administrador').find((el) => el.getAttribute('tabindex') === '0')!); expect((await screen.findAllByText('No puedes cambiar tu propio rol')).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByPlaceholderText('Buscar por nombre, email o usuario...'), { target: { value: 'ZONA@' } }); expect(screen.queryByText('u@example.com')).not.toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText('Buscar por nombre, email o usuario...'), { target: { value: 'nadie' } }); expect(screen.getByText('No se encontraron usuarios con ese criterio.')).toBeVisible();
   });

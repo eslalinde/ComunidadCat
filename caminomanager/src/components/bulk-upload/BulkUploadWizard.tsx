@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { Stepper, type StepperItem } from '@/components/ui/stepper';
+import { Progress } from '@/components/ui/progress';
 import {
   Table,
   TableBody,
@@ -700,22 +701,18 @@ function StepConfirm({
   }
 
   if (isUploading && uploadProgress) {
-    const progressPercent =
-      uploadProgress.total > 0
-        ? Math.round((uploadProgress.current / uploadProgress.total) * 100)
-        : 0;
-
     return (
       <div className="p-8 text-center space-y-4">
-        <Loader2 className="mx-auto size-12 animate-spin text-primary" />
-        <p className="font-medium text-lg">{uploadProgress.phaseLabel}</p>
-        <div className="w-full max-w-md mx-auto bg-gray-200 rounded-full h-2">
-          <div
-            className="h-2 rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <p className="text-sm text-gray-500">
+        <Loader2 aria-hidden="true" className="mx-auto size-12 animate-spin text-primary" />
+        <p id="bulk-upload-phase" className="font-medium text-lg">{uploadProgress.phaseLabel}</p>
+        <Progress
+          value={uploadProgress.current}
+          max={Math.max(uploadProgress.total, 1)}
+          aria-labelledby="bulk-upload-phase"
+          getValueLabel={(value, max) => `${value} de ${max} registros`}
+          className="mx-auto max-w-md"
+        />
+        <p className="text-sm text-gray-500" aria-hidden="true">
           {uploadProgress.current} / {uploadProgress.total}
         </p>
       </div>

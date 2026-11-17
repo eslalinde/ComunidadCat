@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MergeCommunityModal } from '@/components/crud/MergeCommunityModal';
 import { createTableMock } from '../helpers/queryHarness';
+import { chooseOption } from '../helpers/radixSelect';
 import { toast } from 'sonner';
 const db = vi.hoisted(() => ({ from: vi.fn(), rpc: vi.fn() }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
@@ -11,13 +12,13 @@ beforeEach(() => { vi.clearAllMocks(); vi.spyOn(console, 'error').mockImplementa
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 function setup(open = true) { return render(<MergeCommunityModal open={open} onClose={close} keepCommunityId={1} keepCommunityNumber="1" parishId={10} onSuccess={refresh} />); }
 it.each([false, true])('previsualiza y fusiona exclusivamente tras confirmar, error=%s', async (fails) => {
-  setup(); await screen.findByRole('option', { name: 'Comunidad 2 (20 hermanos)' });
+  setup(); await waitFor(() => expect(mock.calls.some((c) => c.table === 'communities')).toBe(true));
   expect(mock.calls).toContainEqual({ table: 'communities', method: 'neq', args: ['id', 1] });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: '2' } }); await screen.findByText('20'); expect(screen.getByText('4')).toBeVisible(); expect(screen.getByText('3')).toBeVisible();
+  await chooseOption(screen.getByRole('combobox', { name: /comunidad a absorber/i }), 'Comunidad 2 (20 hermanos)'); await screen.findByText('20'); expect(screen.getByText('4')).toBeVisible(); expect(screen.getByText('3')).toBeVisible();
   if (fails) db.rpc.mockResolvedValue({ error: { message: 'denied' } });
   fireEvent.change(screen.getByPlaceholderText('Escribe FUSIONAR'), { target: { value: 'FUSIONAR' } }); fireEvent.click(screen.getByRole('button', { name: /Fusionar/ }));
   await waitFor(() => expect(db.rpc).toHaveBeenCalledWith('merge_communities', { p_keep_community_id: 1, p_remove_community_id: 2 }));
   if (fails) { await screen.findByText('Error al fusionar las comunidades'); expect(close).not.toHaveBeenCalled(); expect(refresh).not.toHaveBeenCalled(); }
   else { await waitFor(() => expect(refresh).toHaveBeenCalledOnce()); expect(toast.success).toHaveBeenCalledWith('Fusión exitosa', expect.objectContaining({ description: expect.stringContaining('20 hermano(s)') })); expect(close).toHaveBeenCalledOnce(); }
 });
-it('no consulta cerrado y permite cancelar sin mutar', async () => { const view = setup(false); expect(db.from).not.toHaveBeenCalled(); view.rerender(<MergeCommunityModal open onClose={close} keepCommunityId={1} keepCommunityNumber="1" parishId={10} onSuccess={refresh} />); await screen.findByRole('option', { name: /Comunidad 2/ }); fireEvent.click(screen.getByText('Cancelar')); expect(close).toHaveBeenCalledOnce(); expect(db.rpc).not.toHaveBeenCalled(); });
+it('no consulta cerrado y permite cancelar sin mutar', async () => { const view = setup(false); expect(db.from).not.toHaveBeenCalled(); view.rerender(<MergeCommunityModal open onClose={close} keepCommunityId={1} keepCommunityNumber="1" parishId={10} onSuccess={refresh} />); await waitFor(() => expect(db.from).toHaveBeenCalled()); fireEvent.click(screen.getByText('Cancelar')); expect(close).toHaveBeenCalledOnce(); expect(db.rpc).not.toHaveBeenCalled(); });
