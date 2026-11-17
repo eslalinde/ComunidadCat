@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { PasswordInput } from '@/components/ui/password-input';
 import { FormAlert } from '@/components/ui/form-alert';
 import { Input } from '@/components/ui/input';
+import { Autocomplete } from '@/components/ui/autocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -83,6 +85,63 @@ function DemoForm() {
     </Form>
   );
 }
+
+// Radix Checkbox measures itself; jsdom has no ResizeObserver.
+vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+
+function CompositeForm() {
+  const form = useForm<{ country: string; itinerant: boolean }>({ defaultValues: { country: '', itinerant: false } });
+  const itinerant = form.watch('itinerant');
+  return (
+    <Form {...form}>
+      <FormRoot onSubmit={form.handleSubmit(() => undefined)}>
+        <FormField
+          control={form.control}
+          name="country"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>País</FormLabel>
+              <FormControl>
+                <Autocomplete
+                  options={[{ value: '1', label: 'Colombia' }, { value: '2', label: 'Chile' }]}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="itinerant"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <FormLabel>Itinerante</FormLabel>
+            </FormItem>
+          )}
+        />
+        {itinerant && <p>Ubicación actual</p>}
+      </FormRoot>
+    </Form>
+  );
+}
+
+describe('FormControl con controles compuestos', () => {
+  it('no reemplaza los manejadores internos de Autocomplete ni Checkbox', async () => {
+    render(<CompositeForm />);
+    const country = screen.getByRole('combobox', { name: 'País' });
+    fireEvent.change(country, { target: { value: 'Col' } });
+    expect(country).toHaveValue('Col');
+    fireEvent.click(await screen.findByRole('option', { name: /Colombia/ }));
+    expect(country).toHaveValue('Colombia');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Itinerante' }));
+    expect(await screen.findByText('Ubicación actual')).toBeInTheDocument();
+  });
+});
 
 describe('Form (Radix)', () => {
   it('marca el campo inválido, enlaza el mensaje y enfoca el primer error', async () => {

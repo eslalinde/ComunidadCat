@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Form as FormPrimitive } from "radix-ui"
+import { Form as FormPrimitive, Slot } from "radix-ui"
 import { CircleAlert } from "lucide-react"
 import {
   Controller,
@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils"
  * Form building blocks.
  *
  * Validation rules live in react-hook-form + zod (single source of truth).
- * The DOM layer is Radix `Form` (https://www.radix-ui.com/primitives/docs/components/form):
- * it wires label/control/message ids, exposes `data-invalid` / `data-valid`
- * hooks for styling and moves focus to the first invalid control on submit.
- * RHF errors are fed into Radix through `serverInvalid` on each field.
+ * The DOM layer is Radix `Form` (https://www.radix-ui.com/primitives/docs/components/form)
+ * for root, field, label and message: RHF errors are fed in through
+ * `serverInvalid`, which exposes `data-invalid` for styling. The control itself
+ * is wired with a plain Slot (see FormControl).
  */
 
 const Form = FormProvider
@@ -142,18 +142,22 @@ function RequiredMark({ className }: { className?: string }) {
   )
 }
 
-function FormControl(
-  props: Omit<React.ComponentProps<typeof FormPrimitive.Control>, "asChild">
-) {
-  // Radix appends the ids of mounted <Form.Message> elements to aria-describedby.
-  const { error, formItemId, formDescriptionId } = useFormField()
+/**
+ * Wires id / aria attributes onto the child control.
+ *
+ * Deliberately a plain Slot rather than Radix `Form.Control`: that primitive
+ * targets native inputs and injects `onChange` / `name` / `onInvalid`, which
+ * override the internal handlers of composite controls (Autocomplete, Select,
+ * Checkbox). Focus on the first invalid field comes from react-hook-form.
+ */
+function FormControl(props: React.ComponentProps<typeof Slot.Root>) {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <FormPrimitive.Control
-      asChild
+    <Slot.Root
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={formDescriptionId}
+      aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId}
       aria-invalid={!!error || undefined}
       {...props}
     />
