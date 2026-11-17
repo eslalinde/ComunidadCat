@@ -72,6 +72,15 @@ const useFormField = () => {
   const fieldState = getFieldState(fieldContext.name, formState)
   const { id } = itemContext
 
+  // "Reward early, punish late": surface an error only once the user typed in
+  // the field or tried to submit. Merely passing through an empty field (e.g.
+  // dialog autofocus, then clicking elsewhere) must not flag it; that would
+  // also shift the layout under the pointer between mousedown and click.
+  const error =
+    fieldState.error && (formState.isSubmitted || fieldState.isDirty)
+      ? fieldState.error
+      : undefined
+
   return {
     id,
     name: fieldContext.name,
@@ -79,6 +88,8 @@ const useFormField = () => {
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     ...fieldState,
+    error,
+    invalid: !!error,
   }
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -140,6 +140,55 @@ describe('FormControl con controles compuestos', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Itinerante' }));
     expect(await screen.findByText('Ubicación actual')).toBeInTheDocument();
+  });
+});
+
+const emailSchema = z.object({
+  name: z.string().min(1, 'Escribe un nombre'),
+  email: z.string().email('Revisa el correo'),
+});
+
+function TouchedForm() {
+  const form = useForm({ resolver: zodResolver(emailSchema), mode: 'onTouched', defaultValues: { name: '', email: '' } });
+  return (
+    <Form {...form}>
+      <FormRoot onSubmit={form.handleSubmit(() => undefined)}>
+        {(['name', 'email'] as const).map((name) => (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{name}</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ))}
+        <button type="submit">Enviar</button>
+      </FormRoot>
+    </Form>
+  );
+}
+
+describe('Momento de mostrar errores', () => {
+  it('no marca un campo vacío solo por pasar por él, pero sí al escribir mal o al enviar', async () => {
+    render(<TouchedForm />);
+    const name = screen.getByLabelText('name');
+    const email = screen.getByLabelText('email');
+
+    fireEvent.focus(name); fireEvent.blur(name);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText('Escribe un nombre')).not.toBeInTheDocument();
+    expect(name).not.toHaveAttribute('aria-invalid');
+
+    fireEvent.change(email, { target: { value: 'sin-arroba' } }); fireEvent.blur(email);
+    expect(await screen.findByText('Revisa el correo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Enviar'));
+    expect(await screen.findByText('Escribe un nombre')).toBeInTheDocument();
   });
 });
 
