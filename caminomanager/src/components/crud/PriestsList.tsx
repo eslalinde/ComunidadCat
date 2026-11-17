@@ -12,7 +12,8 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
+  FormRoot,
+} from "@/components/ui/form";
 import { Priest } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
 import { Trash2, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
@@ -367,7 +368,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
             </h2>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSavePriest)} className="space-y-4">
+              <FormRoot onSubmit={form.handleSubmit(handleSavePriest)} className="space-y-4">
                 {/* Role selector */}
                 <FormField
                   control={form.control}
@@ -494,7 +495,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                     {isSaving ? 'Guardando...' : 'Guardar'}
                   </Button>
                 </div>
-              </form>
+              </FormRoot>
             </Form>
           </div>
         </div>

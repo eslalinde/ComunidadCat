@@ -45,15 +45,24 @@ describe('Administración', () => {
     act(() => mocks.updateRole.mock.calls[0][1].onSettled()); expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
   it.each(['viewer', 'zone_contributor', 'community_responsible', 'contributor'])('crea usuario de rol %s', async (role) => {
-    setup(); fireEvent.click(await screen.findByText('Crear usuario')); const dialog = within(screen.getByRole('dialog')); expect(dialog.getByText('Crear usuario')).toBeDisabled();
+    setup(); fireEvent.click(await screen.findByText('Crear usuario')); const dialog = within(screen.getByRole('dialog'));
+    fireEvent.click(dialog.getByText('Crear usuario')); await dialog.findByText('Escribe el correo del usuario'); expect(dialog.getByText('Usa al menos 6 caracteres')).toBeVisible(); expect(mocks.createUser).not.toHaveBeenCalled();
     fireEvent.change(dialog.getByPlaceholderText('correo@ejemplo.com'), { target: { value: 'nuevo@example.com' } }); fireEvent.change(dialog.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: 'secret123' } }); fireEvent.change(dialog.getByPlaceholderText('Nombre del usuario'), { target: { value: ' Nuevo ' } });
     fireEvent.change(dialog.getAllByRole('combobox')[0], { target: { value: role } });
     if (role === 'zone_contributor') fireEvent.change(dialog.getAllByRole('combobox')[1], { target: { value: '3' } });
     if (role === 'community_responsible') fireEvent.change(dialog.getAllByRole('combobox')[1], { target: { value: '4' } });
     fireEvent.click(dialog.getByText('Crear usuario'));
+    await waitFor(() => expect(mocks.createUser).toHaveBeenCalled());
     expect(mocks.createUser).toHaveBeenCalledWith({ email: 'nuevo@example.com', password: 'secret123', fullName: 'Nuevo', role, zoneId: role === 'zone_contributor' ? 3 : null, communityId: role === 'community_responsible' ? 4 : null }, expect.any(Object));
     act(() => mocks.createUser.mock.calls[0][1].onSuccess()); expect(toast.success).toHaveBeenCalledWith('Usuario creado exitosamente'); expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
-  it('muestra fallo de creación y permite cancelar', async () => { setup(); fireEvent.click(await screen.findByText('Crear usuario')); fireEvent.change(screen.getByPlaceholderText('correo@ejemplo.com'), { target: { value: 'x@example.com' } }); fireEvent.change(screen.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: 'secret123' } }); fireEvent.click(within(screen.getByRole('dialog')).getByText('Crear usuario')); act(() => mocks.createUser.mock.calls[0][1].onError(new Error('Duplicado'))); expect(toast.error).toHaveBeenCalledWith('Duplicado'); fireEvent.click(screen.getByText('Cancelar')); expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
+  it('exige la comunidad para responsables antes de crear', async () => {
+    setup(); fireEvent.click(await screen.findByText('Crear usuario')); const dialog = within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByPlaceholderText('correo@ejemplo.com'), { target: { value: 'r@example.com' } }); fireEvent.change(dialog.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: 'secret123' } });
+    fireEvent.change(dialog.getAllByRole('combobox')[0], { target: { value: 'community_responsible' } });
+    fireEvent.click(dialog.getByText('Crear usuario'));
+    await dialog.findByText('Elige la comunidad de la que será responsable'); expect(mocks.createUser).not.toHaveBeenCalled();
+  });
+  it('muestra fallo de creación y permite cancelar', async () => { setup(); fireEvent.click(await screen.findByText('Crear usuario')); fireEvent.change(screen.getByPlaceholderText('correo@ejemplo.com'), { target: { value: 'x@example.com' } }); fireEvent.change(screen.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: 'secret123' } }); fireEvent.click(within(screen.getByRole('dialog')).getByText('Crear usuario')); await waitFor(() => expect(mocks.createUser).toHaveBeenCalled()); act(() => mocks.createUser.mock.calls[0][1].onError(new Error('Duplicado'))); expect(toast.error).toHaveBeenCalledWith('Duplicado'); fireEvent.click(screen.getByText('Cancelar')); expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
   it.each(['loading', 'error', 'empty'])('muestra estado %s', async (state) => { mocks.loading = state === 'loading'; mocks.error = state === 'error' ? new Error('Fallo') : null; mocks.users = []; setup(); await screen.findByText('Administración de Usuarios'); expect(screen.getByText(state === 'loading' ? 'Cargando usuarios...' : state === 'error' ? 'Error al cargar usuarios: Fallo' : 'No hay usuarios registrados.')).toBeVisible(); });
 });
