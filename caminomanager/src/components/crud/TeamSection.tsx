@@ -18,6 +18,7 @@ import { friendlyError } from '@/lib/supabaseErrors';
 import { getCarismaLabel } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import { Hint } from '@/components/ui/tooltip';
 
 interface TeamSectionProps {
   team: Team;
@@ -323,29 +324,31 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
           <CardTitle className="text-lg">{getTeamTitle()}</CardTitle>
           <div className="flex items-center gap-2 print-hidden">
             {onAddMember && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onAddMember}
-                disabled={deletingTeam || deletingId !== null}
-                title="Agregar miembro al equipo"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Agregar</span>
-              </Button>
+              <Hint label="Agregar miembro al equipo">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddMember}
+                  disabled={deletingTeam || deletingId !== null}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Agregar</span>
+                </Button>
+              </Hint>
             )}
             {onDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                onClick={() => setShowDeleteTeamDialog(true)}
-                disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
-                title="Eliminar equipo completo"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">{deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}</span>
-              </Button>
+              <Hint label="Eliminar equipo completo">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                  onClick={() => setShowDeleteTeamDialog(true)}
+                  disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">{deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}</span>
+                </Button>
+              </Hint>
             )}
           </div>
         </div>
@@ -393,7 +396,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                         <>
                           <div className="flex items-center gap-1.5">
                             {isNew(member.createdAt) && (
-                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                              <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                               </span>
@@ -429,7 +432,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                         <>
                           <div className="flex items-center gap-1.5">
                             {isNew(member.createdAt) && (
-                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                              <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                               </span>
@@ -468,51 +471,55 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                       <TableCell className="print-hidden py-1.5">
                         <div className="flex gap-1">
                           {onEditMember && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onEditMember(member.personIds[0], member.personIds)}
-                              disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                              title="Editar datos de la persona"
-                              aria-label={`Editar datos de ${member.name}`}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            <Hint label="Editar datos de la persona">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onEditMember(member.personIds[0], member.personIds)}
+                                disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
+                                aria-label={`Editar datos de ${member.name}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Hint>
                           )}
                           {member.isResponsible ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-orange-500 hover:bg-orange-50"
-                              onClick={() => setMemberToRemoveResponsible(member)}
-                              disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
-                              title="Quitar responsabilidad (la persona permanecerá en el equipo)"
-                            >
-                              <UserMinus className="h-4 w-4" />
-                            </Button>
+                            <Hint label="Quitar responsabilidad (la persona permanecerá en el equipo)">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-orange-500 hover:bg-orange-50"
+                                onClick={() => setMemberToRemoveResponsible(member)}
+                                disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
+                              >
+                                <UserMinus className="h-4 w-4" />
+                              </Button>
+                            </Hint>
                           ) : (
+                            <Hint label={hasResponsible ? "Hacer responsable (reemplaza al responsable actual)" : "Asignar responsabilidad"}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-green-600 hover:bg-green-50"
+                                onClick={() => setMemberToAssignResponsible(member)}
+                                disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
+                                aria-label={`Hacer responsable a ${member.name}`}
+                              >
+                                <Crown className="h-4 w-4" />
+                              </Button>
+                            </Hint>
+                          )}
+                          <Hint label="Eliminar miembro del equipo">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-green-600 hover:bg-green-50"
-                              onClick={() => setMemberToAssignResponsible(member)}
-                              disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
-                              title={hasResponsible ? "Hacer responsable (reemplaza al responsable actual)" : "Asignar responsabilidad"}
-                              aria-label={`Hacer responsable a ${member.name}`}
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => setMemberToDelete(member)}
+                              disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
                             >
-                              <Crown className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:bg-destructive/10"
-                            onClick={() => setMemberToDelete(member)}
-                            disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                            title="Eliminar miembro del equipo"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </Hint>
                         </div>
                       </TableCell>
                     )}

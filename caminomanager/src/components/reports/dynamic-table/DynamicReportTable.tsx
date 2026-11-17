@@ -29,6 +29,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableHeader,
   TableBody,
@@ -331,21 +338,24 @@ export function DynamicReportTable<TData extends RowData>({
                   {Math.max(1, table.getPageCount())} · {filteredLeafRowCount}{" "}
                   registros
                 </span>
-                <label className="flex items-center gap-2">
-                  <span className="sr-only sm:not-sr-only">Filas:</span>
-                  <select
-                    aria-label="Filas por página"
-                    value={table.state.pagination.pageSize}
-                    onChange={(event) => table.setPageSize(Number(event.target.value))}
-                    className="h-9 rounded-md border bg-background px-2 text-foreground"
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="hidden sm:inline">Filas:</span>
+                  <Select
+                    value={String(table.state.pagination.pageSize)}
+                    onValueChange={(value) => table.setPageSize(Number(value))}
                   >
-                    {[5, 10, 20, 50].map((pageSize) => (
-                      <option key={pageSize} value={pageSize}>
-                        {pageSize}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <SelectTrigger aria-label="Filas por página" className="h-9 w-[4.75rem]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 10, 20, 50].map((pageSize) => (
+                        <SelectItem key={pageSize} value={String(pageSize)}>
+                          {pageSize}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button

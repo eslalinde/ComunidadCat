@@ -141,7 +141,7 @@ test.describe.serial('Comunidades — acciones en el detalle (admin sobre comuni
     });
 
     // Borrar el equipo desde la UI (TeamSection).
-    await page.getByRole('button', { name: /Eliminar Equipo/ }).click();
+    await page.getByRole('button', { name: /Eliminar equipo/i }).click();
     // ConfirmDeleteDialog exige escribir "eliminar" antes de habilitar el botón.
     const confirmDialog = page.getByRole('alertdialog', { name: /Eliminar equipo/i });
     await expect(confirmDialog).toBeVisible({ timeout: 5_000 });

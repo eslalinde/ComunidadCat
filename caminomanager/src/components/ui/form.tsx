@@ -85,6 +85,7 @@ const useFormField = () => {
     id,
     name: fieldContext.name,
     formItemId: `${id}-form-item`,
+    formLabelId: `${id}-form-item-label`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     ...fieldState,
@@ -128,11 +129,12 @@ function FormLabel({
   className,
   ...props
 }: React.ComponentProps<typeof FormPrimitive.Label>) {
-  const { formItemId } = useFormField()
+  const { formItemId, formLabelId } = useFormField()
 
   return (
     <FormPrimitive.Label
       data-slot="form-label"
+      id={formLabelId}
       className={cn(
         "flex items-center gap-1 text-sm leading-none font-medium text-foreground select-none",
         className
@@ -160,14 +162,22 @@ function RequiredMark({ className }: { className?: string }) {
  * targets native inputs and injects `onChange` / `name` / `onInvalid`, which
  * override the internal handlers of composite controls (Autocomplete, Select,
  * Checkbox). Focus on the first invalid field comes from react-hook-form.
+ *
+ * `aria-labelledby` points at the FormLabel so composite controls rendered as
+ * non-labelable elements (RadioGroup, Select trigger) are named by it too;
+ * `<label for>` alone only names native inputs. A child's own aria-label wins.
  */
 function FormControl(props: React.ComponentProps<typeof Slot.Root>) {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  const { error, formItemId, formLabelId, formDescriptionId, formMessageId } = useFormField()
+  const child = props.children
+  const hasOwnName =
+    React.isValidElement<{ "aria-label"?: string }>(child) && !!child.props["aria-label"]
 
   return (
     <Slot.Root
       data-slot="form-control"
       id={formItemId}
+      aria-labelledby={hasOwnName ? undefined : formLabelId}
       aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId}
       aria-invalid={!!error || undefined}
       {...props}

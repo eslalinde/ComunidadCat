@@ -37,12 +37,12 @@ describe('TeamSection', () => {
     expect(screen.getAllByText('Juan y Ana')).toHaveLength(1);
     expect(screen.getByText('300')).toBeVisible();
     expect(screen.getByRole('link', { name: 'San José' })).toHaveAttribute('href', '/parroquias/detalle?id=5');
-    expect(screen.getByTitle(/reemplaza al responsable actual/)).toBeEnabled();
-    fireEvent.click(screen.getByTitle('Agregar miembro al equipo')); expect(add).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: /^Hacer responsable a / })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar miembro al equipo' })); expect(add).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Editar datos de Juan y Ana' })); expect(edit).toHaveBeenCalledWith(1, [1, 2]);
     view.rerender(<TeamSection team={{ ...team, team_type_id: 4 }} members={members} parishes={[]} communityId={10} />);
     expect(screen.getByText('Equipo de Responsables')).toBeVisible();
-    expect(screen.queryByTitle('Eliminar equipo completo')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Eliminar equipo completo' })).not.toBeInTheDocument();
   });
   it('muestra carga y equipos vacíos', () => {
     const view = setup({ loading: true }); expect(screen.getByText('Cargando equipo...')).toBeVisible();
@@ -50,9 +50,9 @@ describe('TeamSection', () => {
     expect(screen.getByText('Equipo nacional')).toBeVisible(); expect(screen.getByText('No hay miembros en este equipo')).toBeVisible();
   });
   it.each(['ok', 'error', 'zero'])('elimina las dos relaciones del matrimonio: %s', async (scenario) => {
-    setup(); fireEvent.click(screen.getAllByTitle('Eliminar miembro del equipo')[0]);
+    setup(); fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar miembro del equipo' })[0]);
     fireEvent.click(screen.getByText('Cancelar borrado')); expect(db.from).not.toHaveBeenCalled();
-    fireEvent.click(screen.getAllByTitle('Eliminar miembro del equipo')[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar miembro del equipo' })[0]);
     if (scenario === 'error') responses.belongs.error = { message: 'denied' };
     if (scenario === 'zero') responses.belongs.count = 0;
     fireEvent.click(screen.getByText('Confirmar borrado'));
@@ -61,9 +61,9 @@ describe('TeamSection', () => {
     expect(refresh).toHaveBeenCalledTimes(scenario === 'ok' ? 1 : 0);
   });
   it.each([true, false])('quita responsabilidad y maneja errores=%s', async (fails) => {
-    setup(); fireEvent.click(screen.getByTitle(/Quitar responsabilidad/));
+    setup(); fireEvent.click(screen.getByRole('button', { name: /Quitar responsabilidad/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    fireEvent.click(screen.getByTitle(/Quitar responsabilidad/));
+    fireEvent.click(screen.getByRole('button', { name: /Quitar responsabilidad/ }));
     if (fails) responses.belongs.error = { message: 'denied' };
     fireEvent.click(screen.getByRole('button', { name: 'Quitar Responsabilidad' }));
     await waitFor(() => expect(fails ? toast.error : toast.success).toHaveBeenCalled());
@@ -73,8 +73,8 @@ describe('TeamSection', () => {
   });
   it.each([true, false])('asigna responsabilidad al matrimonio y maneja errores=%s', async (fails) => {
     setup({ members: members.slice(0, 2).map((m) => ({ ...m, is_responsible_for_the_team: false })) });
-    fireEvent.click(screen.getByTitle('Asignar responsabilidad')); fireEvent.click(screen.getByText('Cancelar'));
-    fireEvent.click(screen.getByTitle('Asignar responsabilidad'));
+    fireEvent.click(screen.getByRole('button', { name: /^Hacer responsable a / })); fireEvent.click(screen.getByText('Cancelar'));
+    fireEvent.click(screen.getByRole('button', { name: /^Hacer responsable a / }));
     if (fails) responses.belongs.error = { message: 'denied' };
     fireEvent.click(screen.getByRole('button', { name: 'Asignar Responsabilidad' }));
     await waitFor(() => expect(fails ? toast.error : toast.success).toHaveBeenCalled());
@@ -93,8 +93,8 @@ describe('TeamSection', () => {
     expect(refresh).toHaveBeenCalledOnce();
   });
   it.each(['ok', 'belongs', 'parish_teams', 'teams', 'zero'])('borra equipo en orden y detiene errores en %s', async (scenario) => {
-    setup(); fireEvent.click(screen.getByTitle('Eliminar equipo completo')); fireEvent.click(screen.getByText('Cancelar borrado'));
-    fireEvent.click(screen.getByTitle('Eliminar equipo completo'));
+    setup(); fireEvent.click(screen.getByRole('button', { name: 'Eliminar equipo completo' })); fireEvent.click(screen.getByText('Cancelar borrado'));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar equipo completo' }));
     if (responses[scenario]) responses[scenario].error = { message: 'denied' };
     if (scenario === 'zero') responses.teams.count = 0;
     fireEvent.click(screen.getByText('Confirmar borrado'));

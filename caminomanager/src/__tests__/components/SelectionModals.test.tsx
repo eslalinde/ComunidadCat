@@ -109,8 +109,8 @@ describe('MarriageModal', () => {
     const queries = [1, 2, 3].map((id, i) => createTableMock({ people: { data: { id }, error: ['husband', 'wife', 'link'][i] === scenario ? { message: 'denied' } : null } }));
     db.from.mockImplementationOnce(queries[0].from).mockImplementationOnce(queries[1].from).mockImplementationOnce(queries[2].from);
     render(<MarriageModal open onClose={close} onSuccess={select} />);
-    fireEvent.change(screen.getByLabelText('Nombre del Esposo *'), { target: { value: 'Juan' } });
-    fireEvent.change(screen.getByLabelText('Nombre de la Esposa *'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText(/Nombre del Esposo/), { target: { value: 'Juan' } });
+    fireEvent.change(screen.getByLabelText(/Nombre de la Esposa/), { target: { value: 'Ana' } });
     fireEvent.change(screen.getAllByLabelText('Email')[0], { target: { value: 'juan@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear Matrimonio' }));
     if (scenario === 'ok') {

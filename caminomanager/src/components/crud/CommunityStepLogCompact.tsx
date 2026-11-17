@@ -13,6 +13,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { formatLocalDate, todayLocalISO } from '@/lib/dates';
+import { Hint } from '@/components/ui/tooltip';
 
 interface CommunityStepLogCompactProps {
   communityId: number;
@@ -242,16 +243,17 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                               )}
                             </div>
                             {!readOnly && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                                onClick={() => handleDeleteClick(entry)}
-                                disabled={entryToDelete?.id === entry.id}
-                                title="Eliminar evento"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <Hint label="Eliminar evento">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                                  onClick={() => handleDeleteClick(entry)}
+                                  disabled={entryToDelete?.id === entry.id}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </Hint>
                             )}
                           </div>
                         </div>
@@ -297,16 +299,17 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                         )}
                       </div>
                       {!readOnly && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                          onClick={() => handleDeleteClick(entry)}
-                          disabled={entryToDelete?.id === entry.id}
-                          title="Eliminar evento"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <Hint label="Eliminar evento">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                            onClick={() => handleDeleteClick(entry)}
+                            disabled={entryToDelete?.id === entry.id}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </Hint>
                       )}
                     </div>
                   </div>

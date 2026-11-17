@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { FormAlert } from '@/components/ui/form-alert';
+import { RadioGroup, RadioGroupChip } from '@/components/ui/radio-group';
 import {
   Form,
   FormControl,
@@ -241,16 +242,16 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
                     <FormItem>
                       <FormLabel>Estado</FormLabel>
                       <FormControl>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione el resultado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="true">Cerrada</SelectItem>
-                            <SelectItem value="false">Abierta</SelectItem>
-                            <SelectItem value={NO_OUTCOME}>Sin resultado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {/* Three short options: visible chips beat a dropdown (one click, all in view). */}
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex flex-wrap gap-2"
+                        >
+                          <RadioGroupChip value="true">Cerrada</RadioGroupChip>
+                          <RadioGroupChip value="false">Abierta</RadioGroupChip>
+                          <RadioGroupChip value={NO_OUTCOME}>Sin resultado</RadioGroupChip>
+                        </RadioGroup>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

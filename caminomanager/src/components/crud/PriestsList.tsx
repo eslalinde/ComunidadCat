@@ -21,6 +21,15 @@ import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectPriestModal } from './SelectPriestModal';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Hint } from '@/components/ui/tooltip';
 
 interface PriestsListProps {
   priests: Priest[];
@@ -239,22 +248,24 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Sacerdotes ({priests.length})</CardTitle>
             <div className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsSelectModalOpen(true)}
-                title="Asignar sacerdote existente"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={openCreateForm}
-                title="Nuevo sacerdote"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
+              <Hint label="Asignar sacerdote existente">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsSelectModalOpen(true)}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                </Button>
+              </Hint>
+              <Hint label="Nuevo sacerdote">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openCreateForm}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </Hint>
             </div>
           </div>
         </CardHeader>
@@ -282,19 +293,20 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                         <span className="font-medium text-gray-900 text-sm">
                           {priest.person?.person_name || 'Sin nombre'}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleRole(priest)}
-                          disabled={isToggling}
-                          className={`px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
-                            priest.is_parish_priest
-                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                          }`}
-                          title="Clic para cambiar rol"
-                        >
-                          {isToggling ? '...' : priest.is_parish_priest ? 'Parroco' : 'Vicario'}
-                        </button>
+                        <Hint label={priest.is_parish_priest ? 'Cambiar a Vicario' : 'Cambiar a Párroco'} asLabel={false}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRole(priest)}
+                            disabled={isToggling}
+                            className={`px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                              priest.is_parish_priest
+                                ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                            }`}
+                          >
+                            {isToggling ? '...' : priest.is_parish_priest ? 'Parroco' : 'Vicario'}
+                          </button>
+                        </Hint>
                       </div>
                       {(phone || email) && (
                         <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -314,23 +326,25 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                       )}
                     </div>
                     <div className="flex gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                        onClick={() => openEditForm(priest)}
-                        title="Editar sacerdote"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        onClick={() => setPriestToDelete(priest)}
-                        disabled={isDeleting}
-                        title="Remover sacerdote"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <Hint label="Editar sacerdote">
+                        <button
+                          type="button"
+                          className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                          onClick={() => openEditForm(priest)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </Hint>
+                      <Hint label="Remover sacerdote">
+                        <button
+                          type="button"
+                          className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          onClick={() => setPriestToDelete(priest)}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </Hint>
                     </div>
                   </div>
                 );
@@ -360,12 +374,19 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
       />
 
       {/* Modal para crear/editar sacerdote */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">
-              {editingPriest ? 'Editar Sacerdote' : 'Nuevo Sacerdote'}
-            </h2>
+      <Dialog
+        open={isFormModalOpen}
+        onOpenChange={(next) => {
+          if (next || isSaving) return;
+          setIsFormModalOpen(false);
+          setEditingPriest(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingPriest ? 'Editar Sacerdote' : 'Nuevo Sacerdote'}</DialogTitle>
+              <DialogDescription>Datos de contacto y rol en la parroquia.</DialogDescription>
+            </DialogHeader>
 
             <Form {...form}>
               <FormRoot onSubmit={form.handleSubmit(handleSavePriest)} className="space-y-4">
@@ -479,7 +500,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                   )}
                 />
 
-                <div className="flex gap-2 justify-end pt-2">
+                <DialogFooter className="gap-2 pt-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -494,12 +515,11 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                   <Button type="submit" disabled={isSaving}>
                     {isSaving ? 'Guardando...' : 'Guardar'}
                   </Button>
-                </div>
+                </DialogFooter>
               </FormRoot>
             </Form>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

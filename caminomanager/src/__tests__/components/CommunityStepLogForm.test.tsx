@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CommunityStepLog } from '@/components/crud/CommunityStepLog';
 
@@ -40,9 +40,10 @@ it('exige el paso antes de guardar y no envía datos incompletos', async () => {
 
 it('guarda la entrada con tipos correctos y cierra el formulario', async () => {
   open();
-  const [step, outcome] = screen.getAllByRole('combobox');
-  fireEvent.change(step, { target: { value: '3' } });
-  fireEvent.change(outcome, { target: { value: 'true' } });
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: '3' } });
+  const outcome = screen.getByRole('radiogroup', { name: 'Estado' });
+  fireEvent.click(within(outcome).getByRole('radio', { name: 'Cerrada' }));
+  expect(within(outcome).getByRole('radio', { name: 'Cerrada' })).toBeChecked();
   fireEvent.change(screen.getByPlaceholderText('Nombre del catequista'), { target: { value: ' Ana ' } });
   fireEvent.click(screen.getByText('Guardar Entrada'));
   await waitFor(() => expect(mocks.create).toHaveBeenCalled());
@@ -55,7 +56,7 @@ it('guarda la entrada con tipos correctos y cierra el formulario', async () => {
 it('muestra un aviso si falla el guardado y conserva lo escrito', async () => {
   mocks.create.mockRejectedValue(new Error('offline'));
   open();
-  fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '2' } });
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: '2' } });
   fireEvent.click(screen.getByText('Guardar Entrada'));
   expect(await screen.findByRole('alert')).toBeVisible();
   expect(screen.getByText('Nueva Entrada del Log')).toBeVisible();
