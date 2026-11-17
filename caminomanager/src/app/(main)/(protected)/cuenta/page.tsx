@@ -1,15 +1,51 @@
 "use client";
+import { FormAlert } from "@/components/ui/form-alert";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormRoot,
+} from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { type AppRole, getRoleLabel, getRoleBadgeClass } from "@/lib/permissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyCommunitiesAccess } from "@/hooks/useCommunityAccess";
 import { routes } from "@/lib/routes";
+
+const profileSchema = z.object({
+  fullname: z.string().trim(),
+  username: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || value.length >= 3, "Usa al menos 3 caracteres")
+    .refine(
+      (value) => value === "" || /^[a-zA-Z0-9._-]+$/.test(value),
+      "Usa solo letras, números, punto, guion o guion bajo"
+    ),
+  website: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^https?:\/\/\S+\.\S+/.test(value),
+      "Escribe la dirección completa (ej. https://ejemplo.com)"
+    ),
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function AccountPage() {
   const router = useRouter();
@@ -19,9 +55,12 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [fullname, setFullname] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [website, setWebsite] = useState<string | null>(null);
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
+    defaultValues: { fullname: "", username: "", website: "" },
+  });
   const [avatar_url, setAvatarUrl] = useState<string | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -57,9 +96,11 @@ export default function AccountPage() {
           return;
         }
         if (data) {
-          setFullname(data.full_name);
-          setUsername(data.username);
-          setWebsite(data.website);
+          form.reset({
+            fullname: data.full_name ?? "",
+            username: data.username ?? "",
+            website: data.website ?? "",
+          });
           setAvatarUrl(data.avatar_url);
           setRole(data.role as AppRole);
         }
@@ -71,7 +112,7 @@ export default function AccountPage() {
       }
     }
     if (user) void getProfile();
-  }, [user, supabase]);
+  }, [user, supabase, form]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,29 +159,23 @@ export default function AccountPage() {
     };
   }, [userScope, supabase]);
 
-  async function updateProfile({
-    username,
-    fullname,
-    website,
-    avatar_url,
-  }: {
-    username: string | null;
-    fullname: string | null;
-    website: string | null;
-    avatar_url: string | null;
-  }) {
+  async function updateProfile({ fullname, username, website }: ProfileFormValues) {
     try {
       setSaving(true);
       setMessage(null);
-      
+
       const { error } = await supabase.from("profiles").update({
-        full_name: fullname,
-        username,
-        website,
+        full_name: fullname || null,
+        username: username || null,
+        website: website || null,
         avatar_url,
         updated_at: new Date().toISOString(),
       }).eq('id', user?.id);
-      
+
+      if (error?.code === "23505") {
+        form.setError("username", { message: "Ese nombre de usuario ya está en uso" });
+        return;
+      }
       if (error) {
         console.error("Error updating profile:", error);
         setMessage({ type: 'error', text: 'Error al actualizar el perfil.' });
@@ -218,77 +253,80 @@ export default function AccountPage() {
           </div>
         )}
         
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <Input 
-              id="email" 
-              type="text" 
-              value={user?.email || ''} 
-              disabled 
-              className="bg-gray-100"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="fullName" className="block mb-1 text-sm font-medium text-gray-700">
-              Nombre completo
-            </label>
-            <Input
-              id="fullName"
-              type="text"
-              value={fullname || ""}
-              onChange={(e) => setFullname(e.target.value)}
-              placeholder="Tu nombre completo"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-700">
-              Nombre de usuario
-            </label>
-            <Input
-              id="username"
-              type="text"
-              value={username || ""}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="usuario123"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="website" className="block mb-1 text-sm font-medium text-gray-700">
-              Sitio web
-            </label>
-            <Input
-              id="website"
-              type="url"
-              value={website || ""}
-              onChange={(e) => setWebsite(e.target.value)}
-              placeholder="https://ejemplo.com"
-            />
-          </div>
-          
-          {message && (
-            <div className={`p-3 rounded-lg text-sm ${
-              message.type === 'success' 
-                ? 'bg-green-50 text-green-800 border border-green-200' 
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
-              {message.text}
+        <Form {...form}>
+          <FormRoot onSubmit={form.handleSubmit(updateProfile)} className="space-y-4">
+            <div className="grid gap-2">
+              <label htmlFor="email" className="text-sm leading-none font-medium text-foreground">
+                Email
+              </label>
+              <Input id="email" type="text" value={user?.email || ''} disabled className="bg-muted" />
+              <p className="text-xs leading-4 text-muted-foreground">
+                El correo no se puede cambiar desde aquí.
+              </p>
             </div>
-          )}
-          
-          <Button
-            className="w-full"
-            onClick={() => updateProfile({ fullname, username, website, avatar_url })}
-            disabled={saving}
-          >
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </Button>
-        </div>
+
+            <FormField
+              control={form.control}
+              name="fullname"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre completo</FormLabel>
+                  <FormControl>
+                    <Input type="text" autoComplete="name" placeholder="Tu nombre completo" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre de usuario</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      autoComplete="username"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      placeholder="usuario123"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>Mínimo 3 caracteres, sin espacios.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sitio web</FormLabel>
+                  <FormControl>
+                    <Input type="url" inputMode="url" autoComplete="url" placeholder="https://ejemplo.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {message && (
+              <FormAlert tone={message.type === 'success' ? 'success' : 'error'}>
+                {message.text}
+              </FormAlert>
+            )}
+
+            <Button type="submit" className="w-full" disabled={saving}>
+              {saving && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </Button>
+          </FormRoot>
+        </Form>
       </div>
     </div>
   );

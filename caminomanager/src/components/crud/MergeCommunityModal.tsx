@@ -1,5 +1,6 @@
 'use client';
 
+import { FormAlert } from "@/components/ui/form-alert";
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +23,8 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
+  FormRoot,
+} from "@/components/ui/form";
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
@@ -199,7 +201,7 @@ export function MergeCommunityModal({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
               {/* Comunidad principal */}
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-700 font-medium">Comunidad Principal (permanece)</p>
@@ -284,9 +286,7 @@ export function MergeCommunityModal({
 
               {/* Error */}
               {error && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-                  {error}
-                </div>
+                <FormAlert tone="error">{error}</FormAlert>
               )}
 
               <DialogFooter className="gap-3">
@@ -301,7 +301,7 @@ export function MergeCommunityModal({
                   {loading ? 'Fusionando comunidades...' : 'Fusionar'}
                 </Button>
               </DialogFooter>
-            </form>
+            </FormRoot>
           </Form>
       </DialogContent>
     </Dialog>

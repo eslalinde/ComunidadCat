@@ -4,8 +4,17 @@ import { useEffect } from "react";
 
 export function ServiceWorkerRegistration() {
   useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    // In development the SW's cache would serve stale JS/CSS over fresh builds.
+    // Remove any worker left over from a previous session instead of registering.
+    if (process.env.NODE_ENV === "development") {
+      void unregisterDevServiceWorkers();
+      return;
+    }
+
     // Don't register SW in Electron
-    if (typeof window !== "undefined" && "serviceWorker" in navigator && !window.electronAPI) {
+    if (!window.electronAPI) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
@@ -31,4 +40,17 @@ export function ServiceWorkerRegistration() {
   }, []);
 
   return null;
+}
+
+async function unregisterDevServiceWorkers() {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+    if (registrations.length > 0 && "caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  } catch {
+    // Best effort: a failure here only means stale assets may persist.
+  }
 }

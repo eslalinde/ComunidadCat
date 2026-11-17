@@ -1,3 +1,4 @@
+import { FormAlert } from "@/components/ui/form-alert";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormRoot,
 } from "@/components/ui/form";
 import { createClient } from "@/utils/supabase/client";
 import { friendlyError } from "@/lib/supabaseErrors";
@@ -128,13 +130,13 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
         <h2 className="text-lg font-bold mb-4">Crear Matrimonio</h2>
 
         {form.formState.errors.root && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <FormAlert tone="error" className="mb-4">
             {form.formState.errors.root.message}
-          </div>
+          </FormAlert>
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <FormRoot onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Husband Section */}
               <div className="space-y-4">
@@ -302,7 +304,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
                 {form.formState.isSubmitting ? "Creando..." : "Crear Matrimonio"}
               </Button>
             </div>
-          </form>
+          </FormRoot>
         </Form>
       </div>
     </div>
