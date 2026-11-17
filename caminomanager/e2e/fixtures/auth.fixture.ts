@@ -5,7 +5,7 @@ async function loginAs(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.waitForSelector('form', { timeout: 15_000 });
   await page.getByLabel(/correo/i).fill(user.email);
-  await page.getByLabel(/contraseña/i).fill(user.password);
+  await page.getByLabel('Contraseña', { exact: true }).fill(user.password);
   await page.getByRole('button', { name: /ingresar/i }).click();
 
   const outcome = await Promise.race([

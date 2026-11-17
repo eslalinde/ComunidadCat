@@ -9,8 +9,8 @@ test.describe('Acceso sin sesión @smoke', () => {
     });
     await page.goto('/login');
     await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
-    await expect(page.getByText('El correo es requerido', { exact: true })).toBeVisible();
-    await expect(page.getByText('La contraseña es requerida', { exact: true })).toBeVisible();
+    await expect(page.getByText('Escribe tu correo electrónico', { exact: true })).toBeVisible();
+    await expect(page.getByText('Escribe tu contraseña', { exact: true })).toBeVisible();
     expect(requests).toBe(0);
   });
 
