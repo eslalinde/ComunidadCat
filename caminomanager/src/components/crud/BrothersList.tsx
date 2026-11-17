@@ -213,6 +213,8 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
       if (brotherError) throw brotherError;
 
+      // Close the form so the same person cannot be submitted twice.
+      setIsCreateModalOpen(false);
       toast.success('Hermano agregado a la comunidad');
       // Refresh the community data
       if (onAdd) {
