@@ -4,10 +4,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
+  FormRoot,
   FormField,
   FormItem,
   FormLabel,
@@ -19,8 +23,11 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/ui/brand-logo";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "El correo es requerido").email("Email inválido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  email: z
+    .string()
+    .min(1, "Escribe tu correo electrónico")
+    .email("Revisa el formato del correo (ej. nombre@dominio.com)"),
+  password: z.string().min(1, "Escribe tu contraseña"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,6 +44,8 @@ function LoginForm() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: { email: "", password: "" },
   });
 
@@ -115,7 +124,7 @@ function LoginForm() {
           <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Iniciar sesión</h2>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="email"
@@ -127,6 +136,8 @@ function LoginForm() {
                     <FormControl>
                       <Input
                         type="email"
+                        autoComplete="email"
+                        inputMode="email"
                         placeholder="tucorreo@ejemplo.com"
                         {...field}
                       />
@@ -144,30 +155,25 @@ function LoginForm() {
                       Contraseña
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                      />
+                      <PasswordInput autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {error && (
-                <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
-                  {error}
-                </div>
-              )}
+              {error && <FormAlert tone="error">{error}</FormAlert>}
               <Button
                 type="submit"
                 className="w-full"
                 size="lg"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Ingresando..." : "Ingresar"}
+                {form.formState.isSubmitting && (
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                )}
+                {form.formState.isSubmitting ? "Ingresando…" : "Ingresar"}
               </Button>
-            </form>
+            </FormRoot>
           </Form>
 
           <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">

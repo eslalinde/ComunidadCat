@@ -33,7 +33,7 @@ test('carga el renderer estático y los controles ReUI dentro de Electron', asyn
 
     const admin = TEST_USERS.admin;
     await page.getByLabel(/correo/i).fill(admin.email);
-    await page.getByLabel(/contraseña/i).fill(admin.password);
+    await page.getByLabel('Contraseña', { exact: true }).fill(admin.password);
     await page.getByRole('button', { name: /ingresar/i }).click();
     await page.waitForURL((url) => !url.pathname.includes('/login'), {
       timeout: 20_000,

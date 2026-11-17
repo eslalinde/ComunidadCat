@@ -12,7 +12,9 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
+  FormRoot,
+  RequiredMark,
+} from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from '@/types/database';
 import { X } from 'lucide-react';
 import { buildZodSchema, buildDefaultValues, prepareFormData } from '@/lib/form-schema';
@@ -40,6 +42,8 @@ export function EntityModal<T extends BaseEntity>({
 
   const form = useForm({
     resolver: zodResolver(schema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: buildDefaultValues(fields, initial as Record<string, unknown> | null),
   });
 
@@ -76,7 +80,7 @@ export function EntityModal<T extends BaseEntity>({
         <h2 className="text-xl font-bold mb-5 pr-8">{title}</h2>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {fields.map(field => (
               <FormField
                 key={field.name}
@@ -86,7 +90,7 @@ export function EntityModal<T extends BaseEntity>({
                   <FormItem>
                     <FormLabel>
                       {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                      {field.required && <RequiredMark />}
                     </FormLabel>
                     <FormControl>
                       {field.type === 'textarea' ? (
@@ -161,7 +165,7 @@ export function EntityModal<T extends BaseEntity>({
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
             </div>
-          </form>
+          </FormRoot>
         </Form>
       </div>
     </div>

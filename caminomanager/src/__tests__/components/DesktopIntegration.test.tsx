@@ -33,4 +33,14 @@ it('registra service worker y detecta una versión activada', async () => {
   render(<ServiceWorkerRegistration />); await waitFor(() => expect(register).toHaveBeenCalledWith('/sw.js')); await act(async () => { await Promise.resolve(); });
   registration.dispatchEvent(new Event('updatefound')); worker.dispatchEvent(new Event('statechange')); expect(log).not.toHaveBeenCalled(); worker.state = 'activated'; worker.dispatchEvent(new Event('statechange')); expect(log).toHaveBeenCalledWith('New version of ComunidadCat available.'); registration.installing = null; registration.dispatchEvent(new Event('updatefound'));
 });
+it('en desarrollo no registra el service worker y elimina el existente con su caché', async () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  const unregister = vi.fn().mockResolvedValue(true); const register = vi.fn();
+  vi.stubGlobal('navigator', { serviceWorker: { register, getRegistrations: vi.fn().mockResolvedValue([{ unregister }]) } });
+  const del = vi.fn().mockResolvedValue(true); vi.stubGlobal('caches', { keys: vi.fn().mockResolvedValue(['comunidadcat-v1']), delete: del });
+  render(<ServiceWorkerRegistration />);
+  await waitFor(() => expect(del).toHaveBeenCalledWith('comunidadcat-v1'));
+  expect(unregister).toHaveBeenCalled(); expect(register).not.toHaveBeenCalled();
+  vi.unstubAllEnvs();
+});
 it('absorbe fallo de registro del service worker', async () => { vi.stubGlobal('navigator', { serviceWorker: { register: vi.fn().mockRejectedValue(new Error('offline')) } }); const error = vi.spyOn(console, 'error').mockImplementation(() => {}); render(<ServiceWorkerRegistration />); await waitFor(() => expect(error).toHaveBeenCalledWith('SW registration failed:', expect.any(Error))); });

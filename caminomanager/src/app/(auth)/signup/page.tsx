@@ -4,29 +4,39 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Check, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
+  FormRoot,
   FormField,
   FormItem,
   FormLabel,
   FormControl,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { BrandLogo } from "@/components/ui/brand-logo";
 
+const MIN_PASSWORD_LENGTH = 6;
+
 const signupSchema = z
   .object({
-    full_name: z.string().min(1, "El nombre es requerido"),
-    email: z.string().min(1, "El correo es requerido").email("Email inválido"),
-    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-    confirmPassword: z.string().min(1, "Confirma tu contraseña"),
+    full_name: z.string().trim().min(1, "Escribe tu nombre completo"),
+    email: z
+      .string()
+      .min(1, "Escribe tu correo electrónico")
+      .email("Revisa el formato del correo (ej. nombre@dominio.com)"),
+    password: z.string().min(MIN_PASSWORD_LENGTH, `Usa al menos ${MIN_PASSWORD_LENGTH} caracteres`),
+    confirmPassword: z.string().min(1, "Repite la contraseña para confirmarla"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Las contraseñas no coinciden",
+    message: "Las contraseñas no coinciden todavía",
     path: ["confirmPassword"],
   });
 
@@ -40,6 +50,8 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: {
       full_name: "",
       email: "",
@@ -131,7 +143,7 @@ export default function SignupPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Crear cuenta</h2>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="full_name"
@@ -143,6 +155,7 @@ export default function SignupPage() {
                     <FormControl>
                       <Input
                         type="text"
+                        autoComplete="name"
                         placeholder="Tu nombre completo"
                         {...field}
                       />
@@ -162,6 +175,8 @@ export default function SignupPage() {
                     <FormControl>
                       <Input
                         type="email"
+                        autoComplete="email"
+                        inputMode="email"
                         placeholder="tucorreo@ejemplo.com"
                         {...field}
                       />
@@ -179,16 +194,9 @@ export default function SignupPage() {
                       Contraseña
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                      />
+                      <PasswordInput autoComplete="new-password" {...field} />
                     </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Mínimo 6 caracteres
-                    </p>
+                    <PasswordRequirement met={field.value.length >= MIN_PASSWORD_LENGTH} />
                   </FormItem>
                 )}
               />
@@ -201,33 +209,25 @@ export default function SignupPage() {
                       Confirmar contraseña
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                      />
+                      <PasswordInput autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {error && (
-                <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
-                  {error}
-                </div>
-              )}
+              {error && <FormAlert tone="error">{error}</FormAlert>}
 
               {success && (
-                <div className="text-green-700 text-sm bg-green-50 border border-green-200 p-4 rounded-lg">
+                <FormAlert tone="success" title="Revisa tu correo">
                   <p>{success}</p>
                   <Link
                     href="/login"
-                    className="block mt-2 text-[#1B3A6F] hover:text-[#15305C] font-medium"
+                    className="mt-2 inline-block font-medium text-primary hover:underline underline-offset-4"
                   >
                     Ir a iniciar sesión
                   </Link>
-                </div>
+                </FormAlert>
               )}
 
               {!success && (
@@ -237,10 +237,13 @@ export default function SignupPage() {
                   size="lg"
                   disabled={form.formState.isSubmitting}
                 >
-                  {form.formState.isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
+                  {form.formState.isSubmitting && (
+                    <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                  )}
+                  {form.formState.isSubmitting ? "Creando cuenta…" : "Crear cuenta"}
                 </Button>
               )}
-            </form>
+            </FormRoot>
           </Form>
 
           <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
@@ -252,5 +255,22 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function PasswordRequirement({ met }: { met: boolean }) {
+  return (
+    <FormDescription
+      data-met={met}
+      className="flex items-center gap-1 transition-colors group-data-invalid/field:text-field-error-foreground data-[met=true]:text-field-success"
+    >
+      <Check
+        aria-hidden="true"
+        className="size-3 shrink-0 opacity-40 transition-opacity data-[met=true]:opacity-100"
+        data-met={met}
+      />
+      Mínimo {MIN_PASSWORD_LENGTH} caracteres
+      <span className="sr-only">{met ? "(cumplido)" : "(pendiente)"}</span>
+    </FormDescription>
   );
 }

@@ -21,6 +21,22 @@ describe('Perfil', () => {
     await screen.findByText(scenario === 'ok' ? '¡Perfil actualizado correctamente!' : scenario === 'error' ? 'Error al actualizar el perfil.' : 'Error inesperado al guardar.');
     if (scenario !== 'throw') expect(mock.calls).toContainEqual({ table: 'profiles', method: 'update', args: [expect.objectContaining({ full_name: 'Nuevo Nombre', username: 'nuevo', website: 'https://nuevo.example.com', avatar_url: 'avatar.png' })] });
   });
+  it('valida usuario y sitio web antes de guardar', async () => {
+    render(<AccountPage />); await screen.findByText('Mi Perfil');
+    fireEvent.change(screen.getByLabelText('Nombre de usuario'), { target: { value: 'ab' } });
+    fireEvent.change(screen.getByLabelText('Sitio web'), { target: { value: 'ejemplo' } });
+    fireEvent.click(screen.getByText('Guardar cambios'));
+    await screen.findByText('Usa al menos 3 caracteres');
+    expect(screen.getByText('Escribe la dirección completa (ej. https://ejemplo.com)')).toBeVisible();
+    expect(mock.calls.some((c) => c.method === 'update')).toBe(false);
+  });
+  it('marca el nombre de usuario duplicado en su campo', async () => {
+    render(<AccountPage />); await screen.findByText('Mi Perfil');
+    responses.profiles.error = { message: 'duplicate', code: '23505' };
+    fireEvent.click(screen.getByText('Guardar cambios'));
+    await screen.findByText('Ese nombre de usuario ya está en uso');
+    expect(screen.getByLabelText('Nombre de usuario')).toHaveAttribute('aria-invalid', 'true');
+  });
   it.each(['zone', 'zone-empty', 'community', 'community-number', 'community-empty', 'global', 'viewer'])('explica alcance %s', async (scope) => {
     if (scope.startsWith('zone')) mocks.scope = { zone_id: 3 };
     if (scope.startsWith('community')) mocks.scope = { community_id: 4 };
