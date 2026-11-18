@@ -135,14 +135,14 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
         if (error) throw error;
       }
 
-      toast.success('Hermano eliminado de la comunidad');
+      toast.success('Hermano quitado de la comunidad');
       // Refresh the community data
       if (onDelete) {
         onDelete();
       }
     } catch (error) {
       console.error('Error deleting brother:', error);
-      toast.error('Error al eliminar el hermano');
+      toast.error('Error al quitar el hermano de la comunidad');
     } finally {
       setDeletingId(null);
       setBrotherToDelete(null);
@@ -413,21 +413,21 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                           size="icon"
                                           className="pointer-events-none text-destructive"
                                           disabled
-                                          aria-label={`Eliminar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
+                                          aria-label={`Quitar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </span>
                                     </Hint>
                                   ) : (
-                                    <Hint label="Eliminar hermano de la comunidad">
+                                    <Hint label="Quitar de la comunidad">
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="text-destructive hover:bg-destructive/10"
                                         onClick={() => handleRequestDelete(brother)}
                                         disabled={isDeleting}
-                                        aria-label={`Eliminar a ${brother.name} de la comunidad`}
+                                        aria-label={`Quitar a ${brother.name} de la comunidad`}
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>

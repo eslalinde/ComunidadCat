@@ -176,11 +176,11 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         }
       }
 
-      toast.success('Miembro eliminado del equipo');
+      toast.success('Miembro quitado del equipo');
       if (onDelete) onDelete();
     } catch (error) {
       console.error('Error deleting team member:', error);
-      toast.error(friendlyError(error, 'Error al eliminar el miembro del equipo'));
+      toast.error(friendlyError(error, 'Error al quitar el miembro del equipo'));
     } finally {
       setDeletingId(null);
       setMemberToDelete(null);
@@ -203,7 +203,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         if (error) throw error;
       }
 
-      toast.success('Responsabilidad removida');
+      toast.success('Responsabilidad quitada');
       if (onDelete) onDelete();
     } catch (error) {
       console.error('Error removing responsible:', error);
@@ -509,7 +509,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                               </Button>
                             </Hint>
                           )}
-                          <Hint label="Eliminar miembro del equipo">
+                          <Hint label="Quitar del equipo">
                             <Button
                               variant="ghost"
                               size="icon"
