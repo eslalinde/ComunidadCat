@@ -421,11 +421,12 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
         open={entryToDelete !== null}
         onClose={() => setEntryToDelete(null)}
         onConfirm={handleDeleteConfirm}
-        title="Eliminar elemento?"
+        title="¿Eliminar elemento del inventario?"
         itemName={entryToDelete ? getItemDisplayName(entryToDelete) : ''}
-        description={`¿Estás seguro de que deseas eliminar este elemento del inventario de la Comunidad ${communityNumber}?`}
+        description={`Se eliminará del inventario de la Comunidad ${communityNumber}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        previewTitle="Detalles"
         preview={[
-          ...(entryToDelete ? [`Elemento: ${getItemDisplayName(entryToDelete)}`] : []),
           ...(entryToDelete?.quantity ? [`Cantidad: ${entryToDelete.quantity}`] : []),
           ...(entryToDelete?.condition ? [`Estado: ${getConditionLabel(entryToDelete.condition)}`] : []),
         ]}

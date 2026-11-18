@@ -538,7 +538,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         onConfirm={handleDeleteTeam}
         title="¿Eliminar equipo?"
         itemName={getTeamTitle()}
-        description="¿Estás seguro de que deseas eliminar este equipo? Se eliminarán todos los miembros."
+        description="Se eliminará el equipo y se quitarán todos sus miembros. Esta acción no se puede deshacer."
+        previewTitle="Esto afectará a:"
         preview={[
           `${mergedMembers.length} miembro(s) del equipo`,
           ...(parishes.length > 0 ? [`${parishes.length} parroquia(s) asignada(s)`] : []),
@@ -551,9 +552,13 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         open={memberToDelete !== null}
         onClose={() => setMemberToDelete(null)}
         onConfirm={handleDeleteMember}
-        title="¿Eliminar miembro del equipo?"
+        title="¿Quitar del equipo?"
         itemName={memberToDelete?.name}
-        description="¿Estás seguro de que deseas eliminar a este miembro del equipo?"
+        description="La persona seguirá registrada en Personas; solo se quitará de este equipo."
+        requireTypedConfirmation={false}
+        confirmLabel="Quitar"
+        icon={UserMinus}
+        loadingLabel="Quitando..."
         loading={deletingId !== null}
       />
 
