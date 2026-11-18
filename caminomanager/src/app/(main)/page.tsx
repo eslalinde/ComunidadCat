@@ -148,10 +148,10 @@ export default function Home() {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Welcome section */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3 flex-wrap">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3 flex-wrap">
           Bienvenido a <BrandLogo size="md" />
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-muted-foreground mt-1">
           Selecciona una opción para comenzar a trabajar.
         </p>
       </div>
@@ -161,8 +161,8 @@ export default function Home() {
         {filteredQuickAccess.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href}>
-              <Card className={`p-5 hover:shadow-md transition-all cursor-pointer h-full border border-gray-200 ${item.border}`}>
+            <Link key={item.href} href={item.href} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Card className={`p-5 h-full shadow-xs transition-all hover:shadow-md ${item.border}`}>
                 <div className="flex items-start gap-4">
                   <div
                     className={`p-3 rounded-xl ${item.bg} flex-shrink-0`}
@@ -170,10 +170,10 @@ export default function Home() {
                     <Icon className={`w-7 h-7 ${item.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-0.5">
+                    <h3 className="text-lg font-semibold text-foreground mb-0.5">
                       {item.title}
                     </h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {item.description}
                     </p>
                   </div>
@@ -187,26 +187,22 @@ export default function Home() {
       {/* Secondary access - smaller cards */}
       {showSecondary && filteredSecondaryAccess.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Otras secciones
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {filteredSecondaryAccess.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href}>
-                  <Card className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 hover:border-gray-300 group">
-                    <div className="flex flex-col items-center gap-2">
-                      <div
-                        className={`p-2.5 rounded-lg ${item.bg} transition-colors`}
-                      >
-                        <Icon className={`w-5 h-5 ${item.iconColor}`} />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700 text-center">
-                        {item.title}
-                      </span>
+                <Link key={item.href} href={item.href} className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Card className="flex-row items-center gap-3 px-3 py-3 shadow-xs transition-all group-hover:border-primary/30 group-hover:shadow-sm">
+                    <div className={`p-2 rounded-lg ${item.bg} shrink-0`}>
+                      <Icon className={`w-4 h-4 ${item.iconColor}`} />
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors mx-auto mt-2" />
+                    <span className="flex-1 min-w-0 truncate text-sm font-medium text-foreground">
+                      {item.title}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </Card>
                 </Link>
               );

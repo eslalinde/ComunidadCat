@@ -191,7 +191,7 @@ export function AppSidebar({
             <SidebarGroup className="py-1">
               <SidebarGroupLabel
                 asChild
-                className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
+                className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <CollapsibleTrigger>
                   {group.title}
@@ -214,6 +214,7 @@ export function AppSidebar({
                             asChild
                             isActive={isActive}
                             tooltip={item.label}
+                            className="data-[active=true]:font-semibold data-[active=true]:[&>svg]:text-sidebar-primary"
                           >
                             <Link
                               href={item.href}
