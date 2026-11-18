@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -406,16 +406,16 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                   {isInTeam ? (
                                     // Disabled buttons get no pointer/focus events, so a
                                     // focusable wrapper carries the explanation instead.
-                                    <Hint label="Este hermano está asociado a un equipo y no puede ser eliminado" asLabel={false}>
+                                    <Hint label="No se puede quitar: pertenece a un equipo de la comunidad" asLabel={false}>
                                       <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="pointer-events-none text-destructive"
+                                          className="pointer-events-none text-muted-foreground"
                                           disabled
                                           aria-label={`Quitar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
                                         >
-                                          <Trash2 className="h-4 w-4" />
+                                          <UserMinus className="h-4 w-4" />
                                         </Button>
                                       </span>
                                     </Hint>
@@ -424,12 +424,12 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:bg-destructive/10"
+                                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                         onClick={() => handleRequestDelete(brother)}
                                         disabled={isDeleting}
                                         aria-label={`Quitar a ${brother.name} de la comunidad`}
                                       >
-                                        <Trash2 className="h-4 w-4" />
+                                        <UserMinus className="h-4 w-4" />
                                       </Button>
                                     </Hint>
                                   )}

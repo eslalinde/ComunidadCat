@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Priest } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectPriestModal } from './SelectPriestModal';
@@ -342,7 +342,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                           onClick={() => setPriestToDelete(priest)}
                           disabled={isDeleting}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <UserMinus className="h-4 w-4" />
                         </button>
                       </Hint>
                     </div>
