@@ -40,7 +40,7 @@ export default function MainLayout({
       />
       <SidebarInset className="min-w-0">
         <header
-          className="sticky top-0 z-50 bg-background flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
+          className="sticky top-0 z-50 bg-card/90 backdrop-blur flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
           <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -55,7 +55,7 @@ export default function MainLayout({
             <WindowControls />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 print:p-0 print:overflow-visible">
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 print:p-0 print:overflow-visible">
           {children}
         </main>
       </SidebarInset>

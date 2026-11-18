@@ -210,7 +210,7 @@ export function EntityTable<T extends BaseEntity>({
             {data.map((item, index) => (
               <div
                 key={item.id || index}
-                className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-gray-50" : ""}`}
+                className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-accent" : ""}`}
                 onClick={() => onRowClick?.(item)}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -218,7 +218,7 @@ export function EntityTable<T extends BaseEntity>({
                     {visibleColumns.map((column, colIndex) => (
                       <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
                         {colIndex > 0 && (
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {toSentenceCase(column.label)}:{' '}
                           </span>
                         )}
@@ -251,7 +251,7 @@ export function EntityTable<T extends BaseEntity>({
             return configured?.width ? { width: configured.width } : undefined;
           }}
           getRowClassName={() =>
-            onRowClick ? 'cursor-pointer hover:bg-gray-50' : undefined
+            onRowClick ? 'cursor-pointer' : undefined
           }
           getCellClassName={(cell) =>
             cell.column.id === 'actions'

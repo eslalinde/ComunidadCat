@@ -49,44 +49,68 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Brand palette sampled from the stained-glass logo ("vitral") */
+@theme {
+  --color-vitral-red: #d7262b;
+  --color-vitral-orange: #f07a1f;
+  --color-vitral-amber: #f6a623;
+  --color-vitral-yellow: #ffd21f;
+  --color-vitral-green: #43a047;
+  --color-vitral-blue: #2a5db0;
+  --color-vitral-sky: #4fb3e8;
+  --color-vitral-cream: #f6f1e4;
+  --color-vitral-paper: #fbf8f1;
+  --color-vitral-ink: #15171c;
+  --color-vitral-navy: #1b3a6f;
+}
+
+/* Inline so the font variable resolves where next/font defines it (landing layout). */
+@theme inline {
+  --font-display: var(--font-fraunces), Georgia, serif;
+}
+
+/*
+ * "Sobrio institucional" theme: soft cool-gray canvas (#F6F7F9), white surfaces,
+ * navy (#1B3A6F) as the only strong color; logo colors live in icon chips/badges.
+ */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.977 0.003 264);
+  --foreground: oklch(0.22 0.02 262);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.22 0.02 262);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.22 0.02 262);
   --primary: oklch(0.326 0.1 258);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.962 0.006 262);
+  --secondary-foreground: oklch(0.3 0.04 260);
+  --muted: oklch(0.962 0.005 262);
+  --muted-foreground: oklch(0.5 0.02 262);
+  --accent: oklch(0.955 0.02 258);
+  --accent-foreground: oklch(0.326 0.1 258);
   --destructive: oklch(0.577 0.245 27.325);
   /* Soft, muted-rose validation palette: noticeable without alarming the user */
   --field-error: oklch(0.74 0.08 12);
   --field-error-foreground: oklch(0.52 0.1 12);
   --field-error-soft: oklch(0.982 0.008 12);
   --field-success: oklch(0.56 0.11 158);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.915 0.007 262);
+  --input: oklch(0.885 0.009 262);
+  --ring: oklch(0.55 0.1 258);
+  --chart-1: oklch(0.45 0.14 258);
+  --chart-2: oklch(0.68 0.17 50);
+  --chart-3: oklch(0.62 0.15 145);
+  --chart-4: oklch(0.58 0.2 27);
+  --chart-5: oklch(0.8 0.15 85);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.32 0.02 262);
+  --sidebar-primary: oklch(0.326 0.1 258);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.95 0.022 258);
+  --sidebar-accent-foreground: oklch(0.326 0.1 258);
+  --sidebar-border: oklch(0.915 0.007 262);
+  --sidebar-ring: oklch(0.55 0.1 258);
 }
 
 .dark {
@@ -769,4 +793,29 @@ input[type="date"].date-input::-moz-calendar-picker-indicator {
     line-height: 1.5;
     margin: 0;
   }
+}
+
+/* ---------- Landing ("vitral") ---------- */
+@keyframes vitral-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes vitral-glow {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+@keyframes vitral-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes vitral-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vitral-spin { animation: vitral-spin 160s linear infinite; transform-box: fill-box; transform-origin: center; }
+.vitral-glow { animation: vitral-glow 6s ease-in-out infinite; }
+.vitral-float { animation: vitral-float 7s ease-in-out infinite; }
+.vitral-rise { animation: vitral-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.vitral-pane-shadow { box-shadow: 5px 5px 0 0 var(--color-vitral-ink); }
+@media (prefers-reduced-motion: reduce) {
+  .vitral-spin, .vitral-glow, .vitral-float, .vitral-rise { animation: none; }
 }

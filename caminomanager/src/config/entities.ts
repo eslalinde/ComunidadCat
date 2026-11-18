@@ -8,6 +8,7 @@ import { CarismaBadge } from '@/components/ui/carisma-badge';
 export const countryConfig: EntityConfig<Country> = {
   tableName: 'countries',
   displayName: 'País',
+  pluralName: 'Países',
   fields: [
     {
       name: 'name',
@@ -42,6 +43,7 @@ export const countryConfig: EntityConfig<Country> = {
 export const stateConfig: EntityConfig<State> = {
   tableName: 'states',
   displayName: 'Departamento',
+  pluralName: 'Departamentos',
   fields: [
     {
       name: 'name',
@@ -77,6 +79,7 @@ export const stateConfig: EntityConfig<State> = {
 export const cityConfig: EntityConfig<City> = {
   tableName: 'cities',
   displayName: 'Ciudad',
+  pluralName: 'Ciudades',
   fields: [
     {
       name: 'name',
@@ -130,6 +133,7 @@ export const cityConfig: EntityConfig<City> = {
 export const cityZoneConfig: EntityConfig<CityZone> = {
   tableName: 'city_zones',
   displayName: 'Zona',
+  pluralName: 'Zonas',
   fields: [
     {
       name: 'name',
@@ -165,6 +169,7 @@ export const cityZoneConfig: EntityConfig<CityZone> = {
 export const dioceseConfig: EntityConfig<Diocese> = {
   tableName: 'dioceses',
   displayName: 'Diócesis',
+  pluralName: 'Diócesis',
   fields: [
     {
       name: 'name',
@@ -211,6 +216,7 @@ export const dioceseConfig: EntityConfig<Diocese> = {
 export const parishConfig: EntityConfig<Parish> = {
   tableName: 'parishes',
   displayName: 'Parroquia',
+  pluralName: 'Parroquias',
   formSize: 'wide',
   fields: [
     {
@@ -314,6 +320,7 @@ export const parishConfig: EntityConfig<Parish> = {
 export const stepWayConfig: EntityConfig<StepWay> = {
   tableName: 'step_ways',
   displayName: 'Etapa del Camino Neocatecumenal',
+  pluralName: 'Etapas del Camino',
   fields: [
     {
       name: 'name',
@@ -340,6 +347,7 @@ export const stepWayConfig: EntityConfig<StepWay> = {
 export const teamTypeConfig: EntityConfig<TeamType> = {
   tableName: 'team_types',
   displayName: 'Tipo de Equipo',
+  pluralName: 'Tipos de Equipo',
   fields: [
     {
       name: 'name',
@@ -366,6 +374,7 @@ export const teamTypeConfig: EntityConfig<TeamType> = {
 export const personConfig: EntityConfig<Person> = {
   tableName: 'people',
   displayName: 'Persona',
+  pluralName: 'Personas',
   fields: [
     {
       name: 'person_name',
@@ -521,6 +530,7 @@ export const personConfig: EntityConfig<Person> = {
 export const communityConfig: EntityConfig<Community> = {
   tableName: 'communities',
   displayName: 'Comunidad',
+  pluralName: 'Comunidades',
   formSize: 'wide',
   fields: [
     {
@@ -638,6 +648,7 @@ export const communityConfig: EntityConfig<Community> = {
 export const communityStepLogConfig: EntityConfig<CommunityStepLog> = {
   tableName: 'community_step_log',
   displayName: 'Log de Pasos de Comunidad',
+  pluralName: 'Logs de Pasos',
   fields: [
     {
       name: 'community_id',
@@ -715,6 +726,7 @@ export const communityStepLogConfig: EntityConfig<CommunityStepLog> = {
 export const parishCatechesisConfig: EntityConfig<ParishCatechesis> = {
   tableName: 'parish_catechesis',
   displayName: 'Catequesis de Parroquia',
+  pluralName: 'Catequesis de Parroquia',
   fields: [
     {
       name: 'parish_id',
@@ -769,6 +781,7 @@ export const parishCatechesisConfig: EntityConfig<ParishCatechesis> = {
 export const inventoryItemTypeConfig: EntityConfig<InventoryItemType> = {
   tableName: 'inventory_item_types',
   displayName: 'Tipo de Elemento de Inventario',
+  pluralName: 'Tipos de Inventario',
   fields: [
     {
       name: 'name',

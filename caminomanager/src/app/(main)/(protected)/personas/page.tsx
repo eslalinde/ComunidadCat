@@ -23,7 +23,8 @@ export default function PeoplePage() {
         pageSize={10}
         extraActions={
           <Button
-            variant="success"
+            variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => setMarriageModalOpen(true)}
           >
             <Plus className="w-4 h-4" />

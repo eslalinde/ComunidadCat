@@ -232,6 +232,8 @@ export interface ForeignKeyConfig {
 export interface EntityConfig<T> {
   tableName: string;
   displayName: string;
+  /** Plural used for page titles and empty states (e.g. "Países"). */
+  pluralName?: string;
   formSize?: "default" | "wide";
   fields: FormField[];
   searchFields: (keyof T)[];

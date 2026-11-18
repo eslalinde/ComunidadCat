@@ -183,6 +183,12 @@ function LoginForm() {
             </Link>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          <Link href="/publico" className="font-medium text-[#1B3A6F] hover:underline">
+            Conoce ComunidadCat →
+          </Link>
+        </p>
       </div>
     </div>
   );
