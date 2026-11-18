@@ -2,6 +2,14 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
@@ -125,35 +133,30 @@ export function ReportTable({
             <p className="text-gray-500 text-lg">No hay datos disponibles</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
                   {columns.map((column) => (
-                    <th 
-                      key={column.key}
-                      className="text-left py-3 px-4 font-semibold text-gray-900"
-                    >
-                      {column.label}
-                    </th>
+                    <TableHead key={column.key}>{column.label}</TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.map((row, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
+                  <TableRow key={index}>
                     {columns.map((column) => (
-                      <td key={column.key} className="py-3 px-4 text-gray-700">
-                        {column.render 
+                      <TableCell key={column.key}>
+                        {column.render
                           ? column.render(row[column.key], row)
                           : row[column.key] || '-'
                         }
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
         

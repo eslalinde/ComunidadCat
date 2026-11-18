@@ -114,7 +114,7 @@ describe('DynamicReportTable con DataGrid', () => {
     expect(screen.queryByText('Comunidad 6')).not.toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', { name: /Hermanos iniciales/ }),
-    ).toHaveClass('normal-case', 'tracking-normal');
+    ).not.toHaveClass('uppercase');
     expect(screen.getByRole('columnheader', { name: /Parroquia/ })).toHaveAttribute(
       'aria-sort',
       'ascending',

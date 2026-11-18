@@ -82,10 +82,7 @@ function DataGrid<TData extends RowData>({
                 return (
                   <TableHead
                     key={header.id}
-                    className={cn(
-                      "normal-case tracking-normal",
-                      getHeaderClassName?.(header.column)
-                    )}
+                    className={getHeaderClassName?.(header.column)}
                     style={getHeaderStyle?.(header.column)}
                     aria-sort={
                       sorted === "asc"
@@ -100,7 +97,10 @@ function DataGrid<TData extends RowData>({
                         {header.column.getCanSort() ? (
                           <button
                             type="button"
-                            className="flex min-h-9 items-center gap-2 text-left"
+                            className={cn(
+                              "-mx-1 flex w-fit min-h-9 items-center [.text-center_&]:mx-auto [.text-right_&]:ml-auto [.text-right_&]:mr-0 gap-1.5 rounded px-1 text-left transition-colors hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                              sorted && "text-gray-950"
+                            )}
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {typeof displayHeader === "string" ? displayHeader : <FlexRender header={header} />}

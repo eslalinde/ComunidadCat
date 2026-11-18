@@ -198,6 +198,12 @@ export function DynamicReportTable<TData extends RowData>({
             renderColumnFilter={(column) => (
               <ColumnFilter column={column} />
             )}
+            getHeaderClassName={(column) => {
+              const meta = column.columnDef.meta as
+                | DynamicColumnMeta
+                | undefined;
+              return `px-3 py-2 align-top whitespace-nowrap ${alignClass(meta?.align)}`;
+            }}
             getRowClassName={(row) =>
               row.getIsGrouped() ? "bg-gray-50 font-semibold" : undefined
             }
@@ -205,14 +211,7 @@ export function DynamicReportTable<TData extends RowData>({
               const meta = cell.column.columnDef.meta as
                 | DynamicColumnMeta
                 | undefined;
-              const align = meta?.align ?? "left";
-              return `px-3 py-2 ${
-                align === "center"
-                  ? "text-center"
-                  : align === "right"
-                    ? "text-right"
-                    : "text-left"
-              }`;
+              return `px-3 py-2 whitespace-nowrap ${alignClass(meta?.align)}`;
             }}
             footer={
               hasAggregations && data.length > 0 ? (
@@ -459,6 +458,12 @@ function AggregationFooter<TData extends RowData>({
       </TableRow>
     </TableFooter>
   );
+}
+
+function alignClass(align: DynamicColumnMeta["align"]): string {
+  if (align === "center") return "text-center";
+  if (align === "right") return "text-right";
+  return "text-left";
 }
 
 function countLeafRows<TData extends RowData>(row: Row<AppTableFeatures, TData>): number {
