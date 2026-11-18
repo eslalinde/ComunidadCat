@@ -10,11 +10,11 @@ const ZONE_1_PARISH = 'La Visitación';
 const ZONE_2_PARISH = 'San Juan Bosco';
 
 async function readRecordCount(page: import('@playwright/test').Page): Promise<number> {
-  // EntityPage prints "Página X de Y — N registros" when there is at least 1 row.
-  const label = page.getByText(/—\s*\d+\s+registros/);
+  // EntityPage prints the total as "N registros" (or "1 registro") under the page title.
+  const label = page.getByText(/^\d+\s+registros?$/);
   await expect(label).toBeVisible({ timeout: 10_000 });
   const text = (await label.textContent()) ?? '';
-  const match = text.match(/(\d+)\s+registros/);
+  const match = text.match(/(\d+)\s+registros?/);
   if (!match) throw new Error(`Could not parse record count from: "${text}"`);
   return Number(match[1]);
 }
