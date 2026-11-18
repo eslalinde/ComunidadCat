@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Priest } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectPriestModal } from './SelectPriestModal';
@@ -110,11 +110,11 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         throw new Error('No se pudo eliminar el sacerdote. Es posible que no tengas permisos.');
       }
 
-      toast.success('Sacerdote removido correctamente');
+      toast.success('Sacerdote quitado de la parroquia');
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Error deleting priest:', error);
-      toast.error('Error al eliminar el sacerdote');
+      toast.error('Error al quitar el sacerdote de la parroquia');
     } finally {
       setDeletingId(null);
       setPriestToDelete(null);
@@ -335,14 +335,14 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                           <Pencil className="h-4 w-4" />
                         </button>
                       </Hint>
-                      <Hint label="Remover sacerdote">
+                      <Hint label="Quitar sacerdote de la parroquia">
                         <button
                           type="button"
                           className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                           onClick={() => setPriestToDelete(priest)}
                           disabled={isDeleting}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <UserMinus className="h-4 w-4" />
                         </button>
                       </Hint>
                     </div>
@@ -367,9 +367,13 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         open={priestToDelete !== null}
         onClose={() => setPriestToDelete(null)}
         onConfirm={handleDeleteConfirmed}
-        title="¿Remover sacerdote?"
+        title="¿Quitar sacerdote de la parroquia?"
         itemName={priestToDelete?.person?.person_name || 'este sacerdote'}
-        description="¿Estás seguro de que deseas remover a este sacerdote de la parroquia?"
+        description="La persona seguirá registrada en Personas; solo se quitará de esta parroquia."
+        requireTypedConfirmation={false}
+        confirmLabel="Quitar"
+        icon={UserMinus}
+        loadingLabel="Quitando..."
         loading={deletingId !== null}
       />
 

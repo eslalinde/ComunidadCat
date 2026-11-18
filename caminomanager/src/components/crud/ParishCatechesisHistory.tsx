@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 import { useCrud } from '@/hooks/useCrud';
 import { ParishCatechesis } from '@/types/database';
 import { Calendar, FileText, ExternalLink, Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -401,41 +402,18 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
         loading={isSaving}
       />
 
-      {/* Dialogo de confirmacion para eliminar */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-        if (!open) {
+      <ConfirmDeleteDialog
+        open={isDeleteDialogOpen}
+        onClose={() => {
           setIsDeleteDialogOpen(false);
           setDeletingId(null);
-        }
-      }}>
-        <DialogContent>
-            <DialogHeader>
-              <DialogTitle>¿Eliminar catequesis?</DialogTitle>
-              <DialogDescription>
-                ¿Estas seguro de que deseas eliminar este registro de catequesis? Esta accion no se puede deshacer.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteDialogOpen(false);
-                  setDeletingId(null);
-                }}
-                disabled={isDeleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting || !deletingId}
-              >
-                {isDeleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="¿Eliminar catequesis?"
+        description={`Se eliminará este registro de catequesis de ${parishName}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        loading={isDeleting}
+      />
     </Card>
   );
 }

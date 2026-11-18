@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -135,14 +135,14 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
         if (error) throw error;
       }
 
-      toast.success('Hermano eliminado de la comunidad');
+      toast.success('Hermano quitado de la comunidad');
       // Refresh the community data
       if (onDelete) {
         onDelete();
       }
     } catch (error) {
       console.error('Error deleting brother:', error);
-      toast.error('Error al eliminar el hermano');
+      toast.error('Error al quitar el hermano de la comunidad');
     } finally {
       setDeletingId(null);
       setBrotherToDelete(null);
@@ -406,30 +406,30 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                   {isInTeam ? (
                                     // Disabled buttons get no pointer/focus events, so a
                                     // focusable wrapper carries the explanation instead.
-                                    <Hint label="Este hermano está asociado a un equipo y no puede ser eliminado" asLabel={false}>
+                                    <Hint label="No se puede quitar: pertenece a un equipo de la comunidad" asLabel={false}>
                                       <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="pointer-events-none text-destructive"
+                                          className="pointer-events-none text-muted-foreground"
                                           disabled
-                                          aria-label={`Eliminar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
+                                          aria-label={`Quitar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
                                         >
-                                          <Trash2 className="h-4 w-4" />
+                                          <UserMinus className="h-4 w-4" />
                                         </Button>
                                       </span>
                                     </Hint>
                                   ) : (
-                                    <Hint label="Eliminar hermano de la comunidad">
+                                    <Hint label="Quitar de la comunidad">
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:bg-destructive/10"
+                                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                         onClick={() => handleRequestDelete(brother)}
                                         disabled={isDeleting}
-                                        aria-label={`Eliminar a ${brother.name} de la comunidad`}
+                                        aria-label={`Quitar a ${brother.name} de la comunidad`}
                                       >
-                                        <Trash2 className="h-4 w-4" />
+                                        <UserMinus className="h-4 w-4" />
                                       </Button>
                                     </Hint>
                                   )}
@@ -488,9 +488,13 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
       open={brotherToDelete !== null}
       onClose={() => setBrotherToDelete(null)}
       onConfirm={handleDeleteConfirmed}
-      title="¿Eliminar hermano de la comunidad?"
+      title="¿Quitar de la comunidad?"
       itemName={brotherToDelete?.name}
-      description="¿Estás seguro de que deseas eliminar a este hermano de la comunidad?"
+      description="La persona seguirá registrada en Personas; solo se quitará de esta comunidad."
+      requireTypedConfirmation={false}
+      confirmLabel="Quitar"
+      icon={UserMinus}
+      loadingLabel="Quitando..."
       loading={deletingId !== null}
     />
 

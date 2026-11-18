@@ -50,9 +50,9 @@ describe('TeamSection', () => {
     expect(screen.getByText('Equipo nacional')).toBeVisible(); expect(screen.getByText('No hay miembros en este equipo')).toBeVisible();
   });
   it.each(['ok', 'error', 'zero'])('elimina las dos relaciones del matrimonio: %s', async (scenario) => {
-    setup(); fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar miembro del equipo' })[0]);
+    setup(); fireEvent.click(screen.getAllByRole('button', { name: 'Quitar del equipo' })[0]);
     fireEvent.click(screen.getByText('Cancelar borrado')); expect(db.from).not.toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar miembro del equipo' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Quitar del equipo' })[0]);
     if (scenario === 'error') responses.belongs.error = { message: 'denied' };
     if (scenario === 'zero') responses.belongs.count = 0;
     fireEvent.click(screen.getByText('Confirmar borrado'));

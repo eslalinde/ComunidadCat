@@ -34,8 +34,8 @@ describe('BrothersList', () => {
     view.rerender(<BrothersList brothers={[]} communityId={10} teamMembers={{}} />); expect(screen.queryByText('Agregar Existente')).not.toBeInTheDocument(); expect(screen.getByText(/No hay hermanos/)).toBeVisible();
   });
   it.each([false, true])('borra vínculos del matrimonio, error=%s', async (fails) => {
-    brothers(); fireEvent.click(screen.getByRole('button', { name: /^Eliminar a .* de la comunidad$/ })); fireEvent.click(screen.getByText('Cancelar borrado'));
-    fireEvent.click(screen.getByRole('button', { name: /^Eliminar a .* de la comunidad$/ })); if (fails) responses.brothers.error = { message: 'denied' };
+    brothers(); fireEvent.click(screen.getByRole('button', { name: /^Quitar a .* de la comunidad$/ })); fireEvent.click(screen.getByText('Cancelar borrado'));
+    fireEvent.click(screen.getByRole('button', { name: /^Quitar a .* de la comunidad$/ })); if (fails) responses.brothers.error = { message: 'denied' };
     fireEvent.click(screen.getByText('Confirmar borrado')); await waitFor(() => expect(fails ? toast.error : toast.success).toHaveBeenCalled());
     expect(mock.calls.filter((c) => c.method === 'delete')).toHaveLength(fails ? 1 : 2); expect(refresh).toHaveBeenCalledTimes(fails ? 0 : 1);
     expect(mock.calls).toContainEqual({ table: 'brothers', method: 'eq', args: ['community_id', 10] });
@@ -70,7 +70,7 @@ const priest: Priest = { id: 1, person_id: 7, parish_id: 10, is_parish_priest: f
 function priests(overrides: Partial<React.ComponentProps<typeof PriestsList>> = {}) { return render(<PriestsList priests={[priest]} parishId={10} onRefresh={refresh} {...overrides} />); }
 describe('PriestsList', () => {
   it.each(['ok', 'error', 'zero'])('quita relación parroquial, resultado=%s', async (scenario) => {
-    priests(); fireEvent.click(screen.getByRole('button', { name: 'Remover sacerdote' })); fireEvent.click(screen.getByText('Cancelar borrado')); fireEvent.click(screen.getByRole('button', { name: 'Remover sacerdote' }));
+    priests(); fireEvent.click(screen.getByRole('button', { name: 'Quitar sacerdote de la parroquia' })); fireEvent.click(screen.getByText('Cancelar borrado')); fireEvent.click(screen.getByRole('button', { name: 'Quitar sacerdote de la parroquia' }));
     if (scenario === 'error') responses.priests.error = { message: 'denied' }; if (scenario === 'zero') responses.priests.count = 0;
     fireEvent.click(screen.getByText('Confirmar borrado')); await waitFor(() => expect(scenario === 'ok' ? toast.success : toast.error).toHaveBeenCalled());
     expect(refresh).toHaveBeenCalledTimes(scenario === 'ok' ? 1 : 0); expect(db.from).not.toHaveBeenCalledWith('people');

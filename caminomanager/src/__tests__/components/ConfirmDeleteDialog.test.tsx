@@ -125,4 +125,48 @@ describe('ConfirmDeleteDialog', () => {
     const deleteButton = screen.getByText('Eliminar');
     expect(deleteButton).not.toBeDisabled();
   });
+
+  it('should allow a single-click confirmation for low-impact removals', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDeleteDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        requireTypedConfirmation={false}
+        confirmLabel="Quitar"
+      />
+    );
+
+    expect(screen.queryByPlaceholderText('Escribe eliminar')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Quitar' }));
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it('should confirm with Enter once the word is typed', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<ConfirmDeleteDialog {...defaultProps} onConfirm={onConfirm} />);
+
+    const input = screen.getByLabelText(/Escribe eliminar para confirmar/i);
+    await user.type(input, 'elimin{Enter}');
+    expect(onConfirm).not.toHaveBeenCalled();
+    await user.type(input, 'ar {Enter}');
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it('should show a custom preview heading and loading label', () => {
+    render(
+      <ConfirmDeleteDialog
+        {...defaultProps}
+        preview={['2 miembros']}
+        previewTitle="Esto afectará a:"
+        loading
+        loadingLabel="Quitando..."
+      />
+    );
+    expect(screen.getByText('Esto afectará a:')).toBeInTheDocument();
+    expect(screen.getByText('Quitando...')).toBeInTheDocument();
+  });
 });
