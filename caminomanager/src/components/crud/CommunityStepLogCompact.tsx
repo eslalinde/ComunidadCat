@@ -371,9 +371,10 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         onConfirm={handleDeleteConfirm}
         title="¿Eliminar evento de bitácora?"
         itemName={entryToDelete?.step_way?.name || 'Evento de bitácora'}
-        description={`¿Estás seguro de que deseas eliminar este registro de la Comunidad ${communityNumber}?`}
+        description={`Se eliminará de la bitácora de la Comunidad ${communityNumber}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        previewTitle="Detalles"
         preview={[
-          `Paso: ${entryToDelete?.step_way?.name || 'Sin paso'}`,
           `Fecha: ${formatLocalDate(entryToDelete?.date_of_step)}`,
           ...(entryToDelete?.notes ? [`Notas: ${entryToDelete.notes}`] : []),
         ]}

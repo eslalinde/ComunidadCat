@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
+import { Trash2, UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -488,9 +488,13 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
       open={brotherToDelete !== null}
       onClose={() => setBrotherToDelete(null)}
       onConfirm={handleDeleteConfirmed}
-      title="¿Eliminar hermano de la comunidad?"
+      title="¿Quitar de la comunidad?"
       itemName={brotherToDelete?.name}
-      description="¿Estás seguro de que deseas eliminar a este hermano de la comunidad?"
+      description="La persona seguirá registrada en Personas; solo se quitará de esta comunidad."
+      requireTypedConfirmation={false}
+      confirmLabel="Quitar"
+      icon={UserMinus}
+      loadingLabel="Quitando..."
       loading={deletingId !== null}
     />
 

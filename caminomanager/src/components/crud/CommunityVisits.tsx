@@ -299,13 +299,17 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
         open={entryToDelete !== null}
         onClose={() => setEntryToDelete(null)}
         onConfirm={handleDeleteConfirm}
-        title="Eliminar visita?"
+        title="¿Eliminar visita?"
         itemName="Visita a la comunidad"
-        description={`Estas seguro de que deseas eliminar esta visita de la Comunidad ${communityNumber}?`}
+        description={`Se eliminará esta visita de la Comunidad ${communityNumber}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        previewTitle="Detalles"
         preview={[
           `Fecha: ${entryToDelete?.visit_date ? formatDate(entryToDelete.visit_date) : 'No especificada'}`,
           ...(entryToDelete?.visitor_name ? [`Visitante: ${entryToDelete.visitor_name}`] : []),
-          ...(entryToDelete?.description ? [`Descripcion: ${entryToDelete.description.substring(0, 80)}...`] : []),
+          ...(entryToDelete?.description
+            ? [`Descripción: ${entryToDelete.description.length > 80 ? `${entryToDelete.description.substring(0, 80)}…` : entryToDelete.description}`]
+            : []),
         ]}
         loading={isDeleting}
       />

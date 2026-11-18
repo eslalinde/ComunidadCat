@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Priest } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
+import { Trash2, UserMinus, UserPlus, Plus, Phone, Mail, User, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectPriestModal } from './SelectPriestModal';
@@ -367,9 +367,13 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         open={priestToDelete !== null}
         onClose={() => setPriestToDelete(null)}
         onConfirm={handleDeleteConfirmed}
-        title="¿Remover sacerdote?"
+        title="¿Quitar sacerdote de la parroquia?"
         itemName={priestToDelete?.person?.person_name || 'este sacerdote'}
-        description="¿Estás seguro de que deseas remover a este sacerdote de la parroquia?"
+        description="La persona seguirá registrada en Personas; solo se quitará de esta parroquia."
+        requireTypedConfirmation={false}
+        confirmLabel="Quitar"
+        icon={UserMinus}
+        loadingLabel="Quitando..."
         loading={deletingId !== null}
       />
 
