@@ -403,7 +403,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible && (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded items-center gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
                               </span>
@@ -417,7 +417,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                           {(member.isResponsible || (member.carisma && member.carisma !== 'Matrimonio')) && (
                             <div className="flex flex-wrap gap-1 sm:hidden mt-0.5">
                               {member.isResponsible && (
-                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
                                   <Crown className="w-3.5 h-3.5" />
                                   Responsable
                                 </span>
@@ -439,24 +439,24 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible ? (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded items-center gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
                               </span>
                             ) : (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                              <span className="hidden sm:inline-flex text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded">
                                 Corresponsable
                               </span>
                             )}
                           </div>
                           <div className="flex sm:hidden mt-0.5">
                             {member.isResponsible ? (
-                              <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
                               </span>
                             ) : (
-                              <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                              <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded">
                                 Corresponsable
                               </span>
                             )}
@@ -488,11 +488,12 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-orange-500 hover:bg-orange-50"
+                                aria-pressed={true}
+                                className="text-amber-500 hover:bg-amber-50 hover:text-amber-600"
                                 onClick={() => setMemberToRemoveResponsible(member)}
                                 disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
                               >
-                                <UserMinus className="h-4 w-4" />
+                                <Crown className="h-4 w-4 fill-current" />
                               </Button>
                             </Hint>
                           ) : (
@@ -500,7 +501,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-green-600 hover:bg-green-50"
+                                aria-pressed={false}
+                                className="text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
                                 onClick={() => setMemberToAssignResponsible(member)}
                                 disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
                                 aria-label={`Hacer responsable a ${member.name}`}
@@ -513,11 +515,11 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-destructive hover:bg-destructive/10"
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => setMemberToDelete(member)}
                               disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <UserMinus className="h-4 w-4" />
                             </Button>
                           </Hint>
                         </div>
