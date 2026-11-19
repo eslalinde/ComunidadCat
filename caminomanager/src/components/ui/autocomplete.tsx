@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Check, ChevronDown, LoaderCircle, X } from "lucide-react"
+import { Popover as PopoverPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -39,6 +40,7 @@ function Autocomplete({
   const id = providedId ?? generatedId
   const listboxId = `${id}-listbox`
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const listboxRef = React.useRef<HTMLDivElement>(null)
   const selected = options.find((option) => option.value === value)
   const [query, setQuery] = React.useState(selected?.label ?? "")
   const [open, setOpen] = React.useState(false)
@@ -81,15 +83,25 @@ function Autocomplete({
     setActiveIndex(enabledIndexes[nextPosition])
   }
 
+  const isListboxOpen = open && !disabled && !loading
+
   return (
+    <PopoverPrimitive.Root open={isListboxOpen} onOpenChange={setOpen}>
     <div
       ref={containerRef}
       data-slot="autocomplete"
       className="relative"
       onBlur={(event) => {
-        if (!containerRef.current?.contains(event.relatedTarget)) setOpen(false)
+        const next = event.relatedTarget
+        if (
+          !containerRef.current?.contains(next) &&
+          !listboxRef.current?.contains(next)
+        ) {
+          setOpen(false)
+        }
       }}
     >
+      <PopoverPrimitive.Anchor asChild>
       <div className="relative">
         <input
           id={id}
@@ -175,12 +187,26 @@ function Autocomplete({
           </div>
         )}
       </div>
+      </PopoverPrimitive.Anchor>
 
-      {open && !disabled && !loading && (
-        <div
+      {/* Portaled so the list floats above the page instead of growing scrollable parents such as dialogs. */}
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          ref={listboxRef}
           id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          align="start"
+          sideOffset={4}
+          collisionPadding={8}
+          className="z-50 max-h-[min(15rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-none"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onMouseDown={(event) => event.preventDefault()}
+          onInteractOutside={(event) => {
+            if (containerRef.current?.contains(event.target as Node)) {
+              event.preventDefault()
+            }
+          }}
         >
           {filteredOptions.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
@@ -221,9 +247,10 @@ function Autocomplete({
               </button>
             ))
           )}
-        </div>
-      )}
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
     </div>
+    </PopoverPrimitive.Root>
   )
 }
 
