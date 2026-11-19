@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { publicRoutes } from '@/lib/routes';
+import { publicRoutes, routes } from '@/lib/routes';
 import type { AppRole, UserScope } from '@/lib/permissions';
 
 interface Profile {
@@ -126,8 +126,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
     if (!user && !isPublic) {
+      // Web visitors entering through the root see the public landing page.
+      // The desktop app (Electron) goes straight to the login screen.
+      if (pathname === routes.home && !window.electronAPI) {
+        router.replace(routes.publico);
+        return;
+      }
       const fullPath = pathname + (window.location.search || '');
-      router.replace(`/login?redirectTo=${encodeURIComponent(fullPath)}`);
+      router.replace(`${routes.login}?redirectTo=${encodeURIComponent(fullPath)}`);
     }
   }, [user, loading, pathname, router]);
 

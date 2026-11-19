@@ -38,6 +38,21 @@ it('conserva destino y query string al proteger una ruta', () => {
   expect(mocks.replace).toHaveBeenCalledWith('/login?redirectTo=%2Fcomunidades%2Fdetalle%3Fid%3D10');
   window.history.replaceState({}, '', '/');
 });
+it('envía a la landing al visitante web sin sesión que entra por la raíz', () => {
+  mocks.pathname = '/'; render(<AuthProvider><Consumer /></AuthProvider>);
+  act(() => notify('INITIAL_SESSION', null));
+  expect(mocks.replace).toHaveBeenCalledWith('/publico');
+});
+it('la app de escritorio sin sesión va directo al login desde la raíz', () => {
+  window.electronAPI = {} as NonNullable<typeof window.electronAPI>;
+  try {
+    mocks.pathname = '/'; render(<AuthProvider><Consumer /></AuthProvider>);
+    act(() => notify('INITIAL_SESSION', null));
+    expect(mocks.replace).toHaveBeenCalledWith('/login?redirectTo=%2F');
+  } finally {
+    delete window.electronAPI;
+  }
+});
 it.each(['empty', 'error', 'rejected'])('tolera perfil/alcance %s sin otorgar permisos', async (scenario) => {
   mocks.rpc.mockResolvedValue({ data: [], error: scenario === 'error' ? { message: 'Error' } : null });
   mocks.from.mockImplementation(createTableMock({ profiles: { data: null, error: null } }).from);

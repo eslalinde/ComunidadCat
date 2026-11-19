@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { getSafeRedirectPath } from "@/lib/routes";
 import { BrandLogo } from "@/components/ui/brand-logo";
 
 const loginSchema = z.object({
@@ -57,7 +58,7 @@ function LoginForm() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const redirectTo = searchParams.get('redirectTo') || '/';
+          const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
           router.replace(redirectTo);
           return;
         }
@@ -74,7 +75,7 @@ function LoginForm() {
     setError(null);
 
     try {
-      const redirectTo = searchParams.get('redirectTo') || '/';
+      const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: values.email,
