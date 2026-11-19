@@ -50,7 +50,10 @@ export function getSafeRedirectPath(target: string | null | undefined, fallback:
     const base = 'https://app.invalid';
     const url = new URL(target, base);
     if (url.origin !== base) return fallback;
-    return url.pathname + url.search + url.hash;
+    // Dot segments can normalize into a protocol-relative path (`/.//evil` → `//evil`).
+    const safePath = url.pathname + url.search + url.hash;
+    if (safePath.startsWith('//') || safePath.includes('\\')) return fallback;
+    return safePath;
   } catch {
     return fallback;
   }

@@ -20,6 +20,9 @@ describe('getSafeRedirectPath', () => {
     '\\\\evil.example',
     'javascript:alert(1)',
     '/\t/evil.example',
+    '/.//evil.example',
+    '/a/..//evil.example',
+    '/%2e//evil.example',
     'comunidades',
   ])('rechaza destinos externos o inválidos: %s', (input) => {
     expect(getSafeRedirectPath(input)).toBe(routes.home);
