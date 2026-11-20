@@ -21,29 +21,29 @@ export default function Error({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] py-20">
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 max-w-md text-center">
+      <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-md text-center">
         <div className="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-5">
           <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
 
-        <h2 className="text-2xl font-bold mb-2 text-gray-900">
+        <h2 className="text-2xl font-bold mb-2 text-foreground">
           Algo salió mal
         </h2>
-        <p className="text-gray-500 mb-6">
+        <p className="text-muted-foreground mb-6">
           Ocurrió un error inesperado. Puedes intentar de nuevo o volver al
           inicio.
         </p>
 
         <div className="flex gap-3 justify-center">
           <button
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/80 transition-colors"
             onClick={() => reset()}
           >
             <RotateCcw className="w-4 h-4" />
             Reintentar
           </button>
           <button
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B3A6F] text-white font-medium rounded-lg hover:bg-[#15305C] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors"
             onClick={() => router.push("/")}
           >
             <Home className="w-4 h-4" />
@@ -53,7 +53,7 @@ export default function Error({
 
         {process.env.NODE_ENV === "development" && error.message && (
           <Collapsible className="mt-6 text-left">
-            <CollapsibleTrigger className="group inline-flex items-center gap-1 rounded text-xs text-gray-400 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <CollapsibleTrigger className="group inline-flex items-center gap-1 rounded text-xs text-muted-foreground/70 hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <ChevronRight aria-hidden="true" className="size-3.5 transition-transform group-data-[state=open]:rotate-90 motion-reduce:transition-none" />
               Detalles del error (solo desarrollo)
             </CollapsibleTrigger>

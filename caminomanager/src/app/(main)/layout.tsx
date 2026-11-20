@@ -12,6 +12,7 @@ import { WindowControls } from "@/components/electron/WindowControls";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryProvider } from "@/app/QueryProvider";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function MainLayout({
   children,
@@ -23,7 +24,7 @@ export default function MainLayout({
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <Spinner />
       </div>
     );
   }

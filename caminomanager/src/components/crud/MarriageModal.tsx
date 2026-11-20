@@ -155,7 +155,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Husband Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-blue-600">Esposo</h3>
+                <h3 className="text-base font-semibold text-blue-600">Esposo</h3>
 
                 <FormField
                   control={form.control}
@@ -231,7 +231,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
 
               {/* Wife Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-pink-600">Esposa</h3>
+                <h3 className="text-base font-semibold text-pink-600">Esposa</h3>
 
                 <FormField
                   control={form.control}

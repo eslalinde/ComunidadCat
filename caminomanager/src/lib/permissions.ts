@@ -24,12 +24,12 @@ const ROLE_LABELS: Record<AppRole, string> = {
 };
 
 const ROLE_BADGE_CLASSES: Record<AppRole, string> = {
-  admin: 'bg-blue-100 text-[#1B3A6F] border-blue-300',
+  admin: 'bg-blue-100 text-primary border-blue-300',
   contributor: 'bg-blue-100 text-blue-700 border-blue-300',
   zone_leader: 'bg-emerald-100 text-emerald-700 border-emerald-300',
   zone_contributor: 'bg-teal-100 text-teal-700 border-teal-300',
   community_responsible: 'bg-purple-100 text-purple-700 border-purple-300',
-  viewer: 'bg-gray-100 text-gray-700 border-gray-300',
+  viewer: 'bg-muted text-foreground border-input',
 };
 
 export function getRoleLabel(role: AppRole): string {

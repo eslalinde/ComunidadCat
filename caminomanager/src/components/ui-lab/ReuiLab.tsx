@@ -87,7 +87,7 @@ export function ReuiLab() {
     <main className="mx-auto grid min-h-screen w-full max-w-6xl gap-8 bg-background p-4 text-foreground sm:p-8">
       <header className="space-y-2">
         <p className="text-sm font-medium text-primary">Fase 2 · laboratorio aislado</p>
-        <h1 className="text-3xl font-bold tracking-tight">Evaluación ReUI</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Evaluación ReUI</h1>
         <p className="max-w-3xl text-muted-foreground">
           Prototipos sin conexión a Supabase para validar interacción, accesibilidad,
           responsive y compatibilidad con la fachada actual.

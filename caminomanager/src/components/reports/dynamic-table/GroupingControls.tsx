@@ -45,7 +45,7 @@ export function GroupingControls<TData extends RowData>({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1 text-sm text-gray-600">
+      <div className="flex items-center gap-1 text-sm text-muted-foreground">
         <Layers className="h-4 w-4" />
         <span>Agrupar:</span>
       </div>
@@ -99,7 +99,7 @@ export function GroupingControls<TData extends RowData>({
       {grouping.length > 0 && (
         <button
           onClick={() => onGroupingChange([])}
-          className="text-xs text-gray-500 hover:text-gray-700 underline"
+          className="text-xs text-muted-foreground hover:text-foreground underline"
         >
           Limpiar
         </button>

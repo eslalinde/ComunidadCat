@@ -56,8 +56,8 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Reportes</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reportes</h1>
+        <p className="text-muted-foreground mt-1">
           Selecciona el tipo de reporte que deseas generar.
         </p>
       </div>
@@ -67,16 +67,16 @@ export default function ReportsPage() {
           const Icon = report.icon;
           return (
             <Link key={report.href} href={report.href}>
-              <Card className={`p-5 hover:shadow-md transition-all cursor-pointer h-full border border-gray-200 ${report.border}`}>
+              <Card className={`p-5 hover:shadow-md transition-all cursor-pointer h-full border border-border ${report.border}`}>
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-xl ${report.bg} flex-shrink-0`}>
                     <Icon className={`w-7 h-7 ${report.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-0.5">
+                    <h3 className="text-lg font-semibold text-foreground mb-0.5">
                       {report.title}
                     </h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {report.description}
                     </p>
                   </div>

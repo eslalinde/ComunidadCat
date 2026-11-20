@@ -59,7 +59,7 @@ export default function Header({ userEmail, userName, title: _title }: HeaderPro
 
   return (
     <header
-      className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 h-16 flex items-center px-4 justify-between"
+      className="bg-background shadow-sm border-b h-16 flex items-center px-4 justify-between"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       <div className="flex items-center gap-3">
@@ -68,37 +68,37 @@ export default function Header({ userEmail, userName, title: _title }: HeaderPro
         <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenu.Trigger asChild>
             <button
-              className="flex items-center gap-2 rounded-full px-1 py-1 cursor-pointer focus:outline-none hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-2 rounded-full px-1 py-1 cursor-pointer focus:outline-none hover:bg-accent transition-colors"
               aria-label="Abrir menú de usuario"
             >
               {userName && (
-                <span className="text-sm text-gray-700 dark:text-gray-200 font-medium pl-2 hidden sm:inline">
+                <span className="text-sm text-foreground font-medium pl-2 hidden sm:inline">
                   {userName}
                 </span>
               )}
-              <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 dark:border-gray-600" style={{ backgroundColor: "#E8EDF5", borderColor: "#A3B4D2" }}>
-                <span className="font-bold text-lg" style={{ color: "#1B3A6F" }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-primary/30 bg-primary/10">
+                <span className="font-bold text-lg text-primary">
                   {getInitials(userEmail)}
                 </span>
               </div>
             </button>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" sideOffset={8} className="min-w-[200px] rounded-lg bg-white dark:bg-gray-900 p-2 shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-            <DropdownMenu.Label className="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 font-semibold">Cuenta</DropdownMenu.Label>
+          <DropdownMenu.Content align="end" sideOffset={8} className="min-w-[200px] rounded-lg bg-popover text-popover-foreground p-2 shadow-lg border z-50">
+            <DropdownMenu.Label className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">Cuenta</DropdownMenu.Label>
             <DropdownMenu.Item asChild>
               <Link
                 href={routes.cuenta}
-                className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-800"
+                className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-accent"
                 onClick={() => setMenuOpen(false)}
               >
                 <UserIcon className="w-4 h-4" />
                 Mi Perfil
               </Link>
             </DropdownMenu.Item>
-            <DropdownMenu.Separator className="my-2 h-px bg-gray-200 dark:bg-gray-700" />
+            <DropdownMenu.Separator className="my-2 h-px bg-border" />
             <DropdownMenu.Item asChild>
               <button
-                className="flex items-center gap-2 w-full px-2 py-2 rounded-md cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-800"
+                className="flex items-center gap-2 w-full px-2 py-2 rounded-md cursor-pointer hover:bg-accent"
                 onClick={() => {
                   toggleDarkMode();
                   setMenuOpen(false);
@@ -120,7 +120,7 @@ export default function Header({ userEmail, userName, title: _title }: HeaderPro
                 </span>
               </button>
             </DropdownMenu.Item>
-            <DropdownMenu.Separator className="my-2 h-px bg-gray-200 dark:bg-gray-700" />
+            <DropdownMenu.Separator className="my-2 h-px bg-border" />
             <DropdownMenu.Item asChild>
               <button
                 type="button"

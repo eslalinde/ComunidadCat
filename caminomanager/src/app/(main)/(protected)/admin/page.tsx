@@ -45,6 +45,7 @@ import {
 } from "@/lib/permissions";
 import { useQuery } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Spinner } from "@/components/ui/spinner";
 
 const ALL_ROLES: AppRole[] = [
   "viewer",
@@ -236,7 +237,7 @@ export default function AdminPage() {
   if (authLoading || !authorized) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4" />
+        <Spinner className="mx-auto mb-4" />
       </div>
     );
   }
@@ -246,8 +247,8 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-[#1B3A6F]" />
-          <h1 className="text-2xl font-bold text-gray-800">
+          <Shield className="w-7 h-7 text-primary" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Administración de Usuarios
           </h1>
         </div>
@@ -261,7 +262,7 @@ export default function AdminPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Usuarios del sistema</CardTitle>
-            <Badge className="bg-blue-50 text-[#1B3A6F] border-blue-200">
+            <Badge variant="info">
               {users.length} usuario{users.length !== 1 ? "s" : ""}
             </Badge>
           </div>
@@ -269,7 +270,7 @@ export default function AdminPage() {
         <CardContent>
           {/* Search bar */}
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
             <input
               type="text"
               placeholder="Buscar por nombre, email o usuario..."
@@ -282,8 +283,8 @@ export default function AdminPage() {
           {/* Loading state */}
           {loading && (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-[#1B3A6F]" />
-              <span className="ml-3 text-gray-600">Cargando usuarios...</span>
+              <Spinner />
+              <span className="ml-3 text-muted-foreground">Cargando usuarios...</span>
             </div>
           )}
 
@@ -296,7 +297,7 @@ export default function AdminPage() {
 
           {/* Empty state (compartido entre desktop y mobile) */}
           {!loading && !error && filteredUsers.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-muted-foreground py-8">
               {searchTerm
                 ? "No se encontraron usuarios con ese criterio."
                 : "No hay usuarios registrados."}
@@ -359,12 +360,12 @@ export default function AdminPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                           {getScopeLabel(user) || "—"}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           {formatDate(user.last_sign_in_at)}
                         </span>
                       </TableCell>
@@ -384,14 +385,14 @@ export default function AdminPage() {
                 return (
                   <li
                     key={user.id}
-                    className="rounded-lg border border-gray-200 bg-white p-3 space-y-2"
+                    className="rounded-lg border border-border bg-card p-3 space-y-2"
                   >
                     <div className="space-y-0.5">
-                      <p className="text-sm font-medium text-gray-900 break-all">
+                      <p className="text-sm font-medium text-foreground break-all">
                         {user.email}
                       </p>
                       {user.full_name && (
-                        <p className="text-xs text-gray-500">{user.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{user.full_name}</p>
                       )}
                     </div>
 
@@ -425,10 +426,10 @@ export default function AdminPage() {
                     </div>
 
                     <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-xs">
-                      <dt className="text-gray-500">Alcance:</dt>
-                      <dd className="text-gray-700">{scope || "—"}</dd>
-                      <dt className="text-gray-500">Último acceso:</dt>
-                      <dd className="text-gray-700">
+                      <dt className="text-muted-foreground">Alcance:</dt>
+                      <dd className="text-foreground">{scope || "—"}</dd>
+                      <dt className="text-muted-foreground">Último acceso:</dt>
+                      <dd className="text-foreground">
                         {formatDate(user.last_sign_in_at)}
                       </dd>
                     </dl>
