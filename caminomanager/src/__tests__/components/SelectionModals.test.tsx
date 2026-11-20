@@ -115,7 +115,7 @@ describe('MarriageModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear Matrimonio' }));
     if (scenario === 'ok') {
       await waitFor(() => expect(select).toHaveBeenCalledWith(1, 2)); expect(close).toHaveBeenCalledOnce();
-      expect(queries[1].calls).toContainEqual({ table: 'people', method: 'insert', args: [expect.objectContaining({ spouse_id: 1, gender_id: 2, phone: null })] });
+      expect(queries[1].calls).toContainEqual({ table: 'people', method: 'insert', args: [expect.objectContaining({ spouse_id: 1, gender_id: 2 })] });
       expect(queries[2].calls).toContainEqual({ table: 'people', method: 'update', args: [{ spouse_id: 2 }] });
     } else { await screen.findByText('Error al crear el matrimonio'); expect(select).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled(); }
     expect(db.from).toHaveBeenCalledTimes(scenario === 'husband' ? 1 : scenario === 'wife' ? 2 : 3);

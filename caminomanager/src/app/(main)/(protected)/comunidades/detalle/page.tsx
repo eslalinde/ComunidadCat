@@ -1,5 +1,7 @@
 'use client';
 
+import { flushSync } from 'react-dom';
+import { readContacts, type PersonContact } from '@/lib/personContacts';
 import { useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -87,9 +89,19 @@ function CommunityDetailContent() {
   const showVisits = useFeatureFlag('community_visits');
   const showInventory = useFeatureFlag('community_inventory');
 
-  const handlePrint = (mode: PrintMode) => {
-    setPrintMode(mode);
-    setTimeout(() => window.print(), 0);
+  const [printContacts, setPrintContacts] = useState(new Map<number, PersonContact>());
+  const handlePrint = async (mode: PrintMode) => {
+    try {
+      const ids = [...new Set(brothers.map(b => b.person_id))];
+      const include = userScope && ['admin','contributor','zone_leader','community_responsible'].includes(userScope.role);
+      const contacts = include ? await readContacts(createClient(), ids, communityId, mode) : new Map<number, PersonContact>();
+      flushSync(() => { setPrintMode(mode); setPrintContacts(contacts); });
+      window.print();
+    } catch {
+      toast.error('No se pudo preparar la impresión.');
+    } finally {
+      setPrintContacts(new Map());
+    }
   };
 
   const {
@@ -110,6 +122,11 @@ function CommunityDetailContent() {
     invalidateBrothers,
     invalidateStepLogs,
   } = useCommunityData(communityId);
+
+  function withPrintedContact<T extends { person_id: number; person?: { mobile?: string; phone?: string } }>(row: T): T {
+    const contact = printContacts.get(row.person_id);
+    return { ...row, person: row.person && { ...row.person, phone: contact?.phone ?? '', mobile: [contact?.mobile, contact?.phone].filter(Boolean).join(' / ') } };
+  }
 
   // Construir nombre de catequistas responsables del equipo por defecto
   // Incluye el nombre del responsable y su cónyuge si aplica
@@ -606,12 +623,15 @@ function CommunityDetailContent() {
       <CommunityPrintView
         community={community}
         teams={teams}
-        teamMembers={teamMembers}
+        teamMembers={Object.fromEntries(Object.entries(teamMembers).map(([id, members]) => [id, members.map(withPrintedContact)]))}
         teamParishes={teamParishes}
         stepLogs={stepLogs}
         parishPriestName={parishPriestName}
-        mergedBrothers={mergedBrothers}
-        brothers={brothers}
+        mergedBrothers={mergedBrothers.map(b => ({ ...b, celular: b.personIds.flatMap(id => {
+          const c = printContacts.get(id);
+          return [c?.mobile, c?.phone].filter(Boolean);
+        }).join(' / ') }))}
+        brothers={brothers.map(withPrintedContact)}
         printMode={printMode}
       />
 
@@ -643,6 +663,7 @@ function CommunityDetailContent() {
 
       {/* Modal para editar datos de un miembro de equipo */}
       <EditPersonModal
+        communityId={communityId}
         personIds={editPersonIds}
         onClose={() => setEditPersonIds(null)}
         onSaved={handlePersonUpdated}

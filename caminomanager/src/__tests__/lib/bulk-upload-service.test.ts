@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { executeBulkUpload } from '@/lib/bulk-upload-service';
 import { generateCsvTemplate, parseCsvFile, type ParsedBrother } from '@/lib/csv-parser';
 
-const db = vi.hoisted(() => ({ from: vi.fn() }));
+const db = vi.hoisted(() => ({ from: vi.fn(), functions: {invoke: vi.fn()} }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
 
 interface Response { data: unknown; error: { message: string } | null; count?: number | null }
@@ -18,6 +18,7 @@ const brother = (name: string, overrides: Partial<ParsedBrother> = {}): ParsedBr
 });
 
 beforeEach(() => {
+  db.functions.invoke.mockImplementation(async (_name, {body}) => ({data: {tickets: body.items.map(() => crypto.randomUUID())}, error:null}));
   requests = [];
   responses = [];
   db.from.mockReset().mockImplementation((table: string) => {
@@ -56,6 +57,11 @@ describe('carga masiva: servicio real y frontera Supabase simulada', () => {
     ]);
     // The aggregate must include existing brothers, not just the current upload.
     expect(requests.at(-1)).toEqual({ table: 'communities', operation: 'update', payload: { actual_brothers: 8 }, filters: [['id', 10]] });
+    expect(requests[0].payload).toEqual(expect.arrayContaining([expect.objectContaining({contact_ticket: expect.any(String)})]));
+    for (const row of requests[0].payload as object[]) {
+      expect(row).not.toHaveProperty('phone');
+      expect(row).not.toHaveProperty('mobile');
+    }
     expect(progress.mock.calls.map(([p]) => p.phase)).toEqual(['people', 'people', 'spouses', 'brothers', 'brothers', 'done']);
     expect(responses).toEqual([]);
   });
@@ -64,7 +70,7 @@ describe('carga masiva: servicio real y frontera Supabase simulada', () => {
     responses.push(ok([{ id: 1, person_name: 'Ana' }]), ok(), ok(null, 1), ok());
     const result = await executeBulkUpload([brother('Error', { status: 'error' }), brother('Ana', { status: 'warning' })], 10);
     expect(result.peopleCreated).toBe(1);
-    expect(requests[0].payload).toEqual([{ person_name: 'Ana', phone: null, mobile: null, email: null, person_type_id: 2, gender_id: 1, is_itinerante: false }]);
+    expect(requests[0].payload).toEqual([{ person_name: 'Ana', email: null, person_type_id: 2, gender_id: 1, is_itinerante: false }]);
   });
 
   it('divide en lotes y continúa después de un lote fallido sin vincular personas inexistentes', async () => {

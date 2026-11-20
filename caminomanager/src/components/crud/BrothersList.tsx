@@ -1,3 +1,5 @@
+import { BrotherContact } from './BrotherContact';
+import { preparePerson } from '@/lib/personContacts';
 import { Fragment, useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -198,7 +200,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
       // First, create the person
       const { data: newPerson, error: personError } = await supabase
         .from('people')
-        .insert(data)
+        .insert(await preparePerson(supabase, data))
         .select()
         .single();
 
@@ -325,7 +327,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Celular</TableHead>
+                <TableHead>Teléfonos</TableHead>
                 {onDelete && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
@@ -388,7 +390,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="py-1.5">{brother.celular || '-'}</TableCell>
+                            <TableCell className="py-1.5"><BrotherContact personIds={brother.personIds} communityId={communityId} /></TableCell>
                             {onDelete && (
                               <TableCell className="py-1.5">
                                 <div className="flex justify-end gap-1">
@@ -459,6 +461,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
     {/* Modal para editar datos de un hermano (o de uno de los cónyuges) */}
     <EditPersonModal
+      communityId={communityId}
       personIds={editPersonIds}
       onClose={() => setEditPersonIds(null)}
       onSaved={onPersonUpdated ?? onAdd}

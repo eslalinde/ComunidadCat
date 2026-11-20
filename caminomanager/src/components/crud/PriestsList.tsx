@@ -1,3 +1,4 @@
+import { preparePerson, readPersonContact } from '@/lib/personContacts';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,6 +73,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
 
   const openCreateForm = () => {
     setEditingPriest(null);
+    setContactEditable(true);
     form.reset({
       name: '',
       phone: '',
@@ -82,12 +84,19 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
     setIsFormModalOpen(true);
   };
 
-  const openEditForm = (priest: Priest) => {
+  const [contactEditable, setContactEditable] = useState(true);
+  const [originalNumbers, setOriginalNumbers] = useState({ phone: '', mobile: '' });
+  const openEditForm = async (priest: Priest) => {
+    let contact;
+    try { contact = await readPersonContact(createClient(), priest.person_id); }
+    catch { toast.error('No se pudieron consultar los teléfonos.'); return; }
+    setContactEditable(!!contact);
+    setOriginalNumbers({ phone: contact?.phone ?? '', mobile: contact?.mobile ?? '' });
     setEditingPriest(priest);
     form.reset({
       name: priest.person?.person_name || '',
-      phone: priest.person?.phone || '',
-      mobile: priest.person?.mobile || '',
+      phone: contact?.phone || '',
+      mobile: contact?.mobile || '',
       email: priest.person?.email || '',
       role: priest.is_parish_priest,
     });
@@ -166,12 +175,11 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         // Update existing person
         const { error: personError } = await supabase
           .from('people')
-          .update({
+          .update(await preparePerson(supabase, {
             person_name: values.name.trim(),
-            phone: values.phone.trim() || null,
-            mobile: values.mobile.trim() || null,
+            ...(contactEditable && (values.phone !== originalNumbers.phone || values.mobile !== originalNumbers.mobile) ? {phone:values.phone, mobile:values.mobile} : {}),
             email: values.email.trim() || null,
-          })
+          }, editingPriest.person_id))
           .eq('id', editingPriest.person_id);
 
         if (personError) throw personError;
@@ -189,13 +197,13 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         // Create new person
         const { data: newPerson, error: personError } = await supabase
           .from('people')
-          .insert({
+          .insert(await preparePerson(supabase, {
             person_name: values.name.trim(),
             phone: values.phone.trim() || null,
             mobile: values.mobile.trim() || null,
             email: values.email.trim() || null,
             person_type_id: 3,
-          })
+          }))
           .select()
           .single();
 
@@ -450,6 +458,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
 
                 <FormField
                   control={form.control}
+                  disabled={!contactEditable}
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
@@ -468,6 +477,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
 
                 <FormField
                   control={form.control}
+                  disabled={!contactEditable}
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
