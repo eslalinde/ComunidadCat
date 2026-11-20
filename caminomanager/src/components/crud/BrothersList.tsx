@@ -23,6 +23,7 @@ import { EditPersonModal } from './EditPersonModal';
 import { Hint } from '@/components/ui/tooltip';
 
 interface BrothersListProps {
+  canAssignTeam?: boolean;
   brothers: MergedBrother[];
   loading?: boolean;
   communityId: number;
@@ -39,7 +40,7 @@ interface CarismaGroup {
   brothers: MergedBrother[];
 }
 
-export function BrothersList({ brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
+export function BrothersList({ canAssignTeam = false, brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -502,6 +503,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
     {/* Wizard de carga masiva */}
     <BulkUploadWizard
+      canAssignTeam={canAssignTeam}
       open={isBulkUploadOpen}
       onClose={() => setIsBulkUploadOpen(false)}
       communityId={communityId}

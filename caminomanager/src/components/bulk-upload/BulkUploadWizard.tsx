@@ -47,6 +47,7 @@ import {
 import { CARISMA_GROUP_ORDER } from '@/config/carisma';
 
 interface BulkUploadWizardProps {
+  canAssignTeam: boolean;
   open: boolean;
   onClose: () => void;
   communityId: number;
@@ -70,6 +71,7 @@ const STEPPER_ITEMS: StepperItem[] = STEPS.map((step) => ({
 }));
 
 export function BulkUploadWizard({
+  canAssignTeam,
   open,
   onClose,
   communityId,
@@ -85,8 +87,10 @@ export function BulkUploadWizard({
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requestId = useRef<string | null>(null);
 
   const resetWizard = useCallback(() => {
+    requestId.current = null;
     setCurrentStep('upload');
     setBrothers([]);
     setGlobalErrors([]);
@@ -154,8 +158,10 @@ export function BulkUploadWizard({
 
   const handleConfirmUpload = useCallback(async () => {
     setIsUploading(true);
+    setUploadResult(null);
     try {
-      const result = await executeBulkUpload(brothers, communityId, setUploadProgress);
+      requestId.current ??= crypto.randomUUID();
+      const result = await executeBulkUpload(brothers, communityId, setUploadProgress, requestId.current);
       setUploadResult(result);
       if (result.success) {
         onComplete();
@@ -196,7 +202,8 @@ export function BulkUploadWizard({
       });
   }, [brothers]);
 
-  const stepIndex = STEPS.indexOf(currentStep);
+  const steps = canAssignTeam ? STEPS : STEPS.filter(step => step !== 'responsables');
+  const stepIndex = steps.indexOf(currentStep);
 
   const canGoNext = useMemo(() => {
     switch (currentStep) {
@@ -226,7 +233,7 @@ export function BulkUploadWizard({
         </DialogHeader>
 
         <Stepper
-          steps={STEPPER_ITEMS}
+          steps={canAssignTeam ? STEPPER_ITEMS : STEPPER_ITEMS.filter(item => item.id !== 'responsables')}
           currentStep={stepIndex}
           ariaLabel="Progreso de carga masiva"
           className="mb-4 px-2"
@@ -236,7 +243,7 @@ export function BulkUploadWizard({
         <div
           className="flex-1 overflow-y-auto min-h-0"
           aria-live="polite"
-          aria-label={`Paso ${stepIndex + 1} de ${STEPS.length}: ${STEP_LABELS[currentStep]}`}
+          aria-label={`Paso ${stepIndex + 1} de ${steps.length}: ${STEP_LABELS[currentStep]}`}
         >
           {/* Step 1: Upload */}
           {currentStep === 'upload' && (
@@ -284,13 +291,16 @@ export function BulkUploadWizard({
         {/* Footer */}
         <DialogFooter className="gap-2 sm:gap-0">
           {uploadResult ? (
-            <Button onClick={handleClose}>Cerrar</Button>
+            <>
+              {!uploadResult.success && <Button onClick={handleConfirmUpload}>Reintentar</Button>}
+              <Button onClick={handleClose}>Cerrar</Button>
+            </>
           ) : (
             <>
               {stepIndex > 0 && !isUploading && (
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentStep(STEPS[stepIndex - 1])}
+                  onClick={() => setCurrentStep(steps[stepIndex - 1])}
                 >
                   Anterior
                 </Button>
@@ -312,7 +322,7 @@ export function BulkUploadWizard({
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setCurrentStep(STEPS[stepIndex + 1])}
+                  onClick={() => setCurrentStep(steps[stepIndex + 1])}
                   disabled={!canGoNext}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
@@ -671,9 +681,9 @@ function StepConfirm({
           <h3 className="text-lg font-semibold">
             {uploadResult.success
               ? 'Carga completada exitosamente'
-              : 'Carga completada con algunos errores'}
+              : 'No se pudo confirmar la carga'}
           </h3>
-          <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto text-sm">
+          {uploadResult.success && <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto text-sm">
             <div className="text-right text-gray-600">Personas creadas:</div>
             <div className="text-left font-medium">{uploadResult.peopleCreated}</div>
             <div className="text-right text-gray-600">Hermanos vinculados:</div>
@@ -682,7 +692,7 @@ function StepConfirm({
             <div className="text-left font-medium">{uploadResult.marriagesLinked}</div>
             <div className="text-right text-gray-600">Responsables:</div>
             <div className="text-left font-medium">{uploadResult.responsablesAssigned}</div>
-          </div>
+          </div>}
         </div>
 
         {uploadResult.errors.length > 0 && (

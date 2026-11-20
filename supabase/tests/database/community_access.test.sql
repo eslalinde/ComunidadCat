@@ -3,14 +3,15 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(49);
+select plan(55);
 
 insert into public.cities (id, name) values (-910001, 'Integration city');
 insert into public.city_zones (id, name, city_id) values
   (-910001, 'Integration zone A', -910001), (-910002, 'Integration zone B', -910001);
 insert into public.parishes (id, name, city_id, zone_id) values
   (-910001, 'Integration parish A', -910001, -910001),
-  (-910002, 'Integration parish B', -910001, -910002);
+  (-910002, 'Integration parish B', -910001, -910002),
+  (-910004, 'Second parish in zone A', -910001, -910001);
 insert into public.communities (id, number, parish_id) values
   (-910001, 'Integration A', -910001), (-910002, 'Integration B', -910002);
 insert into public.parishes (id, name, city_id) values (-910003, 'Unzoned', -910001);
@@ -76,6 +77,14 @@ select is((select count(*) from changed),
 );
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000003', true);
+with moved as (
+  update public.communities set parish_id = -910004 where id = -910001 returning parish_id
+)
+select is((select parish_id from moved), -910004::bigint, 'Leader can move a community within the zone');
+select throws_ok($$update public.communities set parish_id = -910002 where id = -910001$$,
+  '42501', null, 'Leader cannot move a community to another zone');
+select throws_ok($$update public.communities set parish_id = -910003 where id = -910001$$,
+  '42501', null, 'Leader cannot move a community to an unzoned parish');
 select is(public.can_manage_community(-910003), false, 'Leader cannot manage an unzoned parish community');
 select is(public.can_manage_community(-910001), true, 'Leader can manage own zone');
 select throws_ok($$select public.grant_community_access('91000000-0000-0000-0000-000000000009', -910003)$$,
@@ -103,6 +112,14 @@ select is((select count(*) from changed),
 );
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000004', true);
+with moved as (
+  update public.communities set parish_id = -910001 where id = -910001 returning parish_id
+)
+select is((select parish_id from moved), -910001::bigint, 'Zone contributor can move a community back within the zone');
+select throws_ok($$update public.communities set parish_id = -910002 where id = -910001$$,
+  '42501', null, 'Zone contributor cannot move a community to another zone');
+select throws_ok($$update public.communities set parish_id = -910003 where id = -910001$$,
+  '42501', null, 'Zone contributor cannot move a community to an unzoned parish');
 select results_eq(
   $$select id from public.communities where id in (-910001, -910002) order by id$$,
   ARRAY[-910001]::bigint[], 'zone_contributor: exact visible communities'

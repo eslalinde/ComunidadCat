@@ -13,7 +13,6 @@ import { friendlyError } from '@/lib/supabaseErrors';
 import { formatLocalDate, todayLocalISO } from '@/lib/dates';
 import { ClipboardList, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { queryKeys } from '@/lib/queryKeys';
-import { useAuth } from '@/contexts/AuthContext';
 import type { CommunityVisit } from '@/types/database';
 import type { FormField } from '@/types/database';
 import { Hint } from '@/components/ui/tooltip';
@@ -62,7 +61,6 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
   const [isSaving, setIsSaving] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<CommunityVisit | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const itemsPerPage = 4;
 
@@ -93,7 +91,6 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
       const { error } = await supabase.from('community_visits').insert({
         ...data,
         community_id: communityId,
-        created_by: user?.id,
       });
 
       if (error) throw error;

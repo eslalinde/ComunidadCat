@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { Package, ExternalLink, Plus, Trash2, Pencil } from 'lucide-react';
 import { queryKeys } from '@/lib/queryKeys';
-import { useAuth } from '@/contexts/AuthContext';
 import type { CommunityInventoryItem, InventoryItemType, FormField } from '@/types/database';
 import { Hint } from '@/components/ui/tooltip';
 
@@ -116,7 +115,6 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
   const [entryToDelete, setEntryToDelete] = useState<CommunityInventoryItem | null>(null);
   const [entryToEdit, setEntryToEdit] = useState<CommunityInventoryItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const itemsPerPage = 6;
 
@@ -155,7 +153,6 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
         quantity: data.quantity || 1,
         condition: data.condition || null,
         notes: data.notes || null,
-        created_by: user?.id,
       };
 
       if (data.item_type_id) {
