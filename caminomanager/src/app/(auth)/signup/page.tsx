@@ -22,6 +22,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { Spinner } from "@/components/ui/spinner";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -122,8 +123,8 @@ export default function SignupPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <Spinner className="mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -135,12 +136,12 @@ export default function SignupPage() {
         {/* Logo y nombre de la app */}
         <div className="flex flex-col items-center mb-8">
           <BrandLogo size="lg" className="mb-2" />
-          <p className="text-gray-500 text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
+          <p className="text-muted-foreground text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
         </div>
 
         {/* Card de registro */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Crear cuenta</h2>
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-8">
+          <h2 className="text-xl font-semibold text-foreground mb-6 text-center">Crear cuenta</h2>
 
           <Form {...form}>
             <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -149,7 +150,7 @@ export default function SignupPage() {
                 name="full_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Nombre completo
                     </FormLabel>
                     <FormControl>
@@ -169,7 +170,7 @@ export default function SignupPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Correo electrónico
                     </FormLabel>
                     <FormControl>
@@ -190,7 +191,7 @@ export default function SignupPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Contraseña
                     </FormLabel>
                     <FormControl>
@@ -205,7 +206,7 @@ export default function SignupPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Confirmar contraseña
                     </FormLabel>
                     <FormControl>
@@ -246,9 +247,9 @@ export default function SignupPage() {
             </FormRoot>
           </Form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
+          <div className="mt-6 pt-6 border-t border-border text-center text-sm text-muted-foreground">
             ¿Ya tienes una cuenta?{" "}
-            <Link href="/login" className="text-[#1B3A6F] hover:text-[#15305C] font-medium">
+            <Link href="/login" className="text-primary hover:text-primary/80 font-medium">
               Iniciar sesión
             </Link>
           </div>

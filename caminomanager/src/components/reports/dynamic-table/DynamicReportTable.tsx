@@ -50,6 +50,7 @@ import { GlobalFilter } from "./GlobalFilter";
 import { ColumnFilter } from "./ColumnFilter";
 import { GroupingControls } from "./GroupingControls";
 import { ColumnVisibilityControl } from "./ColumnVisibilityControl";
+import { Spinner } from "@/components/ui/spinner";
 
 export function DynamicReportTable<TData extends RowData>({
   config,
@@ -141,10 +142,10 @@ export function DynamicReportTable<TData extends RowData>({
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {config.title}
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">{config.description}</p>
+            <p className="text-sm sm:text-base text-muted-foreground">{config.description}</p>
           </div>
         </div>
 
@@ -205,7 +206,7 @@ export function DynamicReportTable<TData extends RowData>({
               return `px-3 py-2 align-top whitespace-nowrap ${alignClass(meta?.align)}`;
             }}
             getRowClassName={(row) =>
-              row.getIsGrouped() ? "bg-gray-50 font-semibold" : undefined
+              row.getIsGrouped() ? "bg-muted/50 font-semibold" : undefined
             }
             getCellClassName={(cell) => {
               const meta = cell.column.columnDef.meta as
@@ -221,12 +222,12 @@ export function DynamicReportTable<TData extends RowData>({
           />
         ) : loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando datos...</span>
+            <Spinner />
+            <span className="ml-3 text-muted-foreground">Cargando datos...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hay datos disponibles</p>
+            <p className="text-muted-foreground text-lg">No hay datos disponibles</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -249,7 +250,7 @@ export function DynamicReportTable<TData extends RowData>({
                               <div
                                 className={`flex items-center gap-1 ${
                                   header.column.getCanSort()
-                                    ? "cursor-pointer select-none hover:text-gray-900"
+                                    ? "cursor-pointer select-none hover:text-foreground"
                                     : ""
                                 }`}
                                 onClick={header.column.getToggleSortingHandler()}
@@ -263,7 +264,7 @@ export function DynamicReportTable<TData extends RowData>({
                                       "desc" ? (
                                       <ArrowDown className="h-3 w-3" />
                                     ) : (
-                                      <ArrowUpDown className="h-3 w-3 text-gray-400" />
+                                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/70" />
                                     )}
                                   </span>
                                 )}
@@ -283,7 +284,7 @@ export function DynamicReportTable<TData extends RowData>({
                   <TableRow
                     key={row.id}
                     className={
-                      row.getIsGrouped() ? "bg-gray-50 font-semibold" : ""
+                      row.getIsGrouped() ? "bg-muted/50 font-semibold" : ""
                     }
                   >
                     {row.getVisibleCells().map((cell) => {
@@ -307,7 +308,7 @@ export function DynamicReportTable<TData extends RowData>({
                                 <ChevronRight className="h-4 w-4" />
                               )}
                               <FlexRender cell={cell} />{" "}
-                              <span className="text-gray-500 font-normal text-xs">
+                              <span className="text-muted-foreground font-normal text-xs">
                                 ({row.subRows.length})
                               </span>
                             </button>
@@ -330,7 +331,7 @@ export function DynamicReportTable<TData extends RowData>({
 
         {data.length > 0 &&
           (config.dataGrid ? (
-            <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <span>
                   Página {table.state.pagination.pageIndex + 1} de{" "}
@@ -380,7 +381,7 @@ export function DynamicReportTable<TData extends RowData>({
               </div>
             </div>
           ) : (
-            <div className="mt-4 text-center text-sm text-gray-500">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Mostrando {filteredLeafRowCount} registros
               {filteredLeafRowCount !== data.length &&
                 ` (de ${data.length} totales)`}
@@ -405,7 +406,7 @@ function AggregationFooter<TData extends RowData>({
 
   return (
     <TableFooter>
-      <TableRow className="bg-gray-100 font-semibold">
+      <TableRow className="bg-muted font-semibold">
         {visibleColumns.map((column) => {
           const meta = column.columnDef.meta as DynamicColumnMeta | undefined;
           const align = meta?.align ?? "left";

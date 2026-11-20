@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { useAuditLog, AuditFilters } from '@/hooks/useAuditLog';
 import { AuditLog } from '@/types/database';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   formatAuditEntry,
   getTableLabel,
@@ -60,7 +61,7 @@ function AuditLogEntry({
         <div
           className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${DOT_COLORS[formatted.color]}`}
         />
-        {!isLast && <div className="w-px flex-1 bg-gray-200 mt-1" />}
+        {!isLast && <div className="w-px flex-1 bg-border mt-1" />}
       </div>
 
       {/* Content */}
@@ -69,22 +70,22 @@ function AuditLogEntry({
           <div className="min-w-0">
             {/* Actor + time */}
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-[10px] font-medium text-gray-600 shrink-0">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-border text-[10px] font-medium text-muted-foreground shrink-0">
                 {getInitials(formatted.actorName)}
               </span>
-              <span className="text-xs font-medium text-gray-700 truncate">
+              <span className="text-xs font-medium text-foreground truncate">
                 {formatted.actorName}
               </span>
-              <span className="text-xs text-gray-400 shrink-0">
+              <span className="text-xs text-muted-foreground/70 shrink-0">
                 {formatted.relativeTime}
               </span>
             </div>
 
             {/* Message */}
-            <p className="text-sm text-gray-900 mt-1">{formatted.message}</p>
+            <p className="text-sm text-foreground mt-1">{formatted.message}</p>
 
             {/* Section badge */}
-            <span className="inline-block text-[10px] text-gray-400 mt-0.5">
+            <span className="inline-block text-xs text-muted-foreground/70 mt-0.5">
               {getTableLabel(entry.table_name)}
             </span>
           </div>
@@ -108,12 +109,12 @@ function AuditLogEntry({
 
         {/* Expandable change details */}
         {hasDetails && expanded && (
-          <div className="mt-2 space-y-1 text-xs bg-gray-50 rounded-md p-2">
+          <div className="mt-2 space-y-1 text-xs bg-muted/50 rounded-md p-2">
             {formatted.details.map((d: ChangeDetail, i: number) => (
               <div key={i} className="flex flex-wrap gap-1">
-                <span className="font-medium text-gray-600">{d.label}:</span>
+                <span className="font-medium text-muted-foreground">{d.label}:</span>
                 <span className="text-red-500 line-through">{d.oldValue}</span>
-                <span className="text-gray-400">&rarr;</span>
+                <span className="text-muted-foreground/70">&rarr;</span>
                 <span className="text-green-600">{d.newValue}</span>
               </div>
             ))}
@@ -154,10 +155,10 @@ function AuditLogTimeline({
       <div className="space-y-4 p-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="flex gap-3 animate-pulse">
-            <div className="w-2.5 h-2.5 rounded-full bg-gray-200 mt-1.5 shrink-0" />
+            <div className="w-2.5 h-2.5 rounded-full bg-border mt-1.5 shrink-0" />
             <div className="flex-1 space-y-2">
-              <div className="h-3 bg-gray-200 rounded w-2/3" />
-              <div className="h-3 bg-gray-200 rounded w-1/2" />
+              <div className="h-3 bg-border rounded w-2/3" />
+              <div className="h-3 bg-border rounded w-1/2" />
             </div>
           </div>
         ))}
@@ -167,10 +168,7 @@ function AuditLogTimeline({
 
   if (entries.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <History className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-        <p className="text-sm">No hay actividad registrada</p>
-      </div>
+      <EmptyState icon={History} title="No hay actividad registrada" />
     );
   }
 
@@ -193,7 +191,7 @@ function AuditLogTimeline({
             size="sm"
             onClick={onLoadMore}
             disabled={isLoading}
-            className="text-xs text-gray-500"
+            className="text-xs text-muted-foreground"
           >
             {isLoading ? 'Cargando...' : 'Cargar mas'}
           </Button>

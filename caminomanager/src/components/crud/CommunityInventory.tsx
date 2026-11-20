@@ -14,6 +14,8 @@ import { Package, ExternalLink, Plus, Trash2, Pencil } from 'lucide-react';
 import { queryKeys } from '@/lib/queryKeys';
 import type { CommunityInventoryItem, InventoryItemType, FormField } from '@/types/database';
 import { Hint } from '@/components/ui/tooltip';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Badge } from '@/components/ui/badge';
 
 function useInventoryItemTypes() {
   return useQuery({
@@ -99,7 +101,7 @@ function getConditionColor(condition?: string): string {
     case 'bueno': return 'bg-green-100 text-green-700';
     case 'regular': return 'bg-yellow-100 text-yellow-700';
     case 'malo': return 'bg-red-100 text-red-700';
-    default: return 'bg-gray-100 text-gray-700';
+    default: return 'bg-muted text-foreground';
   }
 }
 
@@ -255,32 +257,32 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
     return (
       <div
         key={item.id}
-        className={`group/entry border rounded-lg ${compact ? 'p-3' : 'p-4'} hover:bg-gray-50 transition-colors`}
+        className={`group/entry border rounded-lg ${compact ? 'p-3' : 'p-4'} hover:bg-muted/50 transition-colors`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <p className={`${compact ? 'text-sm' : 'text-sm'} font-semibold text-gray-900`}>
+              <p className="text-sm font-semibold text-foreground">
                 {name}
               </p>
               {item.quantity > 1 && (
-                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                <Badge variant="muted">
                   x{item.quantity}
-                </span>
+                </Badge>
               )}
               {conditionLabel && (
-                <span className={`text-xs px-1.5 py-0.5 rounded ${getConditionColor(item.condition)}`}>
+                <Badge variant="muted" className={getConditionColor(item.condition)}>
                   {conditionLabel}
-                </span>
+                </Badge>
               )}
               {item.custom_name && !item.item_type_id && (
-                <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">
+                <Badge variant="muted" className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
                   Personalizado
-                </span>
+                </Badge>
               )}
             </div>
             {item.notes && (
-              <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 ${compact ? 'line-clamp-1' : ''}`}>
+              <p className={`${compact ? 'text-xs' : 'text-sm'} text-muted-foreground ${compact ? 'line-clamp-1' : ''}`}>
                 {item.notes}
               </p>
             )}
@@ -290,20 +292,20 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-gray-500 hover:text-gray-700 hover:bg-gray-100 -mt-1"
+                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-muted -mt-1"
                 onClick={() => setEntryToEdit(item)}
               >
-                <Pencil className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+                <Pencil className="h-4 w-4" />
               </Button>
             </Hint>
             <Hint label="Eliminar elemento">
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 -mt-1"
+                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive -mt-1"
                 onClick={() => setEntryToDelete(item)}
               >
-                <Trash2 className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </Hint>
           </div>
@@ -316,12 +318,12 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-lg">Inventario de la Comunidad</CardTitle>
+          <CardTitle>Inventario de la Comunidad</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-12 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -333,23 +335,23 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
     <Card className="flex flex-col">
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
             Inventario
             {count > 0 && (
-              <span className="text-sm font-normal text-gray-500">({count})</span>
+              <span className="text-sm font-normal text-muted-foreground">({count})</span>
             )}
           </CardTitle>
           <div className="flex items-center gap-2 print-hidden">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4" />
               Agregar
             </Button>
             {count > itemsPerPage && (
               <Dialog open={isAllOpen} onOpenChange={setIsAllOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost">
-                    <ExternalLink className="w-4 h-4 mr-1" />
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-4 w-4" />
                     Ver todo ({count})
                   </Button>
                 </DialogTrigger>
@@ -372,10 +374,7 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
 
       <CardContent className="flex-1">
         {displayedItems.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No hay elementos en el inventario</p>
-          </div>
+          <EmptyState icon={Package} title="No hay elementos en el inventario" />
         ) : (
           <div className="space-y-2">
             {displayedItems.map((item) => renderItem(item, true))}

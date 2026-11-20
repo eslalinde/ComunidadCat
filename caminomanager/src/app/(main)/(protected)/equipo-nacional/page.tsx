@@ -116,10 +116,10 @@ export default function NationalTeamPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Equipo de Catequistas de la Nación
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-muted-foreground mt-2">
           Equipo nacional que coordina las parroquias del camino neocatecumenal.
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function NationalTeamPage() {
               <CardContent>
                 <div className="space-y-3">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+                    <div key={i} className="h-4 bg-muted rounded animate-pulse" />
                   ))}
                 </div>
               </CardContent>
@@ -182,18 +182,18 @@ export default function NationalTeamPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Users2 className="h-5 w-5 text-amber-600" />
-                <CardTitle className="text-lg">Comunidades que lleva</CardTitle>
+                <CardTitle>Comunidades que lleva</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+                    <div key={i} className="h-4 bg-muted rounded animate-pulse" />
                   ))}
                 </div>
               ) : communities.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">
+                <p className="text-center text-muted-foreground py-8">
                   Este equipo no está asignado como catequista de ninguna comunidad.
                 </p>
               ) : (

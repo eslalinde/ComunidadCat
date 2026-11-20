@@ -28,6 +28,7 @@ import { useEntityOptions } from '@/hooks/useEntityOptions';
 import { formatLocalDate, todayLocalISO } from '@/lib/dates';
 import { CommunityStepLog as CommunityStepLogType } from '@/types/database';
 import { Plus, Calendar, User, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const NO_OUTCOME = 'none';
 
@@ -120,9 +121,9 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
 
   const getOutcomeBadge = (outcome?: boolean) => {
     if (outcome === true) {
-      return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Cerrada</Badge>;
+      return <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" />Cerrada</Badge>;
     } else if (outcome === false) {
-      return <Badge variant="destructive" className="bg-yellow-100 text-yellow-800"><XCircle className="w-3 h-3 mr-1" />Abierta</Badge>;
+      return <Badge variant="warning"><XCircle className="w-3 h-3 mr-1" />Abierta</Badge>;
     }
     return <Badge variant="secondary">Sin resultado</Badge>;
   };
@@ -139,7 +140,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
         <CardContent>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-20 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -173,9 +174,9 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
           <Form {...form}>
             <FormRoot
               onSubmit={form.handleSubmit(handleAddEntry)}
-              className="p-4 border rounded-lg bg-gray-50 space-y-4"
+              className="p-4 border rounded-lg bg-muted/50 space-y-4"
             >
-              <h4 className="font-medium text-gray-900">Nueva Entrada del Log</h4>
+              <h4 className="font-medium text-foreground">Nueva Entrada del Log</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -297,17 +298,13 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
         {/* Lista de entradas del log */}
         <div className="space-y-3">
           {stepLogs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No hay entradas en el log de pasos</p>
-              <p className="text-sm">Agrega la primera entrada usando el botón de arriba</p>
-            </div>
+            <EmptyState icon={FileText} title="No hay entradas en el log de pasos" description="Agrega la primera entrada usando el botón de arriba" />
           ) : (
             stepLogs.map((entry) => (
               <div key={entry.id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(entry.date_of_step)}</span>
                     </div>
@@ -319,7 +316,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
                 </div>
                 
                 {entry.principal_catechist_name && (
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
                     <User className="w-4 h-4" />
                     <span className="font-medium">Catequista:</span>
                     <span>{entry.principal_catechist_name}</span>
@@ -327,7 +324,7 @@ export function CommunityStepLog({ communityId, communityNumber }: CommunityStep
                 )}
                 
                 {entry.notes && (
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-foreground">
                     <p className="font-medium mb-1">Notas:</p>
                     <p className="whitespace-pre-wrap">{entry.notes}</p>
                   </div>

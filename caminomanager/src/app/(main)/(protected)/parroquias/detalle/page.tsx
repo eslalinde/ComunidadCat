@@ -20,9 +20,10 @@ import { ArrowLeft, Edit, MapPin, Phone, Mail, Church, Users, ChevronRight, Plus
 import { createClient } from '@/utils/supabase/client';
 import { Community, Parish } from '@/types/database';
 import { routes } from '@/lib/routes';
+import { Spinner } from '@/components/ui/spinner';
 
 function getStepColor(orderNum?: number): string {
-  if (!orderNum) return 'bg-gray-100 text-gray-600 border-gray-200';
+  if (!orderNum) return 'bg-muted text-muted-foreground border-border';
   if (orderNum <= 3) return 'bg-blue-50 text-blue-700 border-blue-200';
   if (orderNum <= 6) return 'bg-purple-50 text-purple-700 border-purple-200';
   if (orderNum <= 9) return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -165,7 +166,7 @@ function ParishDetailContent() {
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {parish?.name || 'Cargando...'}
           </h1>
           <div className="flex items-center gap-2 mt-1">
@@ -175,17 +176,17 @@ function ParishDetailContent() {
               </Badge>
             )}
             {cityZoneText && (
-              <span className="text-sm text-gray-500">{cityZoneText}</span>
+              <span className="text-sm text-muted-foreground">{cityZoneText}</span>
             )}
           </div>
         </div>
 
         {/* Contact info - inline, only non-empty fields */}
         {contactItems.length > 0 && (
-          <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
+          <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
             {contactItems.map((item, i) => (
               <span key={i} className="flex items-center gap-1.5">
-                <item.icon className="w-3.5 h-3.5 text-gray-400" />
+                <item.icon className="w-3.5 h-3.5 text-muted-foreground/70" />
                 {item.text}
               </span>
             ))}
@@ -195,31 +196,31 @@ function ParishDetailContent() {
         {/* Stats strip */}
         {!loading && (
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3">
+            <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50">
                 <Church className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xl font-semibold text-gray-900">{communities.length}</p>
-                <p className="text-xs text-gray-500">Comunidades</p>
+                <p className="text-xl font-semibold text-foreground">{communities.length}</p>
+                <p className="text-xs text-muted-foreground">Comunidades</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3">
+            <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50">
                 <Users className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <p className="text-xl font-semibold text-gray-900">{priests.length}</p>
-                <p className="text-xs text-gray-500">Sacerdotes</p>
+                <p className="text-xl font-semibold text-foreground">{priests.length}</p>
+                <p className="text-xs text-muted-foreground">Sacerdotes</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3">
+            <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50">
                 <Users className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xl font-semibold text-gray-900">{totalBrothers}</p>
-                <p className="text-xs text-gray-500">Hermanos</p>
+                <p className="text-xl font-semibold text-foreground">{totalBrothers}</p>
+                <p className="text-xs text-muted-foreground">Hermanos</p>
               </div>
             </div>
           </div>
@@ -232,7 +233,7 @@ function ParishDetailContent() {
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-lg">Comunidades ({communities.length})</CardTitle>
+              <CardTitle>Comunidades ({communities.length})</CardTitle>
               {showCreateCommunity && (
                 <Button
                   variant="outline"
@@ -250,11 +251,11 @@ function ParishDetailContent() {
             {loading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+                  <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : communities.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-muted-foreground/70">
                 <Church className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-sm">No hay comunidades en esta parroquia</p>
               </div>
@@ -263,26 +264,26 @@ function ParishDetailContent() {
                 {communities.map((community) => (
                   <div
                     key={community.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 cursor-pointer transition-colors group"
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors group"
                     onClick={() => router.push(routes.comunidad(community.id!))}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-semibold text-gray-900 shrink-0">
+                      <span className="font-semibold text-foreground shrink-0">
                         #{community.number}
                       </span>
                       {community.step_way && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStepColor((community.step_way as any)?.order_num)}`}>
+                        <Badge variant="outline" className={getStepColor((community.step_way as any)?.order_num)}>
                           {community.step_way.name}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {community.actual_brothers ? (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           {community.actual_brothers} hnos
                         </span>
                       ) : null}
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
                     </div>
                   </div>
                 ))}
@@ -339,7 +340,7 @@ export default function ParishDetailPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+          <Spinner />
         </div>
       }
     >

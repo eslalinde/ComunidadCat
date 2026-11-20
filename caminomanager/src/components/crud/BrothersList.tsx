@@ -247,7 +247,7 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
         <CardContent>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-4 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -261,8 +261,8 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
         <CardHeader className="flex-shrink-0">
           <div className="flex flex-wrap justify-between items-start gap-2">
             <div>
-              <CardTitle className="text-lg">Hermanos de la Comunidad</CardTitle>
-              <p className="text-sm text-gray-600">
+              <CardTitle>Hermanos de la Comunidad</CardTitle>
+              <p className="text-sm text-muted-foreground">
                 {registeredPeople} {registeredPeople === 1 ? 'persona registrada' : 'personas registradas'}
               </p>
             </div>
@@ -279,23 +279,23 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
                   <DropdownMenu.Content
                     align="end"
                     sideOffset={4}
-                    className="min-w-[240px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
+                    className="min-w-[240px] rounded-lg bg-popover text-popover-foreground p-1 shadow-lg border z-50"
                   >
                     <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsCreateModalOpen(true)}>
-                      <User className="h-4 w-4 text-gray-500" />
+                      <User className="h-4 w-4 text-muted-foreground" />
                       Nuevo hermano
                     </DropdownMenu.Item>
                     <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsMarriageModalOpen(true)}>
-                      <Users className="h-4 w-4 text-gray-500" />
+                      <Users className="h-4 w-4 text-muted-foreground" />
                       Nuevo matrimonio
                     </DropdownMenu.Item>
                     <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsSelectModalOpen(true)}>
-                      <UserPlus className="h-4 w-4 text-gray-500" />
+                      <UserPlus className="h-4 w-4 text-muted-foreground" />
                       Persona ya registrada
                     </DropdownMenu.Item>
-                    <DropdownMenu.Separator className="my-1 h-px bg-gray-200" />
+                    <DropdownMenu.Separator className="my-1 h-px bg-border" />
                     <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsBulkUploadOpen(true)}>
-                      <FileUp className="h-4 w-4 text-gray-500" />
+                      <FileUp className="h-4 w-4 text-muted-foreground" />
                       Carga masiva (CSV)
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
@@ -317,7 +317,7 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
             <TableBody>
               {brothers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-gray-500 py-8 whitespace-normal">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8 whitespace-normal">
                     <p>No hay hermanos registrados</p>
                     {onAdd && (
                       <>
@@ -345,18 +345,18 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
                     <Fragment key={`group-${group.carisma}`}>
                       {/* Group header row */}
                       <TableRow
-                        className="bg-gray-50 hover:bg-gray-100 cursor-pointer select-none"
+                        className="bg-muted/50 hover:bg-muted cursor-pointer select-none"
                         onClick={() => toggleGroup(group.carisma)}
                       >
                         <TableCell colSpan={3} className="py-2">
                           <div className="flex items-center gap-1.5">
                             {isCollapsed ? (
-                              <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <ChevronDown className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
                             )}
                             <CarismaBadge carisma={group.carisma || 'Sin carisma'} size="md" />
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               ({group.brothers.length})
                             </span>
                           </div>

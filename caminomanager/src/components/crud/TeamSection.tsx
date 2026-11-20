@@ -19,6 +19,7 @@ import { getCarismaLabel } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { Hint } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface TeamSectionProps {
   team: Team;
@@ -70,7 +71,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         <CardContent>
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-4 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -321,7 +322,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-lg">{getTeamTitle()}</CardTitle>
+          <CardTitle>{getTeamTitle()}</CardTitle>
           <div className="flex items-center gap-2 print-hidden">
             {onAddMember && (
               <Hint label="Agregar miembro al equipo">
@@ -356,8 +357,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
           <div className="mt-2 space-y-1">
             {parishes.map((parish) => (
               <div key={parish.id} className="flex items-center gap-1.5">
-                <Church className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-sm text-gray-500">Lleva</span>
+                <Church className="h-3.5 w-3.5 text-muted-foreground/70 flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Lleva</span>
                 <a
                   href={`/parroquias/detalle?id=${parish.id}`}
                   target="_blank"
@@ -384,7 +385,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
             <TableBody>
               {mergedMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                     No hay miembros en este equipo
                   </TableCell>
                 </TableRow>
@@ -403,10 +404,10 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible && (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded items-center gap-1">
+                              <Badge variant="warning" className="hidden sm:inline-flex gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             )}
                             {member.carisma && member.carisma !== 'Matrimonio' && (
                               <span className="hidden sm:inline-flex">
@@ -417,10 +418,10 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                           {(member.isResponsible || (member.carisma && member.carisma !== 'Matrimonio')) && (
                             <div className="flex flex-wrap gap-1 sm:hidden mt-0.5">
                               {member.isResponsible && (
-                                <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                <Badge variant="warning" className="gap-1">
                                   <Crown className="w-3.5 h-3.5" />
                                   Responsable
-                                </span>
+                                </Badge>
                               )}
                               {member.carisma && member.carisma !== 'Matrimonio' && (
                                 <CarismaBadge carisma={member.carisma} />
@@ -439,26 +440,26 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible ? (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded items-center gap-1">
+                              <Badge variant="warning" className="hidden sm:inline-flex gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded">
+                              <Badge variant="muted" className="hidden sm:inline-flex">
                                 Corresponsable
-                              </span>
+                              </Badge>
                             )}
                           </div>
                           <div className="flex sm:hidden mt-0.5">
                             {member.isResponsible ? (
-                              <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <Badge variant="warning" className="gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded">
+                              <Badge variant="muted">
                                 Corresponsable
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         </>

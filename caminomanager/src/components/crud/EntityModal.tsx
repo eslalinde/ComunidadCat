@@ -150,7 +150,7 @@ export function EntityModal<T extends BaseEntity>({
               />
             ))}
 
-            <DialogFooter className="mt-6 gap-3 border-t border-gray-100 pt-4">
+            <DialogFooter className="mt-6 gap-3 border-t border-border pt-4">
               <Button
                 type="button"
                 variant="outline"

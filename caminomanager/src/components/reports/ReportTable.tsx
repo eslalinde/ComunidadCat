@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ReportData {
   [key: string]: any;
@@ -98,8 +99,8 @@ export function ReportTable({
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-            <p className="text-gray-600">{description}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+            <p className="text-muted-foreground">{description}</p>
           </div>
         </div>
         
@@ -125,12 +126,12 @@ export function ReportTable({
       <Card className="p-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando datos...</span>
+            <Spinner />
+            <span className="ml-3 text-muted-foreground">Cargando datos...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hay datos disponibles</p>
+            <p className="text-muted-foreground text-lg">No hay datos disponibles</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border">
@@ -161,7 +162,7 @@ export function ReportTable({
         )}
         
         {data.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 text-center">
+          <div className="mt-4 text-sm text-muted-foreground text-center">
             Mostrando {data.length} registros
           </div>
         )}

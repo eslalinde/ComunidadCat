@@ -243,10 +243,10 @@ export function MergeCommunityModal({
 
               {/* Vista previa */}
               {selectedCommunityId && (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Vista previa de la fusión:</p>
+                <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                  <p className="text-sm font-medium text-foreground mb-2">Vista previa de la fusión:</p>
                   {loadingPreview ? (
-                    <p className="text-sm text-gray-500">Cargando datos...</p>
+                    <p className="text-sm text-muted-foreground">Cargando datos...</p>
                   ) : preview ? (
                     <div className="space-y-1 text-sm">
                       <p>Hermanos a transferir: <span className="font-semibold">{preview.brothers}</span></p>

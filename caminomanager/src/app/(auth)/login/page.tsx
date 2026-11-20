@@ -22,6 +22,7 @@ import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { getSafeRedirectPath } from "@/lib/routes";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { Spinner } from "@/components/ui/spinner";
 
 const loginSchema = z.object({
   email: z
@@ -104,8 +105,8 @@ function LoginForm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <Spinner className="mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -117,12 +118,12 @@ function LoginForm() {
         {/* Logo y nombre de la app */}
         <div className="flex flex-col items-center mb-8">
           <BrandLogo size="lg" className="mb-2" />
-          <p className="text-gray-500 text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
+          <p className="text-muted-foreground text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
         </div>
 
         {/* Card de login */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Iniciar sesión</h2>
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-8">
+          <h2 className="text-xl font-semibold text-foreground mb-6 text-center">Iniciar sesión</h2>
 
           <Form {...form}>
             <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -131,7 +132,7 @@ function LoginForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Correo electrónico
                     </FormLabel>
                     <FormControl>
@@ -152,7 +153,7 @@ function LoginForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Contraseña
                     </FormLabel>
                     <FormControl>
@@ -177,16 +178,16 @@ function LoginForm() {
             </FormRoot>
           </Form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
+          <div className="mt-6 pt-6 border-t border-border text-center text-sm text-muted-foreground">
             ¿No tienes una cuenta?{" "}
-            <Link href="/signup" className="text-[#1B3A6F] hover:text-[#15305C] font-medium">
+            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
               Crear cuenta
             </Link>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          <Link href="/publico" className="font-medium text-[#1B3A6F] hover:underline">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/publico" className="font-medium text-primary hover:underline">
             Conoce ComunidadCat →
           </Link>
         </p>
@@ -201,8 +202,8 @@ export default function LoginPage() {
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando...</p>
+            <Spinner className="mx-auto mb-4" />
+            <p className="text-muted-foreground">Cargando...</p>
           </div>
         </div>
       }

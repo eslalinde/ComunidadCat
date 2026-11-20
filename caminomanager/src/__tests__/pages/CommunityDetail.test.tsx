@@ -180,6 +180,12 @@ vi.mock('@/hooks/useCommunityData', () => ({
   }),
 }));
 
+// The switcher's own behaviour is covered in CommunitySwitcher.test.tsx; here it
+// falls back to the detail payload for the header labels.
+vi.mock('@/hooks/useCommunitySwitcher', () => ({
+  useCommunitySwitcher: () => ({ parishes: [], loading: false, error: false }),
+}));
+
 vi.mock('@/lib/queryKeys', () => ({
   queryKeys: {
     crud: { table: () => ['crud'] },

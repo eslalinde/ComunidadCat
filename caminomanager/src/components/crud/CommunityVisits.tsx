@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { CommunityVisit } from '@/types/database';
 import type { FormField } from '@/types/database';
 import { Hint } from '@/components/ui/tooltip';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const visitFormFields: FormField[] = [
   {
@@ -140,12 +141,12 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-lg">Visitas a la Comunidad</CardTitle>
+          <CardTitle>Visitas a la Comunidad</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-16 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -157,20 +158,20 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
     <Card className="flex flex-col">
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
             Visitas a la Comunidad
           </CardTitle>
           <div className="flex items-center gap-2 print-hidden">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4" />
               Agregar
             </Button>
             {count > itemsPerPage && (
               <Dialog open={isAllOpen} onOpenChange={setIsAllOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost">
-                    <ExternalLink className="w-4 h-4 mr-1" />
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-4 w-4" />
                     Ver todas ({count})
                   </Button>
                 </DialogTrigger>
@@ -185,25 +186,25 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                     {visits.map((visit) => (
                       <div
                         key={visit.id}
-                        className="group/entry border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        className="group/entry border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-semibold text-gray-900">
+                              <p className="text-sm font-semibold text-foreground">
                                 {formatDate(visit.visit_date)}
                               </p>
                               {visit.visitor_name && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   por {visit.visitor_name}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            <p className="text-sm text-foreground whitespace-pre-wrap">
                               {visit.description}
                             </p>
                             {visit.topics_discussed && (
-                              <p className="text-xs text-gray-500 mt-2">
+                              <p className="text-xs text-muted-foreground mt-2">
                                 <span className="font-medium">Temas:</span>{' '}
                                 {visit.topics_discussed}
                               </p>
@@ -213,10 +214,10 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
                               onClick={() => setEntryToDelete(visit)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </Hint>
                         </div>
@@ -232,30 +233,27 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
 
       <CardContent className="flex-1">
         {displayedVisits.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <ClipboardList className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No hay visitas registradas</p>
-          </div>
+          <EmptyState icon={ClipboardList} title="No hay visitas registradas" />
         ) : (
           <div className="space-y-3">
             {displayedVisits.map((visit) => (
               <div
                 key={visit.id}
-                className="group/entry border rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                className="group/entry border rounded-lg p-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-foreground">
                         {formatDate(visit.visit_date)}
                       </p>
                       {visit.visitor_name && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           por {visit.visitor_name}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 line-clamp-2">
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                       {visit.description}
                     </p>
                   </div>
@@ -263,10 +261,10 @@ export function CommunityVisits({ communityId, communityNumber, defaultVisitorNa
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
+                      className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 -mt-1"
                       onClick={() => setEntryToDelete(visit)}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </Hint>
                 </div>

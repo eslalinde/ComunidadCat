@@ -130,7 +130,7 @@ export function EntityTable<T extends BaseEntity>({
                 if (onRowClick) { onRowClick(item); } else { onEdit(item); }
               }}
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Editar</TooltipContent>
@@ -152,7 +152,7 @@ export function EntityTable<T extends BaseEntity>({
                   }
                 }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Eliminar</TooltipContent>
