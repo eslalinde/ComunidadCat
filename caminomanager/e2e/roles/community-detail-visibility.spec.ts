@@ -22,8 +22,8 @@ interface DetailVisibility {
   eliminar: boolean;     // botón "Eliminar" comunidad (no "Eliminar Equipo")
   // Tarjetas / acciones internas
   bitacora: boolean;        // tarjeta "Bitácora" visible
-  bitacoraAgregar: boolean; // botón "Agregar" dentro de la bitácora
-  agregarHermano: boolean;  // botón "Agregar Existente" en lista de hermanos
+  bitacoraAgregar: boolean; // botón "Agregar registro" dentro de la bitácora
+  agregarHermano: boolean;  // botón "Agregar hermanos" en lista de hermanos
 }
 
 // Valores derivados a mano de src/lib/permissions.ts. Si cambian las reglas,
@@ -201,7 +201,7 @@ test.describe('Comunidades — visibilidad de acciones en el detalle', () => {
 
         await expectCount(
           page,
-          bitacoraCard.getByRole('button', { name: 'Agregar', exact: true }),
+          bitacoraCard.getByRole('button', { name: 'Agregar registro', exact: true }),
           expected.bitacoraAgregar, 'Bitácora → Agregar', roleKey,
         );
       }
@@ -213,8 +213,8 @@ test.describe('Comunidades — visibilidad de acciones en el detalle', () => {
         .toBeVisible({ timeout: 10_000 });
       await expectCount(
         page,
-        page.getByRole('button', { name: /Agregar Existente/ }),
-        expected.agregarHermano, 'Agregar Existente (hermano)', roleKey,
+        page.getByRole('button', { name: /Agregar hermanos/ }),
+        expected.agregarHermano, 'Agregar hermanos', roleKey,
       );
 
       await takeRoleScreenshot(page, roleKey, 'community-detail', {

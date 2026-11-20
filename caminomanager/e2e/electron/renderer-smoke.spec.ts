@@ -75,7 +75,8 @@ test('carga el renderer estático y los controles ReUI dentro de Electron', asyn
 
     await sidebar.getByRole('link', { name: 'Comunidades', exact: true }).click();
     await page.getByRole('table').locator('tbody tr').first().click();
-    await page.getByRole('button', { name: 'Carga masiva desde archivo CSV' }).click();
+    await page.getByRole('button', { name: 'Agregar hermanos' }).click();
+    await page.getByRole('menuitem', { name: 'Carga masiva (CSV)' }).click();
     const stepper = page.getByRole('navigation', { name: 'Progreso de carga masiva' });
     await expect(stepper.getByRole('listitem')).toHaveCount(4);
     await expect(stepper.getByRole('listitem').first()).toHaveAttribute(

@@ -200,7 +200,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                 onClick={() => setIsAddModalOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Agregar
+                Agregar registro
               </Button>
             )}
             {count > itemsPerPage && (
@@ -273,7 +273,12 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
           {displayedLogs.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No hay entradas en el log</p>
+              <p className="text-sm">La bitácora está vacía</p>
+              {!readOnly && (
+                <p className="text-xs mt-1">
+                  Agrega un registro al cerrar una etapa para actualizar la etapa de la comunidad.
+                </p>
+              )}
             </div>
           ) : (
             <div className="relative">

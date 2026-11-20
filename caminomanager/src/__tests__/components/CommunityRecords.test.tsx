@@ -106,7 +106,7 @@ describe('bitácora compacta', () => {
   const entries = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, community_id: 10, step_way_id: 1, date_of_step: i % 2 ? '2026-10-30' : undefined, notes: i % 2 ? 'Nota' : undefined, outcome: i % 3 === 0 ? true : i % 3 === 1 ? false : undefined, principal_catechist_name: i % 2 ? 'Ana' : undefined, step_way: i % 2 ? { id: 1, name: 'Paso' } : undefined }));
   const setup = (extra: Partial<ComponentProps<typeof CommunityStepLogCompact>> = {}) => render(<CommunityStepLogCompact communityId={10} communityNumber="1" stepLogs={entries} loading={false} onStepLogAdded={refresh} onStepLogDeleted={refresh} {...extra} />);
   it.each(['true', 'false', ''])('normaliza resultado %s y actualiza etapa solo al cerrar', async (outcome) => {
-    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar registro' }));
     save({ outcome, step_way_id: '2', date_of_step: '2026-10-30', brothers_count: outcome ? '20' : '', notes: outcome === 'true' ? 'Nota' : '' });
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     const insert = mock.calls.find((c) => c.table === 'community_step_log' && c.method === 'insert')?.args[0];
@@ -118,7 +118,7 @@ describe('bitácora compacta', () => {
   });
   it('avisa si el registro se guardó pero la comunidad no se actualizó', async () => {
     responses.communities = ok([]);
-    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar registro' }));
     save({ outcome: 'true', step_way_id: '2', date_of_step: '2026-10-30' });
     await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringContaining('no se pudo actualizar la etapa')));
     expect(toast.success).not.toHaveBeenCalled();
@@ -126,13 +126,13 @@ describe('bitácora compacta', () => {
     expect(screen.queryByLabelText('Agregar Registro a la Bitácora')).not.toBeInTheDocument();
   });
   it('presenta carga, vacío y modo lectura sin acciones de escritura', () => {
-    const view = setup({ loading: true }); expect(screen.queryByText('Agregar')).not.toBeInTheDocument();
+    const view = setup({ loading: true }); expect(screen.queryByText('Agregar registro')).not.toBeInTheDocument();
     view.rerender(<CommunityStepLogCompact communityId={10} communityNumber="1" stepLogs={[]} loading={false} readOnly />);
-    expect(screen.queryByText('Agregar')).not.toBeInTheDocument();
-      expect(screen.getByText('No hay entradas en el log')).toBeVisible();
+    expect(screen.queryByText('Agregar registro')).not.toBeInTheDocument();
+      expect(screen.getByText('La bitácora está vacía')).toBeVisible();
   });
   it('conserva formulario si falla el registro', async () => {
-    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar' })); responses.community_step_log.error = { message: 'Error' };
+    setup(); fireEvent.click(screen.getByRole('button', { name: 'Agregar registro' })); responses.community_step_log.error = { message: 'Error' };
     save({ outcome: 'true', step_way_id: '2' }); await screen.findByRole('alert');
     expect(refresh).not.toHaveBeenCalled(); fireEvent.click(screen.getByText('Cerrar formulario'));
   });

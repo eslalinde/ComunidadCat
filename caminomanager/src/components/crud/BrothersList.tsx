@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, User, Users, FileUp, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -232,6 +232,11 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
     }
   };
 
+  // A marriage is one row but two people; count people so this matches the community info card.
+  const registeredPeople = brothers.reduce((total, brother) => total + brother.personIds.length, 0);
+  const menuItemClass =
+    'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm outline-none hover:bg-accent focus:bg-accent';
+
   if (loading) {
     return (
       <Card className="h-full">
@@ -257,67 +262,44 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
             <div>
               <CardTitle className="text-lg">Hermanos de la Comunidad</CardTitle>
               <p className="text-sm text-gray-600">
-                Total: {brothers.length} {brothers.length === 1 ? 'hermano' : 'hermanos'}
+                {registeredPeople} {registeredPeople === 1 ? 'persona registrada' : 'personas registradas'}
               </p>
             </div>
             {onAdd && (
-              <div className="flex flex-wrap gap-2">
-                <Hint label="Carga masiva desde archivo CSV">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsBulkUploadOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <FileUp className="h-4 w-4" />
-                    <span className="hidden sm:inline">Carga Masiva</span>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <Button size="sm" className="flex items-center gap-2 print-hidden">
+                    <Plus className="h-4 w-4" />
+                    Agregar hermanos
+                    <ChevronDown className="h-3 w-3" />
                   </Button>
-                </Hint>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsSelectModalOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agregar Existente</span>
-                </Button>
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="hidden sm:inline">Agregar Nuevo</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Portal>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
                   <DropdownMenu.Content
                     align="end"
                     sideOffset={4}
-                    className="min-w-[180px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
+                    className="min-w-[240px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
                   >
-                    <DropdownMenu.Item
-                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                      onSelect={() => setIsCreateModalOpen(true)}
-                    >
-                      <User className="h-4 w-4" />
-                      Hermano individual
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsCreateModalOpen(true)}>
+                      <User className="h-4 w-4 text-gray-500" />
+                      Nuevo hermano
                     </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                      onSelect={() => setIsMarriageModalOpen(true)}
-                    >
-                      <Heart className="h-4 w-4" />
-                      Matrimonio
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsMarriageModalOpen(true)}>
+                      <Users className="h-4 w-4 text-gray-500" />
+                      Nuevo matrimonio
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsSelectModalOpen(true)}>
+                      <UserPlus className="h-4 w-4 text-gray-500" />
+                      Persona ya registrada
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator className="my-1 h-px bg-gray-200" />
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsBulkUploadOpen(true)}>
+                      <FileUp className="h-4 w-4 text-gray-500" />
+                      Carga masiva (CSV)
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
-                </DropdownMenu.Root>
-              </div>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
             )}
           </div>
         </CardHeader>
@@ -334,8 +316,25 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
             <TableBody>
               {brothers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-gray-500 py-8">
-                    No hay hermanos registrados
+                  <TableCell colSpan={3} className="text-center text-gray-500 py-8 whitespace-normal">
+                    <p>No hay hermanos registrados</p>
+                    {onAdd && (
+                      <>
+                        <p className="text-sm mt-1">
+                          Agrégalos uno a uno o importa una lista desde un archivo CSV.
+                        </p>
+                        <div className="mt-4 flex flex-wrap justify-center gap-2 print-hidden">
+                          <Button variant="outline" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+                            <User className="h-4 w-4" />
+                            Nuevo hermano
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setIsBulkUploadOpen(true)}>
+                            <FileUp className="h-4 w-4" />
+                            Carga masiva (CSV)
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ) : (
