@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import serve from 'electron-serve';
-import { autoUpdater } from 'electron-updater';
+import { SignedWindowsUpdater } from './SignedWindowsUpdater';
+import { getUpdatePublisher } from './updatePublisher';
 
 const isProd = app.isPackaged;
 const isSmokeTest = process.env.ELECTRON_SMOKE_TEST === '1';
@@ -20,6 +21,7 @@ const isStandalone: boolean = appPackageJson.standalone === true || appPackageJs
 const loadURL = serve({ directory: path.join(__dirname, '..', 'out') });
 
 let mainWindow: BrowserWindow | null = null;
+let updater: SignedWindowsUpdater | undefined;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -93,7 +95,16 @@ app.whenReady().then(async () => {
   });
 
   // Auto-updates (prod only, disabled for standalone builds)
-  if (isProd && !isStandalone) {
+  if (isProd && !isStandalone && process.platform === 'win32') {
+    let publisher: string | undefined;
+    try {
+      publisher = getUpdatePublisher(fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8'));
+    } catch {
+      // An unsigned or incomplete local package cannot enable updates.
+    }
+    if (!publisher) return;
+    const autoUpdater = new SignedWindowsUpdater(publisher, path.join(process.resourcesPath, 'Verify-UpdateSignature.ps1'));
+    updater = autoUpdater;
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.checkForUpdatesAndNotify();
@@ -118,7 +129,7 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('install-update', () => {
-  autoUpdater.quitAndInstall();
+  updater?.quitAndInstall();
 });
 
 // Window control handlers

@@ -62,6 +62,10 @@ Ambas ramas deben requerir PR, impedir borrados y force pushes y conservar CodeQ
 
 CI no tiene filtros de paths: los checks requeridos se ejecutan también para PR de documentación. Los PR externos no reciben secretos de despliegue. Dependabot apunta a `dev`. Electron mantiene su entrega independiente al publicar un release de GitHub.
 
+Para publicar los instaladores Windows, configura los secretos de GitHub Actions `WINDOWS_SIGNING_PFX` (PFX en base64) y `WINDOWS_SIGNING_PASSWORD`. La variable `WINDOWS_PUBLISHER_DN` debe contener el `SignerCertificate.Subject` completo del editor. La release comprueba la firma Authenticode de cada instalador y la identidad escrita en la configuración de actualizaciones.
+
+En equipos que ya usan una versión sin editor configurado, instala manualmente la primera versión firmada y comprueba su firma por un canal de confianza. La nueva versión exige ese editor para las actualizaciones posteriores.
+
 ## Limpieza del proveedor anterior
 
 No hay workflow de Azure activo ni secretos de Azure registrados en el repositorio al momento de esta revisión. El despliegue web usa Vercel. Los backups standalone son locales por defecto, con rclone opcional para el proveedor que se configure; ya no asumen Azure. La limpieza del repositorio no elimina recursos ni backups de cuentas cloud.

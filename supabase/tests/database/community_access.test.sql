@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(35);
+select plan(49);
 
 insert into public.cities (id, name) values (-910001, 'Integration city');
 insert into public.city_zones (id, name, city_id) values
@@ -13,6 +13,10 @@ insert into public.parishes (id, name, city_id, zone_id) values
   (-910002, 'Integration parish B', -910001, -910002);
 insert into public.communities (id, number, parish_id) values
   (-910001, 'Integration A', -910001), (-910002, 'Integration B', -910002);
+insert into public.parishes (id, name, city_id) values (-910003, 'Unzoned', -910001);
+insert into public.communities (id, number, parish_id) values (-910003, '1', -910003);
+insert into public.priests(id, parish_id) values (-910001,-910001), (-910002,-910002), (-910003,null);
+insert into public.parish_catechesis(id, parish_id) values (-910001,-910001), (-910002,-910002);
 
 -- The production signup trigger creates each profile.
 insert into auth.users (id, email, raw_user_meta_data)
@@ -40,6 +44,10 @@ select ok(
 set local role authenticated;
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000001', true);
+select results_eq($$select id from public.priests where id between -910003 and -910001 order by id$$,
+  array[-910003,-910002,-910001]::bigint[], 'Admin sees all assignments, including unassigned priests');
+select results_eq($$select id from public.parish_catechesis where id in (-910001,-910002) order by id$$,
+  array[-910002,-910001]::bigint[], 'Admin sees both catechesis histories');
 select results_eq(
   $$select id from public.communities where id in (-910001, -910002) order by id$$,
   ARRAY[-910002, -910001]::bigint[], 'admin: exact visible communities'
@@ -68,6 +76,19 @@ select is((select count(*) from changed),
 );
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000003', true);
+select is(public.can_manage_community(-910003), false, 'Leader cannot manage an unzoned parish community');
+select is(public.can_manage_community(-910001), true, 'Leader can manage own zone');
+select throws_ok($$select public.grant_community_access('91000000-0000-0000-0000-000000000009', -910003)$$,
+  'P0001', 'No tienes permisos para esta comunidad', 'Unzoned grant denied');
+select throws_ok($$select public.revoke_community_access('91000000-0000-0000-0000-000000000009', -910003)$$,
+  'P0001', 'No tienes permisos para esta comunidad', 'Unzoned revoke denied');
+select throws_ok($$select * from public.get_community_access_users(-910003)$$,
+  'P0001', 'No tienes permisos para ver los accesos de esta comunidad', 'Unzoned access list denied');
+select throws_ok($$select public.merge_communities(-910001, -910003)$$,
+  'P0001', 'Permiso denegado: no tienes acceso a ambas comunidades', 'Cannot merge an unzoned source');
+select throws_ok($$select public.merge_communities(-910003, -910001)$$,
+  'P0001', 'Permiso denegado: no tienes acceso a ambas comunidades', 'Cannot merge into an unzoned destination');
+select lives_ok($$select * from public.get_community_access_users(-910001)$$, 'Own-zone access list allowed');
 select results_eq(
   $$select id from public.communities where id in (-910001, -910002) order by id$$,
   ARRAY[-910001]::bigint[], 'zone_leader: exact visible communities'
@@ -138,6 +159,10 @@ select is((select count(*) from changed),
 );
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000008', true);
+select results_eq($$select id from public.priests where id between -910003 and -910001$$,
+  array[-910002]::bigint[], 'Viewer with a community grant sees only its parish assignments');
+select results_eq($$select id from public.parish_catechesis where id in (-910001,-910002)$$,
+  array[-910002]::bigint[], 'Viewer with a community grant sees only its parish catechesis');
 select results_eq(
   $$select id from public.communities where id in (-910001, -910002) order by id$$,
   ARRAY[-910002]::bigint[], 'viewer_grant: exact visible communities'
@@ -152,6 +177,8 @@ select is((select count(*) from changed),
 );
 
 select set_config('request.jwt.claim.sub', '91000000-0000-0000-0000-000000000009', true);
+select is_empty($$select id from public.priests$$, 'Unscoped viewer cannot read priest assignments');
+select is_empty($$select id from public.parish_catechesis$$, 'Unscoped viewer cannot read catechesis');
 select results_eq(
   $$select id from public.communities where id in (-910001, -910002) order by id$$,
   ARRAY[]::bigint[], 'viewer_no_scope: exact visible communities'

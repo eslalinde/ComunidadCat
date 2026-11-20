@@ -11,6 +11,7 @@ import {
 import { WindowControls } from "@/components/electron/WindowControls";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { QueryProvider } from "@/app/QueryProvider";
 
 export default function MainLayout({
   children,
@@ -32,33 +33,35 @@ export default function MainLayout({
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar
-        userName={profile?.full_name ?? undefined}
-        userEmail={user.email}
-        className="print-hidden"
-      />
-      <SidebarInset className="min-w-0">
-        <header
-          className="sticky top-0 z-50 bg-card/90 backdrop-blur flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        >
-          <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumbs />
-          </div>
-          <div className="ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <WindowControls />
-          </div>
-        </header>
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 print:p-0 print:overflow-visible">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <QueryProvider>
+      <SidebarProvider>
+        <AppSidebar
+          userName={profile?.full_name ?? undefined}
+          userEmail={user.email}
+          className="print-hidden"
+        />
+        <SidebarInset className="min-w-0">
+          <header
+            className="sticky top-0 z-50 bg-card/90 backdrop-blur flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          >
+            <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              <Breadcrumbs />
+            </div>
+            <div className="ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              <WindowControls />
+            </div>
+          </header>
+          <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 print:p-0 print:overflow-visible">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </QueryProvider>
   );
 }
