@@ -72,7 +72,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <UpdateNotification />
-          <Toaster richColors position="top-right" />
+          <Toaster />
           <ServiceWorkerRegistration />
         </AuthProvider>
       </body>
