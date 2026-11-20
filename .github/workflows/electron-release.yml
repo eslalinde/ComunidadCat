@@ -43,6 +43,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Test rejection of unsigned and differently signed files
+        run: ./scripts/test-update-signature.ps1
+
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
@@ -54,9 +57,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
 
       - name: Build Electron installer (Cloud)
-        run: >
-          npx electron-builder --win --publish never
-          --config.artifactName 'ComunidadCat-Cloud-${version}-Setup.${ext}'
+        env:
+          WIN_CSC_LINK: ${{ secrets.WINDOWS_SIGNING_PFX }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+          WINDOWS_PUBLISHER_DN: ${{ vars.WINDOWS_PUBLISHER_DN }}
+        run: ./scripts/build-signed-installer.ps1 -Edition Cloud
 
       - name: Move Cloud artifacts
         shell: pwsh
@@ -80,10 +85,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
 
       - name: Build Electron installer (Standalone)
-        run: >
-          npx electron-builder --win --publish never
-          --config.artifactName 'ComunidadCat-Standalone-${version}-Setup.${ext}'
-          --config.extraMetadata.standalone=true
+        env:
+          WIN_CSC_LINK: ${{ secrets.WINDOWS_SIGNING_PFX }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+          WINDOWS_PUBLISHER_DN: ${{ vars.WINDOWS_PUBLISHER_DN }}
+        run: ./scripts/build-signed-installer.ps1 -Edition Standalone
 
       # ── Phase 3: Assemble Standalone ZIP ──────────────────────────────
       - name: Assemble Standalone ZIP

@@ -11,6 +11,10 @@ files:
   - out/**/*
   - package.json
 
+extraResources:
+  - from: build-resources/Verify-UpdateSignature.ps1
+    to: Verify-UpdateSignature.ps1
+
 win:
   target:
     - target: nsis

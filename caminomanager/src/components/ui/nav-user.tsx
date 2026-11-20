@@ -20,7 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
-import { createClient } from "@/utils/supabase/client";
+import { signOut } from "@/lib/signOut";
 import { useAppVersion, DOWNLOAD_URL } from "@/hooks/useAppVersion";
 import { FeatureFlagsDialog } from "@/components/ui/FeatureFlagsDialog";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -154,16 +154,7 @@ export function NavUser({
 
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={async () => {
-                const supabase = createClient();
-                try {
-                  await Promise.race([
-                    supabase.auth.signOut(),
-                    new Promise((r) => setTimeout(r, 1000)),
-                  ]);
-                } catch {}
-                window.location.reload();
-              }}
+              onClick={signOut}
             >
               <LogOut />
               Cerrar Sesión

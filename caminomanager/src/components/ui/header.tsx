@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { DropdownMenu } from "radix-ui";
 import { routes } from "@/lib/routes";
-import { createClient } from "@/utils/supabase/client";
+import { signOut } from "@/lib/signOut";
 import { WindowControls } from "@/components/electron/WindowControls";
 
 interface HeaderProps {
@@ -127,14 +127,7 @@ export default function Header({ userEmail, userName, title: _title }: HeaderPro
                 className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900"
                 onClick={async () => {
                   setMenuOpen(false);
-                  const supabase = createClient();
-                  try {
-                    await Promise.race([
-                      supabase.auth.signOut(),
-                      new Promise(r => setTimeout(r, 1000)),
-                    ]);
-                  } catch {}
-                  window.location.reload();
+                  await signOut();
                 }}
               >
                 <LogOut className="w-4 h-4" />

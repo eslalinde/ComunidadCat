@@ -1,6 +1,8 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { QueryProvider } from '@/app/QueryProvider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createTableMock } from '../helpers/queryHarness';
 
 type Session = { user: { id: string } } | null;
@@ -17,6 +19,27 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 const state = () => JSON.parse(screen.getByRole('status').textContent || '{}');
+it('aísla la caché de una pestaña que recibe eventos de cambio de cuenta', async () => {
+  const key = ['community', 10, 'brothers'];
+  function CachedMembers() {
+    const client = useQueryClient();
+    const { data } = useQuery<string>({ queryKey: key, enabled: false });
+    return <button onClick={() => client.setQueryData(key, 'Ana')}>{data ?? 'Vacío'}</button>;
+  }
+  let finishOldScope!: (value: unknown) => void;
+  mocks.rpc.mockReturnValueOnce(new Promise(resolve => { finishOldScope = resolve; }));
+  render(<AuthProvider><QueryProvider><CachedMembers /><Consumer /></QueryProvider></AuthProvider>);
+  await act(async () => notify('SIGNED_IN', { user: { id: 'first' } }));
+  act(() => screen.getByRole('button').click());
+  await screen.findByRole('button', { name: 'Ana' });
+  await act(async () => notify('TOKEN_REFRESHED', { user: { id: 'first' } }));
+  expect(screen.getByRole('button')).toHaveTextContent('Ana');
+  await act(async () => notify('SIGNED_OUT', null));
+  await act(async () => notify('SIGNED_IN', { user: { id: 'second' } }));
+  await act(async () => finishOldScope({ data: [{ role: 'admin' }] }));
+  expect(screen.getByRole('button')).toHaveTextContent('Vacío');
+  expect(state().scope.role).toBe('viewer');
+});
 it('restaura sesión, perfil, alcance y limpia datos al salir', async () => {
   render(<AuthProvider><Consumer /></AuthProvider>);
   expect(state().loading).toBe(true);

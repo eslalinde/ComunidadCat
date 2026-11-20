@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(15);
+select plan(26);
 insert into public.cities (id,name) values (-930001,'Contact test');
 insert into public.city_zones (id,name,city_id) values (-930001,'A',-930001),(-930002,'B',-930001);
 insert into public.parishes (id,name,city_id,zone_id)
@@ -75,5 +75,40 @@ select public.finish_legacy_contact(-930003,'{"data":"synthetic-migrated"}');
 select ok(not exists(select 1 from contact_private.legacy where person_id=-930003)
  and exists(select 1 from contact_private.contacts where person_id=-930003 and envelope->>'data'='synthetic-migrated'),
  'Backfill atomically replaces its legacy source');
+-- Exercise the membership boundary as a scoped caller. Read contacts through
+-- the same service-only RPC that the Edge Function calls with the verified actor.
+insert into contact_private.contacts values (-930002, '{"data":"outside"}');
+select set_config('request.jwt.claim.sub',(select id::text from actors where role='community_responsible'),true);
+set local role authenticated;
+select throws_ok($$insert into public.brothers(person_id, community_id) values (-930002,-930001)$$,
+  '42501', null, 'Cannot add an outside person to gain access to their phone');
+select throws_ok($$update public.brothers set person_id=-930002 where person_id=-930001 and community_id=-930001$$,
+  '42501', null, 'Cannot substitute an outside person in an existing membership');
+select throws_ok($$insert into public.brothers(person_id, community_id) values (-930003,-930001)$$,
+  '42501', null, 'An existing person without membership still needs independent authorization');
+insert into public.people(id,person_name) values (-930005,'Created by responsible');
+select lives_ok($$insert into public.brothers(person_id,community_id) values (-930005,-930001)$$,
+  'The creator can complete a normal new-person registration');
+reset role;
+select is_empty($$select * from public.read_person_contacts(auth.uid(), array[-930002]::bigint[], null, 'view')$$,
+  'Outside phone stays unavailable in individual view');
+select is_empty($$select * from public.read_person_contacts(auth.uid(), array[-930002]::bigint[], -930001, 'hermanos')$$,
+  'Outside phone stays unavailable in the community report');
+select is((select envelope->>'data' from public.read_person_contacts(auth.uid(), array[-930001]::bigint[], null, 'view')),
+  'synthetic-ciphertext', 'Authorized contact is still returned');
+select is_empty($$select person_id from contact_private.first_membership where person_id=-930005$$,
+  'First assignment consumes creator permission');
+select set_config('request.jwt.claim.sub',(select id::text from actors where role='admin'),true);
+set local role authenticated;
+select lives_ok($$update public.brothers set community_id=-930002 where person_id=-930005$$,
+  'Global manager can transfer a person between zones');
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from actors where role='community_responsible'),true);
+set local role authenticated;
+select throws_ok($$insert into public.brothers(person_id,community_id) values (-930005,-930001)$$,
+  '42501', null, 'Creator cannot reclaim a person after a transfer outside their scope');
+reset role;
+select is_empty($$select * from public.read_person_contacts(auth.uid(), array[-930005]::bigint[], null, 'view')$$,
+  'Contact access follows the authorized transfer');
 select * from finish();
 rollback;

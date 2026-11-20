@@ -45,15 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient();
     let active = true;
+    let identity: string | null = null;
+    let revision = 0;
 
-    async function fetchProfile(userId: string) {
+    async function fetchProfile(userId: string, request: number) {
       try {
         const { data } = await supabase
           .from('profiles')
           .select('full_name, feature_flags')
           .eq('id', userId)
           .single();
-        if (active) {
+        if (active && request === revision) {
           setProfile(data ? { full_name: data.full_name } : null);
           setFeatureFlags((data?.feature_flags as FeatureFlags) || {});
         }
@@ -62,11 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    async function fetchUserScope() {
+    async function fetchUserScope(request: number) {
       try {
         const { data, error } = await supabase.rpc('get_user_scope');
         if (error) throw error;
-        if (active && data && data.length > 0) {
+        if (active && request === revision && data && data.length > 0) {
           const row = data[0];
           setUserScope({
             role: row.role as AppRole,
@@ -89,16 +91,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
 
         const currentUser = session?.user ?? null;
+        const nextIdentity = currentUser?.id ?? null;
+        if (identity !== nextIdentity) {
+          identity = nextIdentity;
+          revision++;
+          setProfile(null);
+          setUserScope(null);
+          setFeatureFlags({});
+        }
         setUser(currentUser);
         setLoading(false);
 
         if (currentUser) {
-          fetchProfile(currentUser.id);
-          fetchUserScope();
-        } else {
-          setProfile(null);
-          setUserScope(null);
-          setFeatureFlags({});
+          fetchProfile(currentUser.id, revision);
+          fetchUserScope(revision);
         }
 
         if (event === 'SIGNED_OUT') {
