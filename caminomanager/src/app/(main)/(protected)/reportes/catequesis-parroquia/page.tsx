@@ -118,7 +118,7 @@ export default function ParishCatechesisReport() {
     <div className="space-y-4">
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <label htmlFor="startDate" className="text-sm font-medium text-gray-700">
+          <label htmlFor="startDate" className="text-sm font-medium text-foreground">
             Desde:
           </label>
           <input
@@ -126,11 +126,11 @@ export default function ParishCatechesisReport() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+            className="border border-input rounded-md px-3 py-1.5 text-sm"
           />
         </div>
         <div className="flex items-center gap-2">
-          <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+          <label htmlFor="endDate" className="text-sm font-medium text-foreground">
             Hasta:
           </label>
           <input
@@ -138,7 +138,7 @@ export default function ParishCatechesisReport() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+            className="border border-input rounded-md px-3 py-1.5 text-sm"
           />
         </div>
       </div>

@@ -54,6 +54,7 @@ import { CommunityAccessSection } from '@/components/crud/CommunityAccessSection
 import { CommunityVisits } from '@/components/crud/CommunityVisits';
 import { CommunityInventory } from '@/components/crud/CommunityInventory';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
+import { Spinner } from '@/components/ui/spinner';
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -386,7 +387,7 @@ function CommunityDetailContent() {
           </Button>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Comunidad {community?.number || 'Cargando...'}
               </h1>
               <p className="mt-1 text-muted-foreground">
@@ -737,7 +738,7 @@ export default function CommunityDetailPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+          <Spinner />
         </div>
       }
     >

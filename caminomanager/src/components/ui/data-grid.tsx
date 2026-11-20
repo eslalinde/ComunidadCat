@@ -98,8 +98,8 @@ function DataGrid<TData extends RowData>({
                           <button
                             type="button"
                             className={cn(
-                              "-mx-1 flex w-fit min-h-9 items-center [.text-center_&]:mx-auto [.text-right_&]:ml-auto [.text-right_&]:mr-0 gap-1.5 rounded px-1 text-left transition-colors hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-                              sorted && "text-gray-950"
+                              "-mx-1 flex w-fit min-h-9 items-center [.text-center_&]:mx-auto [.text-right_&]:ml-auto [.text-right_&]:mr-0 gap-1.5 rounded px-1 text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                              sorted && "text-foreground"
                             )}
                             onClick={header.column.getToggleSortingHandler()}
                           >

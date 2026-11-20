@@ -139,13 +139,13 @@ function SelectBrotherModalContent({
 
             {/* Lista de personas disponibles */}
             {loading ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 Cargando personas disponibles...
               </div>
             ) : error && people.length === 0 ? (
               <div className="text-center py-8 text-red-500">{error}</div>
             ) : filteredPeople.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 {searchTerm
                   ? 'No se encontraron personas con ese nombre'
                   : 'No hay personas disponibles sin comunidad asignada'}
@@ -159,7 +159,7 @@ function SelectBrotherModalContent({
                       key={person.id}
                       className={cn(
                         'flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
-                        checked ? 'bg-blue-50 border-blue-500' : 'hover:bg-gray-50'
+                        checked ? 'bg-blue-50 border-blue-500' : 'hover:bg-muted/50'
                       )}
                     >
                       <Checkbox
@@ -170,7 +170,7 @@ function SelectBrotherModalContent({
                       />
                       <div>
                         <div className="font-medium">{person.person_name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                           {person.mobile && `Celular: ${person.mobile}`}
                           {person.email && ` • Email: ${person.email}`}
                         </div>

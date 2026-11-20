@@ -25,6 +25,7 @@ import { type AppRole, getRoleLabel, getRoleBadgeClass } from "@/lib/permissions
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyCommunitiesAccess } from "@/hooks/useCommunityAccess";
 import { routes } from "@/lib/routes";
+import { Spinner } from "@/components/ui/spinner";
 
 const profileSchema = z.object({
   fullname: z.string().trim(),
@@ -195,8 +196,8 @@ export default function AccountPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando perfil...</p>
+          <Spinner className="mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando perfil...</p>
         </div>
       </div>
     );
@@ -204,14 +205,14 @@ export default function AccountPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Mi Perfil</h2>
+      <div className="bg-card rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold mb-6 text-foreground">Mi Perfil</h2>
         
         {/* Mostrar rol del usuario */}
         {role && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[#1B3A6F]">Tu rol:</span>
+              <span className="text-sm font-medium text-primary">Tu rol:</span>
               <Badge className={getRoleBadgeClass(role)}>{getRoleLabel(role)}</Badge>
             </div>
             {scopeLabel && (

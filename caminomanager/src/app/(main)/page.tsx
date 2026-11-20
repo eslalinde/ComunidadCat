@@ -19,6 +19,7 @@ import {
 import { routes } from "@/lib/routes";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSidebarVisibility } from "@/lib/permissions";
+import { Spinner } from "@/components/ui/spinner";
 
 const quickAccess = [
   {
@@ -120,7 +121,7 @@ export default function Home() {
   if (shouldRedirectToCommunity) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+        <Spinner />
       </div>
     );
   }
@@ -148,7 +149,7 @@ export default function Home() {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Welcome section */}
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3 flex-wrap">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-3 flex-wrap">
           Bienvenido a <BrandLogo size="md" />
         </h1>
         <p className="text-muted-foreground mt-1">

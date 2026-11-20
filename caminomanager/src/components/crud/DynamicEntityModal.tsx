@@ -567,7 +567,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
             )}
 
             <DialogFooter
-              className="col-span-full mt-2 w-full gap-3 border-t border-gray-100 pt-4 sm:justify-end"
+              className="col-span-full mt-2 w-full gap-3 border-t border-border pt-4 sm:justify-end"
             >
               <Button
                 type="button"

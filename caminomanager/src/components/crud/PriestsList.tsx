@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Hint } from '@/components/ui/tooltip';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface PriestsListProps {
   priests: Priest[];
@@ -236,12 +237,12 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Sacerdotes</CardTitle>
+          <CardTitle>Sacerdotes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-14 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -254,24 +255,24 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Sacerdotes ({priests.length})</CardTitle>
+            <CardTitle>Sacerdotes ({priests.length})</CardTitle>
             <div className="flex gap-1.5">
               <Hint label="Asignar sacerdote existente">
                 <Button
-                  size="sm"
+                  size="icon-sm"
                   variant="outline"
                   onClick={() => setIsSelectModalOpen(true)}
                 >
-                  <UserPlus className="h-3.5 w-3.5" />
+                  <UserPlus className="h-4 w-4" />
                 </Button>
               </Hint>
               <Hint label="Nuevo sacerdote">
                 <Button
-                  size="sm"
+                  size="icon-sm"
                   variant="outline"
                   onClick={openCreateForm}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               </Hint>
             </div>
@@ -279,10 +280,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
         </CardHeader>
         <CardContent>
           {priests.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <User className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm">No hay sacerdotes asignados</p>
-            </div>
+            <EmptyState icon={User} title="No hay sacerdotes asignados" />
           ) : (
             <div className="space-y-2">
               {priests.map((priest) => {
@@ -294,11 +292,11 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                 return (
                   <div
                     key={priest.id}
-                    className="flex items-start justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors group"
+                    className="flex items-start justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 text-sm">
+                        <span className="font-medium text-foreground text-sm">
                           {priest.person?.person_name || 'Sin nombre'}
                         </span>
                         <Hint label={priest.is_parish_priest ? 'Cambiar a Vicario' : 'Cambiar a Párroco'} asLabel={false}>
@@ -317,7 +315,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                         </Hint>
                       </div>
                       {(phone || email) && (
-                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           {phone && (
                             <span className="flex items-center gap-1">
                               <Phone className="w-3 h-3" />
@@ -335,23 +333,25 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                     </div>
                     <div className="flex gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <Hint label="Editar sacerdote">
-                        <button
-                          type="button"
-                          className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground"
                           onClick={() => openEditForm(priest)}
                         >
                           <Pencil className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </Hint>
                       <Hint label="Quitar sacerdote de la parroquia">
-                        <button
-                          type="button"
-                          className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setPriestToDelete(priest)}
                           disabled={isDeleting}
                         >
                           <UserMinus className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </Hint>
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                           className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                             !field.value
                               ? 'bg-blue-50 border-blue-500 text-blue-700'
-                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              : 'bg-background border-input text-foreground hover:bg-muted/50'
                           }`}
                           onClick={() => field.onChange(false)}
                         >
@@ -426,7 +426,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
                           className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                             field.value
                               ? 'bg-amber-50 border-amber-500 text-amber-700'
-                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              : 'bg-background border-input text-foreground hover:bg-muted/50'
                           }`}
                           onClick={() => field.onChange(true)}
                         >

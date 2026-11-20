@@ -284,10 +284,10 @@ export default function ReporteEstadoPasos() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Estado de Comunidades
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Matriz de comunidades distribuidas por parroquia y etapa del camino
             </p>
           </div>
@@ -322,7 +322,7 @@ export default function ReporteEstadoPasos() {
         <h1 className="text-xl font-bold text-center">
           Estado de Pasos por Parroquia
         </h1>
-        <p className="text-sm text-center text-gray-600">
+        <p className="text-sm text-center text-muted-foreground">
           Generado el {new Date().toLocaleDateString("es-CO")}
         </p>
       </div>
@@ -337,27 +337,27 @@ export default function ReporteEstadoPasos() {
           className="[&_table]:min-w-max print:overflow-visible print:border-0 print:[&_table]:min-w-0 print:[&_table]:text-xs"
           getHeaderClassName={(column) =>
             column.id === "parishName"
-              ? "sticky left-0 z-10 min-w-[180px] bg-gray-100 text-gray-900 print:min-w-0 print:bg-gray-200"
+              ? "sticky left-0 z-10 min-w-[180px] bg-muted text-foreground print:min-w-0 print:bg-gray-200"
               : column.id === "total"
-                ? "min-w-[80px] bg-blue-50 text-center text-gray-900 print:min-w-0 print:bg-blue-100"
-                : "min-w-[96px] text-center text-gray-900 print:min-w-0"
+                ? "min-w-[80px] bg-blue-50 text-center text-foreground print:min-w-0 print:bg-blue-100"
+                : "min-w-[96px] text-center text-foreground print:min-w-0"
           }
           getCellClassName={(cell) =>
             cell.column.id === "parishName"
-              ? "sticky left-0 z-10 bg-inherit font-medium text-gray-900"
+              ? "sticky left-0 z-10 bg-inherit font-medium text-foreground"
               : cell.column.id === "total"
                 ? "bg-blue-50 text-center font-semibold text-blue-800 print:bg-blue-100"
-                : "text-center text-gray-700"
+                : "text-center text-foreground"
           }
           footer={
             <TableFooter>
-              <TableRow className="bg-gray-100 font-bold print:bg-gray-200">
+              <TableRow className="bg-muted font-bold print:bg-gray-200">
                 {matrixTable.getVisibleLeafColumns().map((column) => {
                   if (column.id === "parishName") {
                     return (
                       <TableCell
                         key={column.id}
-                        className="sticky left-0 z-10 bg-gray-100 font-bold text-gray-900 print:bg-gray-200"
+                        className="sticky left-0 z-10 bg-muted font-bold text-foreground print:bg-gray-200"
                       >
                         Total por Paso
                       </TableCell>
@@ -388,7 +388,7 @@ export default function ReporteEstadoPasos() {
         />
 
         {!loading && parishes.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 text-center print:hidden">
+          <div className="mt-4 text-sm text-muted-foreground text-center print:hidden">
             {parishes.length} parroquias &middot; {grandTotal} comunidades
           </div>
         )}

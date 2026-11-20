@@ -21,7 +21,7 @@ export function SelectTest() {
             <SelectItem value="grape">Grape</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-sm text-gray-600">Selected: {value || 'None'}</p>
+        <p className="text-sm text-muted-foreground">Selected: {value || 'None'}</p>
       </div>
 
       <div className="space-y-2">

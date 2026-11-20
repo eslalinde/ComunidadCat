@@ -385,22 +385,22 @@ function StepUpload({
         {isParsing ? (
           <div className="space-y-2">
             <Loader2 className="mx-auto size-10 animate-spin text-primary" />
-            <p className="text-gray-600">Procesando archivo...</p>
+            <p className="text-muted-foreground">Procesando archivo...</p>
           </div>
         ) : fileName ? (
           <div className="space-y-2">
             <FileText className="mx-auto size-10 text-primary" />
             <p className="font-medium">{fileName}</p>
-            <p className="text-sm text-gray-500">{brothersCount} registros encontrados</p>
-            <p className="text-xs text-gray-400">Haz clic para cambiar el archivo</p>
+            <p className="text-sm text-muted-foreground">{brothersCount} registros encontrados</p>
+            <p className="text-xs text-muted-foreground/70">Haz clic para cambiar el archivo</p>
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload className="h-10 w-10 mx-auto text-gray-400" />
-            <p className="text-gray-600 font-medium">
+            <Upload className="h-10 w-10 mx-auto text-muted-foreground/70" />
+            <p className="text-muted-foreground font-medium">
               Arrastra tu archivo CSV aquí o haz clic para seleccionar
             </p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground/70">
               Solo archivos .csv
             </p>
           </div>
@@ -435,18 +435,18 @@ function StepReview({
     <div className="space-y-4">
       {/* Summary badges */}
       <div className="flex gap-3 flex-wrap">
-        <Badge variant="secondary" className="gap-1 bg-green-100 text-green-800">
+        <Badge variant="success" className="gap-1">
           <CheckCircle2 className="h-3 w-3" />
           {validation.validCount} válidos
         </Badge>
         {validation.warningCount > 0 && (
-          <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800">
+          <Badge variant="warning" className="gap-1">
             <AlertTriangle className="h-3 w-3" />
             {validation.warningCount} advertencias
           </Badge>
         )}
         {validation.errorCount > 0 && (
-          <Badge variant="secondary" className="gap-1 bg-red-100 text-red-800">
+          <Badge variant="danger" className="gap-1">
             <AlertCircle className="h-3 w-3" />
             {validation.errorCount} errores
           </Badge>
@@ -491,7 +491,7 @@ function StepReview({
                     : ''
                 }
               >
-                <TableCell className="text-xs text-gray-400">
+                <TableCell className="text-xs text-muted-foreground/70">
                   {brother.rowIndex + 1}
                 </TableCell>
                 <TableCell>
@@ -531,7 +531,7 @@ function StepReview({
                   {brother.carisma ? (
                     <CarismaBadge carisma={brother.carisma} size="sm" />
                   ) : (
-                    <span className="text-gray-400 text-sm">-</span>
+                    <span className="text-muted-foreground/70 text-sm">-</span>
                   )}
                 </TableCell>
                 <TableCell className="text-sm">{brother.genero || '-'}</TableCell>
@@ -542,7 +542,7 @@ function StepReview({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteRow(brother.rowIndex)}
-                    className="h-7 w-7 p-0 text-gray-400 hover:text-red-600"
+                    className="h-7 w-7 p-0 text-muted-foreground/70 hover:text-red-600"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -596,12 +596,12 @@ function StepResponsables({
               <>
                 <TableRow
                   key={`group-${group.carisma}`}
-                  className="bg-gray-50"
+                  className="bg-muted/50"
                 >
                   <TableCell colSpan={3} className="py-2">
                     <div className="flex items-center gap-1.5">
                       <CarismaBadge carisma={group.carisma} size="md" />
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         ({group.brothers.length})
                       </span>
                     </div>
@@ -674,13 +674,13 @@ function StepConfirm({
               : 'Carga completada con algunos errores'}
           </h3>
           <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto text-sm">
-            <div className="text-right text-gray-600">Personas creadas:</div>
+            <div className="text-right text-muted-foreground">Personas creadas:</div>
             <div className="text-left font-medium">{uploadResult.peopleCreated}</div>
-            <div className="text-right text-gray-600">Hermanos vinculados:</div>
+            <div className="text-right text-muted-foreground">Hermanos vinculados:</div>
             <div className="text-left font-medium">{uploadResult.brothersLinked}</div>
-            <div className="text-right text-gray-600">Matrimonios:</div>
+            <div className="text-right text-muted-foreground">Matrimonios:</div>
             <div className="text-left font-medium">{uploadResult.marriagesLinked}</div>
-            <div className="text-right text-gray-600">Responsables:</div>
+            <div className="text-right text-muted-foreground">Responsables:</div>
             <div className="text-left font-medium">{uploadResult.responsablesAssigned}</div>
           </div>
         </div>
@@ -712,7 +712,7 @@ function StepConfirm({
           getValueLabel={(value, max) => `${value} de ${max} registros`}
           className="mx-auto max-w-md"
         />
-        <p className="text-sm text-gray-500" aria-hidden="true">
+        <p className="text-sm text-muted-foreground" aria-hidden="true">
           {uploadProgress.current} / {uploadProgress.total}
         </p>
       </div>
@@ -721,21 +721,21 @@ function StepConfirm({
 
   return (
     <div className="space-y-4">
-      <div className="p-6 bg-gray-50 rounded-lg border space-y-4">
+      <div className="p-6 bg-muted/50 rounded-lg border space-y-4">
         <h3 className="font-semibold text-lg">Resumen de la carga</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="flex justify-between p-3 bg-white rounded border">
-            <span className="text-gray-600">Hermanos a crear:</span>
+          <div className="flex justify-between p-3 bg-card rounded border">
+            <span className="text-muted-foreground">Hermanos a crear:</span>
             <span className="font-semibold">
               {brothers.filter((b) => b.status !== 'error').length}
             </span>
           </div>
-          <div className="flex justify-between p-3 bg-white rounded border">
-            <span className="text-gray-600">Matrimonios:</span>
+          <div className="flex justify-between p-3 bg-card rounded border">
+            <span className="text-muted-foreground">Matrimonios:</span>
             <span className="font-semibold">{validation.marriageCount}</span>
           </div>
-          <div className="flex justify-between p-3 bg-white rounded border">
-            <span className="text-gray-600">Responsables:</span>
+          <div className="flex justify-between p-3 bg-card rounded border">
+            <span className="text-muted-foreground">Responsables:</span>
             <span className="font-semibold">{responsablesCount}</span>
           </div>
           {validation.warningCount > 0 && (

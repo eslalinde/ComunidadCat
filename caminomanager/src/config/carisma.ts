@@ -39,7 +39,7 @@ export const CARISMA_BADGE_COLORS: Record<string, { bg: string; text: string }> 
   'Diácono': { bg: 'bg-orange-100', text: 'text-orange-800' },
   'Monja': { bg: 'bg-indigo-100', text: 'text-indigo-800' },
   'Viudo/a': { bg: 'bg-slate-100', text: 'text-slate-800' },
-  'Soltero/a': { bg: 'bg-gray-100', text: 'text-gray-800' },
+  'Soltero/a': { bg: 'bg-muted', text: 'text-foreground' },
   'Matrimonio': { bg: 'bg-pink-100', text: 'text-pink-800' },
 };
 
