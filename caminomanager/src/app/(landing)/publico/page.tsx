@@ -5,7 +5,7 @@ import {
   BarChart3,
   Church,
   Footprints,
-  HeartHandshake,
+  Users,
   KeyRound,
   Laptop,
   MailCheck,
@@ -45,7 +45,7 @@ const FEATURES: Feature[] = [
     title: "Hermanos y matrimonios",
     description:
       "Registra personas, cónyuges y carismas: casados, solteros, presbíteros, seminaristas, religiosas e itinerantes.",
-    icon: HeartHandshake,
+    icon: Users,
     pane: "bg-vitral-red",
   },
   {
