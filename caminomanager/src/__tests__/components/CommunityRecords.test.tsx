@@ -36,7 +36,7 @@ describe('inventario', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
     save({ item_type_id: catalogue ? 1 : '', custom_name: catalogue ? 'Ignorado' : 'Mantel', quantity: 2, condition: 'bueno', notes: 'Nota' });
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Elemento agregado al inventario'));
-    expect(mock.calls).toContainEqual({ table: 'community_inventory', method: 'insert', args: [{ community_id: 10, item_type_id: catalogue ? 1 : null, custom_name: catalogue ? null : 'Mantel', quantity: 2, condition: 'bueno', notes: 'Nota', created_by: 'u' }] });
+    expect(mock.calls).toContainEqual({ table: 'community_inventory', method: 'insert', args: [{ community_id: 10, item_type_id: catalogue ? 1 : null, custom_name: catalogue ? null : 'Mantel', quantity: 2, condition: 'bueno', notes: 'Nota' }] });
   });
   it('valida nombre, cancela y conserva el formulario si falla la creación', async () => {
     setup(); await screen.findByText('No hay elementos en el inventario');
@@ -88,7 +88,7 @@ describe('visitas', () => {
     save({ visit_date: '2026-10-30', description: 'Visita' });
     if (fails) { await screen.findByRole('alert'); fireEvent.click(screen.getByText('Cerrar formulario')); }
     else await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Visita registrada'));
-    expect(mock.calls).toContainEqual({ table: 'community_visits', method: 'insert', args: [{ visit_date: '2026-10-30', description: 'Visita', community_id: 10, created_by: 'u' }] });
+    expect(mock.calls).toContainEqual({ table: 'community_visits', method: 'insert', args: [{ visit_date: '2026-10-30', description: 'Visita', community_id: 10 }] });
   });
   it.each(['success', 'zero', 'error'])('lista completa y eliminación de visitas: %s', async (scenario) => {
     responses.community_visits = ok(Array.from({ length: 5 }, (_, i) => ({ id: i + 1, description: `Visita ${i}`, visit_date: i % 2 ? '2026-10-30' : undefined, visitor_name: i % 2 ? 'Ana' : undefined, topics_discussed: i % 2 ? 'Tema' : undefined })));

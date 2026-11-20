@@ -639,6 +639,7 @@ function CommunityDetailContent() {
             )}
 
             <BrothersList
+              canAssignTeam={showManageTeams}
               brothers={mergedBrothers}
               loading={loading}
               communityId={communityId}
