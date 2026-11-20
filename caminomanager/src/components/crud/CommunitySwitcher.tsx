@@ -100,7 +100,7 @@ export function CommunitySwitcher({
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="shrink-0 whitespace-nowrap text-2xl font-semibold tracking-tight text-foreground">
           {canSwitchCommunity ? (
             <SwitcherMenu
               open={communityOpen}
@@ -306,7 +306,9 @@ function SwitcherMenu({
           )}
         >
           {icon && <span className="opacity-70">{icon}</span>}
-          <span className="min-w-0 truncate">{children}</span>
+          {/* No overflow clipping: the number must always be visible and long
+              parish names wrap instead of being cut off. */}
+          <span className="min-w-0 break-words">{children}</span>
           <ChevronDown
             aria-hidden
             className="h-4 w-4 shrink-0 opacity-50 transition-all duration-300 group-hover:translate-y-0.5 group-hover:opacity-100 group-data-[state=open]:rotate-180 group-data-[state=open]:translate-y-0"
