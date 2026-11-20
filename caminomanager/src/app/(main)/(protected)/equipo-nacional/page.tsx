@@ -1,5 +1,7 @@
 'use client';
 
+import { EditPersonModal } from '@/components/crud/EditPersonModal';
+import { preparePerson } from '@/lib/personContacts';
 import { useState, useMemo } from 'react';
 import { useNationalTeamData } from '@/hooks/useNationalTeamData';
 import { TeamSection } from '@/components/crud/TeamSection';
@@ -62,7 +64,7 @@ export default function NationalTeamPage() {
       // Create the person
       const { data: newPerson, error: personError } = await supabase
         .from('people')
-        .insert(cleanData)
+        .insert(await preparePerson(supabase, cleanData))
         .select()
         .single();
 
@@ -99,37 +101,6 @@ export default function NationalTeamPage() {
     }
   };
 
-  const handleUpdatePerson = async (data: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!editingPerson?.id) return;
-    setIsSaving(true);
-    try {
-      const supabase = createClient();
-
-      const cleanData = { ...data };
-      for (const key of Object.keys(cleanData) as (keyof typeof cleanData)[]) {
-        if (cleanData[key] === '') {
-          (cleanData as any)[key] = null;
-        }
-      }
-
-      const { error: updateError } = await supabase
-        .from('people')
-        .update(cleanData)
-        .eq('id', editingPerson.id);
-
-      if (updateError) {
-        throw new Error(friendlyError(updateError));
-      }
-
-      await refreshTeam();
-      setEditingPerson(null);
-    } catch (err: any) {
-      console.error('Error updating person:', err?.message || JSON.stringify(err));
-      throw err;
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (error) {
     return (
@@ -279,15 +250,10 @@ export default function NationalTeamPage() {
         loading={isSaving}
       />
 
-      <DynamicEntityModal
-        key={editingPerson ? `edit-person-${editingPerson.id}` : 'no-edit-person'}
-        open={editingPerson !== null}
+      <EditPersonModal
+        personIds={editingPerson?.id ? [editingPerson.id] : null}
         onClose={() => setEditingPerson(null)}
-        onSave={handleUpdatePerson}
-        initial={editingPerson}
-        fields={personConfig.fields}
-        title={`Editar Persona: ${editingPerson?.person_name || ''}`}
-        loading={isSaving}
+        onSaved={refreshTeam}
       />
     </div>
   );

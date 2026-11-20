@@ -8,8 +8,6 @@ export interface PriestRow {
   diocese: string;
   city_name: string;
   communities_count: number;
-  phone: string;
-  mobile: string;
   email: string;
 }
 
@@ -25,7 +23,7 @@ async function fetchPriests(): Promise<PriestRow[]> {
         id,
         is_parish_priest,
         parish_id,
-        person:people(person_name, phone, mobile, email),
+        person:people(person_name, email),
         parish:parishes(
           name,
           diocese:dioceses(name),
@@ -62,8 +60,6 @@ async function fetchPriests(): Promise<PriestRow[]> {
       communities_count: priest.parish_id
         ? commCountByParish[priest.parish_id] || 0
         : 0,
-      phone: person?.phone || "-",
-      mobile: person?.mobile || "-",
       email: person?.email || "-",
     };
   });

@@ -5,7 +5,7 @@ import { createQueryHarness, createTableMock, type QueryResponse } from '../help
 import { FormDouble, type FormDoubleProps } from '../helpers/modalDoubles';
 import { toast } from 'sonner';
 
-const db = vi.hoisted(() => ({ from: vi.fn() }));
+const db = vi.hoisted(() => ({ from: vi.fn(), functions: { invoke: vi.fn(async (_name: string, {body}: {body:{ids:number[]}}) => ({data:{contacts:body.ids.map(id => ({id,phone:null,mobile:null}))}})) } }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
 vi.mock('@/components/crud/DynamicEntityModal', () => ({ DynamicEntityModal: (p: FormDoubleProps) => <FormDouble {...p} /> }));
 
@@ -55,7 +55,7 @@ describe('EditPersonModal', () => {
     setup([1, 2]);
     expect(screen.getByText('¿A quién quieres editar?')).toBeVisible();
     fireEvent.click(await screen.findByRole('button', { name: 'Ana' }));
-    expect(screen.getByRole('heading', { name: 'Editar: Ana' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Editar: Ana' })).toBeVisible();
     expect(mock.calls).toContainEqual({ table: 'people', method: 'in', args: ['id', [1, 2]] });
   });
 

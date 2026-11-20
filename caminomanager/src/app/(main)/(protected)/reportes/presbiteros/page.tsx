@@ -72,20 +72,6 @@ const columns = columnHelper.columns([
       aggregationLabel: "Total",
     } satisfies DynamicColumnMeta,
   }),
-  columnHelper.accessor("phone", {
-    header: "Teléfono",
-    cell: (info) => info.getValue(),
-    meta: {
-      filterType: "text",
-    } satisfies DynamicColumnMeta,
-  }),
-  columnHelper.accessor("mobile", {
-    header: "Móvil",
-    cell: (info) => info.getValue(),
-    meta: {
-      filterType: "text",
-    } satisfies DynamicColumnMeta,
-  }),
   columnHelper.accessor("email", {
     header: "Email",
     cell: (info) => <span className="text-sm">{info.getValue()}</span>,

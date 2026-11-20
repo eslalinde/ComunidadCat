@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { preparePerson, readPersonContact } from '@/lib/personContacts';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -20,17 +22,19 @@ import { createClient } from '@/utils/supabase/client';
 import { Person } from '@/types/database';
 
 interface EditPersonModalProps {
+  communityId?: number;
   /** People to edit. With two (a marriage) the user first picks one. Null closes the modal. */
   personIds: number[] | null;
   onClose: () => void;
   onSaved?: () => void | Promise<void>;
 }
 
-export function EditPersonModal({ personIds, onClose, onSaved }: EditPersonModalProps) {
+export function EditPersonModal({ personIds, onClose, onSaved, communityId }: EditPersonModalProps) {
   if (!personIds || personIds.length === 0) return null;
   return (
     <EditPersonModalContent
       key={personIds.join('-')}
+      communityId={communityId}
       personIds={personIds}
       onClose={onClose}
       onSaved={onSaved}
@@ -42,6 +46,7 @@ function EditPersonModalContent({
   personIds,
   onClose,
   onSaved,
+  communityId,
 }: EditPersonModalProps & { personIds: number[] }) {
   const queryClient = useQueryClient();
   const [chosenId, setChosenId] = useState<number | null>(
@@ -64,7 +69,16 @@ function EditPersonModalContent({
     gcTime: 300_000,
   });
 
+  const { user } = useAuth();
+  const contact = useQuery({
+    queryKey: ['person-contact', user?.id, chosenId, communityId],
+    queryFn: async () => (await readPersonContact(createClient(), chosenId!, communityId)) ?? null,
+    enabled: chosenId !== null, gcTime: 0, staleTime: 0, retry: false,
+  });
   const person = people.find((p) => p.id === chosenId) ?? null;
+
+  const initial = useMemo(() => person && ({ ...person, phone: contact.data?.phone ?? '', mobile: contact.data?.mobile ?? '' }), [person, contact.data]);
+  const fields = useMemo(() => contact.data ? personConfig.fields : personConfig.fields.filter(f => f.name !== 'phone' && f.name !== 'mobile'), [contact.data]);
 
   const handleSave = async (data: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => {
     if (!person?.id) return;
@@ -75,10 +89,14 @@ function EditPersonModalContent({
         if (cleanData[key] === '') cleanData[key] = null;
       }
 
+      if (!contact.data || ((cleanData.phone || null) === contact.data.phone && (cleanData.mobile || null) === contact.data.mobile)) {
+        delete cleanData.phone;
+        delete cleanData.mobile;
+      }
       const supabase = createClient();
       const { data: updatedRows, error: updateError } = await supabase
         .from('people')
-        .update(cleanData)
+        .update(await preparePerson(supabase, cleanData, person.id))
         .eq('id', person.id)
         .select('id');
 
@@ -136,16 +154,16 @@ function EditPersonModalContent({
   }
 
   // Step 2: edit form (waits for the person to load so the form starts filled in).
-  if (!person) {
+  if (!person || contact.isLoading || contact.error) {
     return (
       <Dialog open onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar persona</DialogTitle>
             <DialogDescription>
-              {error
+              {contact.error ? 'No se pudieron cargar los teléfonos.' : error
                 ? friendlyError(error, 'Error al cargar los datos de la persona')
-                : isLoading
+                : isLoading || contact.isLoading
                   ? 'Cargando...'
                   : 'No se encontró la persona.'}
             </DialogDescription>
@@ -160,8 +178,8 @@ function EditPersonModalContent({
       open
       onClose={onClose}
       onSave={handleSave}
-      initial={person}
-      fields={personConfig.fields}
+      initial={initial}
+      fields={fields}
       title={`Editar: ${person.person_name}`}
       loading={isSaving}
     />

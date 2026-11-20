@@ -589,7 +589,7 @@ export function CommunityPrintView({
             <tr>
               <th className="pv-bl-th pv-bl-th--num">#</th>
               <th className="pv-bl-th">Nombre</th>
-              <th className="pv-bl-th">Celular</th>
+              <th className="pv-bl-th">Teléfonos</th>
             </tr>
           </thead>
           <tbody>

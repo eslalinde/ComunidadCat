@@ -1,3 +1,4 @@
+import { preparePerson } from '@/lib/personContacts';
 import { FormAlert } from "@/components/ui/form-alert";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -83,14 +84,14 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
       // Create husband
       const { data: husband, error: husbandError } = await supabase
         .from("people")
-        .insert({
+        .insert(await preparePerson(supabase, {
           person_name: values.husband_name,
           phone: values.husband_phone || null,
           mobile: values.husband_mobile || null,
           email: values.husband_email || null,
           person_type_id: 1, // Matrimonio
           gender_id: 1, // Masculino
-        })
+        }))
         .select()
         .single();
 
@@ -99,7 +100,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
       // Create wife
       const { data: wife, error: wifeError } = await supabase
         .from("people")
-        .insert({
+        .insert(await preparePerson(supabase, {
           person_name: values.wife_name,
           phone: values.wife_phone || null,
           mobile: values.wife_mobile || null,
@@ -107,7 +108,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
           person_type_id: 1, // Matrimonio
           gender_id: 2, // Femenino
           spouse_id: husband.id,
-        })
+        }))
         .select()
         .single();
 

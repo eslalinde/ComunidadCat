@@ -176,3 +176,14 @@ Las 21 pruebas del validador pasaron localmente y en la comprobación remota
 [41759849441](https://github.com/eslalinde/ComunidadCat/actions/runs/41759849441),
 que también completó la inspección y el dry-run de ambos proyectos con sus PAT
 separados. Repetir la revisión si cambia el esquema o llegan nuevas migraciones.
+
+## Activación de teléfonos cifrados
+
+La función `person-contacts` utiliza AES-256-GCM y valida la sesión con Supabase Auth. Su secreto `PERSON_CONTACT_KEY_V1` contiene 32 bytes aleatorios en Base64 estándar. Usa una clave propia por entorno y conserva una copia en el gestor de secretos que se usa para recuperación. Para rotar una clave que ya tenga contactos, conserva la versión anterior durante el recifrado. Sustituir el valor de V1 impediría recuperar esos contactos.
+
+1. Configurar el secreto en **Edge Functions → Secrets** del proyecto de destino. Desplegar `supabase/functions/person-contacts` junto con su configuración de autenticación de `supabase/config.toml`.
+2. Coordinar la migración `20261119234600_encrypted_person_contacts` con la nueva versión de la aplicación. Desde la migración, las consultas anteriores devuelven ambos campos vacíos y las versiones antiguas que envíen números directamente recibirán un error.
+3. Si hay números anteriores, la migración los recoge en `contact_private.legacy`, restringida al servidor. Completar el recifrado inmediato llamando por HTTPS a la función con el cuerpo `{"action":"migrate"}` y la clave secreta de servidor denominada `default` del mismo proyecto en el encabezado `apikey`. Repetir hasta obtener `{"processed":0}`. Cada lote procesa hasta 100 personas. La función comprueba el descifrado antes de retirar cada original y permite reanudar tras un fallo. Durante el proceso, una lectura de un contacto pendiente devuelve un error temporal.
+4. Verificar que `select count(*) from contact_private.legacy` da cero, que ambos campos públicos están vacíos y que se recupera un contacto ficticio con un usuario autorizado. Los respaldos históricos anteriores a la activación conservan los datos según su retención original.
+
+El contrato SQL de permisos está en `supabase/tests/database/person_contacts.test.sql`. La comprobación de cifrado y del manejador HTTP se ejecuta desde la raíz con `node --experimental-strip-types --test supabase/tests/functions/person-contacts.test.mjs`. El informe global de presbíteros omite teléfonos. La impresión con teléfonos se solicita desde una comunidad.

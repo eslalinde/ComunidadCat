@@ -7,7 +7,7 @@ import { createTableMock, type QueryResponse } from '../helpers/queryHarness';
 import type { MergedBrother } from '@/hooks/useCommunityData';
 import type { Priest } from '@/types/database';
 import { toast } from 'sonner';
-const db = vi.hoisted(() => ({ from: vi.fn() }));
+const db = vi.hoisted(() => ({ from: vi.fn(), functions: { invoke: vi.fn(async (_name: string, {body}: {body:{ids:number[]}}) => ({data:{contacts:body.ids.map(id => ({id,phone:null,mobile:null}))}})) } }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 vi.mock('@/components/crud/ConfirmDeleteDialog', () => ({ ConfirmDeleteDialog: (p: Parameters<typeof DeleteDouble>[0]) => <DeleteDouble {...p} /> }));
@@ -86,7 +86,7 @@ describe('PriestsList', () => {
   });
   it.each([false, true])('guarda formulario de sacerdote, edición=%s', async (editing) => {
     priests(); fireEvent.click(screen.getByRole('button', { name: editing ? 'Editar sacerdote' : 'Nuevo sacerdote' }));
-    fireEvent.change(screen.getByLabelText('Nombre *'), { target: { value: '  Padre Nuevo  ' } });
+    fireEvent.change(await screen.findByLabelText('Nombre *'), { target: { value: '  Padre Nuevo  ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Parroco' })); fireEvent.click(screen.getByText('Guardar'));
     await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
     expect(mock.calls).toContainEqual({ table: 'people', method: editing ? 'update' : 'insert', args: [expect.objectContaining({ person_name: 'Padre Nuevo' })] });

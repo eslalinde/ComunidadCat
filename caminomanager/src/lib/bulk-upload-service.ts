@@ -1,3 +1,4 @@
+import { preparePeople } from '@/lib/personContacts';
 import { createClient } from '@/utils/supabase/client';
 import { ParsedBrother } from './csv-parser';
 
@@ -57,9 +58,16 @@ export async function executeBulkUpload(
       is_itinerante: b.esItinerante,
     }));
 
+    let protectedRows;
+    try {
+      protectedRows = await preparePeople(supabase, peopleData);
+    } catch {
+      errors.push(`No se pudieron proteger los teléfonos del lote ${Math.floor(i / BATCH_SIZE) + 1}.`);
+      continue;
+    }
     const { data: createdPeople, error } = await supabase
       .from('people')
-      .insert(peopleData)
+      .insert(protectedRows)
       .select('id, person_name');
 
     if (error) {

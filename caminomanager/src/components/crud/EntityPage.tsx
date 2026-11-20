@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EditPersonModal } from './EditPersonModal';
 import { EntityTable } from './EntityTable';
 import { EntityModal } from './EntityModal';
 import { DynamicEntityModal } from './DynamicEntityModal';
@@ -282,7 +283,9 @@ export function EntityPage<T extends BaseEntity>({
       </div>
 
       {/* Modal */}
-      {needsDynamicModal ? (
+      {config.tableName === 'people' && editing?.id ? (
+        <EditPersonModal personIds={[editing.id]} onClose={handleCloseModal} />
+      ) : needsDynamicModal ? (
         <DynamicEntityModal
           key={editing ? `edit-${editing.id}` : 'create'}
           open={modalOpen}

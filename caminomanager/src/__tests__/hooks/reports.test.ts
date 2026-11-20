@@ -48,8 +48,8 @@ describe('reportes con relaciones y transformaciones reales', () => {
     responses.communities = ok([{ parish_id: 10 }, { parish_id: 10 }, { parish_id: null }]);
     const { result } = renderHook(usePriestsReport, { wrapper: harness.wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.data[0]).toEqual({ priest_name: 'Juan', is_parish_priest: 'Sí', parish_name: 'A', diocese: 'Diócesis', city_name: 'Ciudad', communities_count: 2, phone: '1', mobile: '2', email: 'juan@test.local' });
-    expect(result.current.data[1]).toMatchObject({ priest_name: 'N/A', is_parish_priest: 'No', parish_name: 'Sin parroquia asignada', communities_count: 0, phone: '-', email: '-' });
+    expect(result.current.data[0]).toEqual({ priest_name: 'Juan', is_parish_priest: 'Sí', parish_name: 'A', diocese: 'Diócesis', city_name: 'Ciudad', communities_count: 2, email: 'juan@test.local' });
+    expect(result.current.data[1]).toMatchObject({ priest_name: 'N/A', is_parish_priest: 'No', parish_name: 'Sin parroquia asignada', communities_count: 0, email: '-' });
     expect(result.current.data[2].communities_count).toBe(0);
   });
 
