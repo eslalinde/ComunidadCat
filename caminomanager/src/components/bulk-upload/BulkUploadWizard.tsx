@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { Fragment, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { Stepper, type StepperItem } from '@/components/ui/stepper';
 import { Progress } from '@/components/ui/progress';
+import { FormAlert } from '@/components/ui/form-alert';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -125,8 +127,15 @@ export function BulkUploadWizard({
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) {
+      if (!file) return;
+      if (file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv') {
         handleFileSelect(file);
+      } else {
+        setFileName(file.name);
+        setBrothers([]);
+        setGlobalErrors([
+          'El archivo debe ser .csv. En Excel usa "Guardar como" → "CSV UTF-8 (delimitado por comas)".',
+        ]);
       }
     },
     [handleFileSelect]
@@ -311,13 +320,20 @@ export function BulkUploadWizard({
                   )}
                 </Button>
               ) : (
-                <Button
-                  onClick={() => setCurrentStep(STEPS[stepIndex + 1])}
-                  disabled={!canGoNext}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Siguiente
-                </Button>
+                <>
+                  {currentStep === 'upload' && !canGoNext && (
+                    <p className="mr-auto self-center text-sm text-muted-foreground">
+                      Sube un archivo para continuar
+                    </p>
+                  )}
+                  <Button
+                    onClick={() => setCurrentStep(STEPS[stepIndex + 1])}
+                    disabled={!canGoNext}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Siguiente
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -328,6 +344,42 @@ export function BulkUploadWizard({
 }
 
 // --- Step Components ---
+
+const TEMPLATE_COLUMNS: { name: string; required?: boolean }[] = [
+  { name: 'nombre', required: true },
+  { name: 'telefono' },
+  { name: 'celular' },
+  { name: 'email' },
+  { name: 'carisma' },
+  { name: 'genero' },
+  { name: 'es_itinerante' },
+  { name: 'nombre_conyuge' },
+];
+
+function InstructionStep({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <li className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+      >
+        {number}
+      </span>
+      <div className="min-w-0 flex-1 space-y-2">
+        <p className="text-sm font-medium leading-6">{title}</p>
+        {children}
+      </div>
+    </li>
+  );
+}
 
 function StepUpload({
   fileName,
@@ -346,21 +398,42 @@ function StepUpload({
   onFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const hasErrors = globalErrors.length > 0;
+
   return (
-    <div className="space-y-4">
-      {/* Template download */}
-      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div>
-          <p className="font-medium text-blue-900">Plantilla CSV</p>
-          <p className="text-sm text-blue-700">
-            Descarga la plantilla con el formato correcto para cargar hermanos
+    <div className="space-y-5">
+      <ol className="space-y-4" aria-label="Cómo preparar el archivo">
+        <InstructionStep number={1} title="Descarga la plantilla">
+          <Button variant="outline" size="sm" onClick={downloadCsvTemplate} className="gap-2">
+            <Download aria-hidden="true" className="size-4" />
+            Descargar plantilla CSV
+          </Button>
+        </InstructionStep>
+
+        <InstructionStep
+          number={2}
+          title="Llénala en Excel o Google Sheets, un hermano por fila"
+        >
+          <p className="text-sm text-muted-foreground">
+            No cambies los nombres de las columnas. Solo el nombre es obligatorio; al
+            terminar, guarda el archivo como <span className="font-medium text-foreground">CSV</span>.
           </p>
-        </div>
-        <Button variant="outline" onClick={downloadCsvTemplate} className="gap-2">
-          <Download className="h-4 w-4" />
-          Descargar
-        </Button>
-      </div>
+          <ul className="flex flex-wrap gap-1.5" aria-label="Columnas de la plantilla">
+            {TEMPLATE_COLUMNS.map((col) => (
+              <li key={col.name}>
+                <Badge variant={col.required ? 'default' : 'muted'} className="font-mono font-normal">
+                  {col.name}
+                  {col.required && <span className="sr-only"> (obligatoria)</span>}
+                  {col.required && <span aria-hidden="true">*</span>}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </InstructionStep>
+
+        <InstructionStep number={3} title="Sube el archivo" />
+      </ol>
 
       {/* Drop zone */}
       <span id="bulk-upload-csv-help" className="sr-only">
@@ -368,9 +441,28 @@ function StepUpload({
       </span>
       <label
         htmlFor="bulk-upload-csv"
-        className="cursor-pointer rounded-lg border-2 border-dashed border-border p-12 text-center transition-colors hover:border-primary"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onFileDrop}
+        data-dragging={isDragging || undefined}
+        className={cn(
+          'flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          'hover:border-primary hover:bg-primary/5',
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : hasErrors
+              ? 'border-destructive/50 bg-destructive/5'
+              : fileName
+                ? 'border-primary/40 bg-muted/40'
+                : 'border-border bg-muted/30'
+        )}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          setIsDragging(false);
+          onFileDrop(e);
+        }}
       >
         <input
           id="bulk-upload-csv"
@@ -383,40 +475,49 @@ function StepUpload({
           aria-describedby="bulk-upload-csv-help"
         />
         {isParsing ? (
-          <div className="space-y-2">
-            <Loader2 className="mx-auto size-10 animate-spin text-primary" />
-            <p className="text-muted-foreground">Procesando archivo...</p>
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 aria-hidden="true" className="size-9 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Procesando archivo...</p>
           </div>
         ) : fileName ? (
-          <div className="space-y-2">
-            <FileText className="mx-auto size-10 text-primary" />
+          <div className="flex flex-col items-center gap-1.5">
+            <FileText aria-hidden="true" className="size-9 text-primary" />
             <p className="font-medium">{fileName}</p>
-            <p className="text-sm text-muted-foreground">{brothersCount} registros encontrados</p>
-            <p className="text-xs text-muted-foreground/70">Haz clic para cambiar el archivo</p>
+            {!hasErrors && (
+              <p className="text-sm text-muted-foreground">
+                {brothersCount} {brothersCount === 1 ? 'hermano encontrado' : 'hermanos encontrados'}
+              </p>
+            )}
+            <span className="mt-2 text-sm font-medium text-primary underline-offset-4 hover:underline">
+              Elegir otro archivo
+            </span>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Upload className="h-10 w-10 mx-auto text-muted-foreground/70" />
-            <p className="text-muted-foreground font-medium">
-              Arrastra tu archivo CSV aquí o haz clic para seleccionar
-            </p>
-            <p className="text-sm text-muted-foreground/70">
-              Solo archivos .csv
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+              <Upload aria-hidden="true" className="size-6 text-primary" />
+            </span>
+            <div className="space-y-1">
+              <p className="font-medium">Arrastra tu archivo CSV aquí</p>
+              <p className="text-sm text-muted-foreground">o</p>
+            </div>
+            <span className="inline-flex h-9 items-center rounded-md border bg-card px-4 text-sm font-medium shadow-xs">
+              Seleccionar archivo
+            </span>
+            <p className="text-xs text-muted-foreground">Solo archivos .csv</p>
           </div>
         )}
       </label>
 
       {/* Global errors */}
-      {globalErrors.length > 0 && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-1">
-          {globalErrors.map((err, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm text-red-700">
-              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>{err}</span>
-            </div>
-          ))}
-        </div>
+      {hasErrors && (
+        <FormAlert tone="error" title="No pudimos leer el archivo">
+          <ul className="space-y-1">
+            {globalErrors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </FormAlert>
       )}
     </div>
   );
@@ -452,16 +553,17 @@ function StepReview({
           </Badge>
         )}
         {validation.marriageCount > 0 && (
-          <Badge variant="secondary" className="gap-1 bg-pink-100 text-pink-800">
+          <Badge variant="info" className="gap-1">
             {validation.marriageCount} matrimonios
           </Badge>
         )}
       </div>
 
       {validation.hasErrors && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          Corrige o elimina las filas con errores para poder continuar.
-        </div>
+        <FormAlert tone="error">
+          Corrige las filas marcadas en tu archivo y vuelve a subirlo, o elimínalas con el
+          ícono de papelera para continuar.
+        </FormAlert>
       )}
 
       {/* Table */}
@@ -485,9 +587,9 @@ function StepReview({
                 key={brother.rowIndex}
                 className={
                   brother.status === 'error'
-                    ? 'bg-red-50'
+                    ? 'bg-destructive/5'
                     : brother.status === 'warning'
-                    ? 'bg-yellow-50'
+                    ? 'bg-amber-50 dark:bg-amber-950/30'
                     : ''
                 }
               >
@@ -542,9 +644,10 @@ function StepReview({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteRow(brother.rowIndex)}
-                    className="h-7 w-7 p-0 text-muted-foreground/70 hover:text-red-600"
+                    aria-label={`Quitar fila ${brother.rowIndex + 1}${brother.nombre ? ` (${brother.nombre})` : ''}`}
+                    className="h-7 w-7 p-0 text-muted-foreground/70 hover:text-destructive"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -569,12 +672,10 @@ function StepResponsables({
 
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-800">
-          Selecciona los hermanos que serán parte del equipo de responsables de la comunidad.
-          Este paso es opcional.
-        </p>
-      </div>
+      <FormAlert tone="info" title="Paso opcional">
+        Marca los hermanos que serán parte del equipo de responsables de la comunidad.
+        Puedes omitirlo y asignarlos después.
+      </FormAlert>
 
       {selectedCount > 0 && (
         <Badge variant="secondary" className="bg-primary/10 text-primary">
@@ -593,11 +694,8 @@ function StepResponsables({
           </TableHeader>
           <TableBody>
             {groups.map((group) => (
-              <>
-                <TableRow
-                  key={`group-${group.carisma}`}
-                  className="bg-muted/50"
-                >
+              <Fragment key={`group-${group.carisma}`}>
+                <TableRow className="bg-muted/50">
                   <TableCell colSpan={3} className="py-2">
                     <div className="flex items-center gap-1.5">
                       <CarismaBadge carisma={group.carisma} size="md" />
@@ -627,7 +725,7 @@ function StepResponsables({
                     </TableCell>
                   </TableRow>
                 ))}
-              </>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
@@ -659,8 +757,8 @@ function StepConfirm({
         <div
           className={`p-6 rounded-lg border text-center space-y-3 ${
             uploadResult.success
-              ? 'bg-green-50 border-green-200'
-              : 'bg-yellow-50 border-yellow-200'
+              ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'
+              : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
           }`}
         >
           {uploadResult.success ? (
@@ -686,15 +784,13 @@ function StepConfirm({
         </div>
 
         {uploadResult.errors.length > 0 && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-1">
-            <p className="font-medium text-red-800 mb-2">Errores durante la carga:</p>
-            {uploadResult.errors.map((err, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-red-700">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{err}</span>
-              </div>
-            ))}
-          </div>
+          <FormAlert tone="error" title="Errores durante la carga">
+            <ul className="space-y-1">
+              {uploadResult.errors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </FormAlert>
         )}
       </div>
     );
@@ -739,9 +835,9 @@ function StepConfirm({
             <span className="font-semibold">{responsablesCount}</span>
           </div>
           {validation.warningCount > 0 && (
-            <div className="flex justify-between p-3 bg-yellow-50 rounded border border-yellow-200">
-              <span className="text-yellow-700">Advertencias:</span>
-              <span className="font-semibold text-yellow-700">
+            <div className="flex justify-between rounded border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+              <span className="text-amber-700 dark:text-amber-300">Advertencias:</span>
+              <span className="font-semibold text-amber-700 dark:text-amber-300">
                 {validation.warningCount}
               </span>
             </div>
@@ -749,7 +845,7 @@ function StepConfirm({
         </div>
       </div>
 
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
         <p className="font-medium">Al confirmar se realizarán las siguientes acciones:</p>
         <ul className="list-disc list-inside mt-2 space-y-1">
           <li>Crear los registros de personas en la base de datos</li>
