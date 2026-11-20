@@ -171,3 +171,9 @@ npm run electron:build    # Production Electron installer (Windows)
 - Supabase keys (anon, service_role) must stay in environment variables.
 - RLS policies enforce data-level security. All tables must have RLS enabled.
 - Auth flows use Supabase Auth with email confirmation.
+- Signup is open and new users get an unscoped `viewer` profile: never grant data to "any authenticated user" for tables with personal data. Role and scope columns in `profiles` are protected by a trigger; change them only through `set_user_role`.
+- The `anon` role has no privileges on `public`. Write policies `TO authenticated` (never the implicit `public`), use `(select auth.uid())`, and give UPDATE policies an explicit `WITH CHECK`.
+- Supabase no longer exposes new tables to the Data API automatically: each new table needs explicit `GRANT`s to `authenticated` (never `anon`) plus RLS.
+- New functions in `public` get `EXECUTE` for `PUBLIC` by default: `revoke execute ... from public, anon`, grant only to `authenticated`, set `search_path`, and check permissions inside every `SECURITY DEFINER` function.
+- Validate any user-supplied redirect with `getSafeRedirectPath` from `@/lib/routes`.
+- Run `npx supabase db advisors --local --type security` before committing a migration.

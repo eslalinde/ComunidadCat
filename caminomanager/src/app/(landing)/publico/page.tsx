@@ -6,10 +6,13 @@ import {
   Church,
   Footprints,
   HeartHandshake,
+  KeyRound,
   Laptop,
+  MailCheck,
   MapPinned,
   ShieldCheck,
   Sparkles,
+  UserPlus,
   Users2,
   type LucideIcon,
 } from "lucide-react";
@@ -119,7 +122,29 @@ const STEP_COLORS = [
   "bg-vitral-amber",
 ];
 
-const DARK_PANES = new Set(["bg-vitral-blue", "bg-vitral-navy", "bg-vitral-red", "bg-vitral-green"]);
+const ACCESS_STEPS: Array<{ title: string; description: string; icon: LucideIcon; pane: string }> = [
+  {
+    title: "Crea tu cuenta",
+    description: "Regístrate con tu correo y una contraseña segura.",
+    icon: UserPlus,
+    pane: "bg-vitral-amber",
+  },
+  {
+    title: "Confirma tu correo",
+    description: "Abre el enlace que te enviamos para verificar que la cuenta es tuya.",
+    icon: MailCheck,
+    pane: "bg-vitral-sky",
+  },
+  {
+    title: "Recibe tu rol",
+    description:
+      "Un administrador te asigna el rol y el alcance que te corresponde: comunidad, zona o equipo nacional.",
+    icon: KeyRound,
+    pane: "bg-vitral-navy",
+  },
+];
+
+const DARK_PANES =new Set(["bg-vitral-blue", "bg-vitral-navy", "bg-vitral-red", "bg-vitral-green"]);
 
 function Wordmark() {
   return (
@@ -145,6 +170,7 @@ export default function LandingPage() {
             <a href="#funciones" className="hover:text-vitral-ink">Funciones</a>
             <a href="#estructura" className="hover:text-vitral-ink">Estructura</a>
             <a href="#etapas" className="hover:text-vitral-ink">Etapas</a>
+            <a href="#acceso" className="hover:text-vitral-ink">Acceso</a>
           </div>
           <Link
             href={routes.login}
@@ -380,6 +406,49 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* --------------------------------------------------------- Access */}
+        <section id="acceso" className="scroll-mt-20 bg-vitral-cream/60 py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-vitral-blue">Acceso</p>
+              <h2 className="mt-3 font-display text-4xl font-semibold leading-tight sm:text-5xl">
+                Los datos de los hermanos, siempre protegidos.
+              </h2>
+              <p className="mt-5 text-lg leading-relaxed text-vitral-ink/70">
+                Crear una cuenta no da acceso a la información. Cada persona ve únicamente las
+                comunidades, parroquias o zonas que un administrador le asigna.
+              </p>
+            </div>
+
+            <ol className="mt-14 grid gap-6 md:grid-cols-3">
+              {ACCESS_STEPS.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <li
+                    key={step.title}
+                    className="relative rounded-2xl border-2 border-vitral-ink bg-white p-6 vitral-pane-shadow"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex size-11 items-center justify-center rounded-xl border-2 border-vitral-ink ${step.pane} ${
+                          DARK_PANES.has(step.pane) ? "text-white" : "text-vitral-ink"
+                        }`}
+                      >
+                        <Icon className="size-5" aria-hidden />
+                      </span>
+                      <span className="text-sm font-semibold uppercase tracking-wider text-vitral-ink/55">
+                        Paso {i + 1}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 text-lg font-semibold leading-snug">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-vitral-ink/70">{step.description}</p>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </section>
+
         {/* ------------------------------------------------------ Final CTA */}
         <section className="px-4 pb-24 sm:px-6">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border-2 border-vitral-ink bg-vitral-navy px-6 py-16 text-white vitral-pane-shadow sm:px-14">
@@ -389,7 +458,7 @@ export default function LandingPage() {
                 Deja que la luz pase por cada comunidad.
               </h2>
               <p className="mt-5 text-lg text-white/80">
-                Crea tu cuenta y empieza a ordenar tu servicio hoy mismo.
+                Crea tu cuenta y pide a tu responsable que te asigne el acceso que te corresponde.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 <Link
