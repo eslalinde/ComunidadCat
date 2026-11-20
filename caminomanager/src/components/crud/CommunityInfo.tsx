@@ -76,6 +76,7 @@ export function CommunityInfo({ community, loading, onEdit, brothersInList, stag
           <CardTitle>Información de la Comunidad</CardTitle>
           {onEdit && (
             <Button
+              variant="outline"
               onClick={onEdit}
               className="flex items-center gap-2 print-hidden"
               size="sm"
@@ -125,7 +126,9 @@ export function CommunityInfo({ community, loading, onEdit, brothersInList, stag
             <p className="text-sm font-semibold text-gray-700">{community.actual_brothers || 'No especificado'}</p>
             {brothersInList !== undefined && brothersInList !== (community.actual_brothers ?? 0) && (
               <p className="text-xs text-muted-foreground">
-                {brothersInList} {brothersInList === 1 ? 'persona registrada' : 'personas registradas'} en la lista
+                {community.actual_brothers
+                  ? `${brothersInList} de ${community.actual_brothers} registrados en la lista`
+                  : `${brothersInList} ${brothersInList === 1 ? 'registrado' : 'registrados'} en la lista`}
               </p>
             )}
           </div>

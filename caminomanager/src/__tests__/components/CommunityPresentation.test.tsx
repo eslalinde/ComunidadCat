@@ -61,12 +61,12 @@ describe('Fichas y listas imprimibles', () => {
   it('indica que la etapa viene de la bitácora y compara hermanos registrados', () => {
     const view = render(<CommunityInfo community={{ number: '1', actual_brothers: 20 }} brothersInList={18} stageFromStepLog />);
     expect(screen.getByText('Se actualiza desde la Bitácora')).toBeVisible();
-    expect(screen.getByText('18 personas registradas en la lista')).toBeVisible();
+    expect(screen.getByText('18 de 20 registrados en la lista')).toBeVisible();
     view.rerender(<CommunityInfo community={{ number: '1', actual_brothers: 20 }} brothersInList={20} />);
     expect(screen.queryByText('Se actualiza desde la Bitácora')).not.toBeInTheDocument();
-    expect(screen.queryByText(/registradas en la lista/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/registrados en la lista/)).not.toBeInTheDocument();
     view.rerender(<CommunityInfo community={{ number: '1' }} brothersInList={1} />);
-    expect(screen.getByText('1 persona registrada en la lista')).toBeVisible();
+    expect(screen.getByText('1 registrado en la lista')).toBeVisible();
   });
   it('muestra datos geográficos y estados vacíos de parroquia', () => {
     const edit = vi.fn(); const view = render(<ParishInfo parish={parish} onEdit={edit} />);

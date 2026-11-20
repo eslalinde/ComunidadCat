@@ -175,7 +175,7 @@ test.describe.serial('Comunidades — acciones en el detalle (admin sobre comuni
       ? bitacoraCard
       : page.locator('div', { hasText: 'Bitácora' }).first();
 
-    await bitacoraScope.getByRole('button', { name: 'Agregar', exact: true }).click();
+    await bitacoraScope.getByRole('button', { name: 'Agregar registro', exact: true }).click();
 
     const dialogTitle = page.getByText('Agregar Registro a la Bitácora');
     await expect(dialogTitle).toBeVisible({ timeout: 5_000 });

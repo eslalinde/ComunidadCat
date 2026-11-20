@@ -23,7 +23,7 @@ beforeEach(() => { vi.clearAllMocks(); vi.spyOn(console, 'error').mockImplementa
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const base: MergedBrother = { id: 'm', name: 'Juan y Ana', personIds: [1, 2], carisma: 'Matrimonio', celular: '300', isMarriage: true, isItinerante: false, isPresbitero: false, createdAt: new Date().toISOString() };
 function brothers(overrides: Partial<React.ComponentProps<typeof BrothersList>> = {}) { return render(<BrothersList brothers={[base]} communityId={10} teamMembers={{}} onAdd={refresh} onDelete={refresh} {...overrides} />); }
-function menu(item: string) { fireEvent.keyDown(screen.getByRole('button', { name: /Agregar Nuevo/ }), { key: 'Enter' }); fireEvent.click(screen.getByRole('menuitem', { name: item })); }
+function menu(item: string) { fireEvent.keyDown(screen.getByRole('button', { name: /Agregar hermanos/ }), { key: 'Enter' }); fireEvent.click(screen.getByRole('menuitem', { name: item })); }
 describe('BrothersList', () => {
   it('agrupa, ordena, colapsa y protege hermanos asociados a equipos', () => {
     const view = brothers({ brothers: [base, { ...base, id: 's', name: 'Pedro', personIds: [3], carisma: 'Presbítero', isMarriage: false }, { ...base, id: 'u', name: 'Otro', personIds: [4], carisma: '' }], teamMembers: { 1: [{ person_id: 1, community_id: 10, team_id: 1, is_responsible_for_the_team: true }] } });
@@ -31,7 +31,7 @@ describe('BrothersList', () => {
     fireEvent.click(screen.getByText('Matrimonio')); expect(screen.queryByText('Juan y Ana')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Matrimonio')); expect(screen.getByText('Juan y Ana')).toBeVisible();
     view.rerender(<BrothersList brothers={[]} communityId={10} teamMembers={{}} loading />); expect(screen.getByText('Cargando hermanos...')).toBeVisible();
-    view.rerender(<BrothersList brothers={[]} communityId={10} teamMembers={{}} />); expect(screen.queryByText('Agregar Existente')).not.toBeInTheDocument(); expect(screen.getByText(/No hay hermanos/)).toBeVisible();
+    view.rerender(<BrothersList brothers={[]} communityId={10} teamMembers={{}} />); expect(screen.queryByRole('button', { name: /Agregar hermanos/ })).not.toBeInTheDocument(); expect(screen.getByText(/No hay hermanos/)).toBeVisible();
   });
   it.each([false, true])('borra vínculos del matrimonio, error=%s', async (fails) => {
     brothers(); fireEvent.click(screen.getByRole('button', { name: /^Quitar a .* de la comunidad$/ })); fireEvent.click(screen.getByText('Cancelar borrado'));
@@ -41,12 +41,12 @@ describe('BrothersList', () => {
     expect(mock.calls).toContainEqual({ table: 'brothers', method: 'eq', args: ['community_id', 10] });
   });
   it.each([false, true])('agrega persona existente, error=%s', async (fails) => {
-    brothers(); fireEvent.click(screen.getByText('Agregar Existente')); if (fails) responses.brothers.error = { message: 'denied' };
+    brothers(); menu('Persona ya registrada'); if (fails) responses.brothers.error = { message: 'denied' };
     fireEvent.click(screen.getByText('Seleccionar persona')); await waitFor(() => expect(fails ? toast.error : refresh).toHaveBeenCalled());
     expect(mock.calls).toContainEqual({ table: 'brothers', method: 'insert', args: [[{ person_id: 42, community_id: 10 }, { person_id: 43, community_id: 10 }]] }); fireEvent.click(screen.getByText('Cerrar selección'));
   });
   it.each(['ok', 'people', 'brothers'])('crea persona y relación, error=%s', async (scenario) => {
-    brothers(); menu('Hermano individual'); if (responses[scenario]) responses[scenario].error = { message: 'denied' };
+    brothers(); menu('Nuevo hermano'); if (responses[scenario]) responses[scenario].error = { message: 'denied' };
     fireEvent.change(screen.getByLabelText('Datos del formulario'), { target: { value: JSON.stringify({ person_name: 'Nuevo' }) } }); fireEvent.click(screen.getByText('Guardar formulario'));
     await waitFor(() => expect(scenario === 'ok' ? toast.success : toast.error).toHaveBeenCalled());
     expect(refresh).toHaveBeenCalledTimes(scenario === 'ok' ? 1 : 0); expect(db.from).toHaveBeenCalledTimes(scenario === 'people' ? 1 : 2);
@@ -59,12 +59,12 @@ describe('BrothersList', () => {
     }
   });
   it.each([false, true])('añade ambos cónyuges tras crearlos, error=%s', async (fails) => {
-    brothers(); menu('Matrimonio'); fireEvent.click(screen.getByText('Sin identificadores')); expect(db.from).not.toHaveBeenCalled();
+    brothers(); menu('Nuevo matrimonio'); fireEvent.click(screen.getByText('Sin identificadores')); expect(db.from).not.toHaveBeenCalled();
     if (fails) responses.brothers.error = { message: 'denied' }; fireEvent.click(screen.getByText('Matrimonio creado'));
     await waitFor(() => expect(fails ? toast.error : refresh).toHaveBeenCalled());
     expect(mock.calls).toContainEqual({ table: 'brothers', method: 'insert', args: [[{ person_id: 42, community_id: 10 }, { person_id: 43, community_id: 10 }]] }); fireEvent.click(screen.getByText('Cerrar matrimonio'));
   });
-  it('refresca al completar carga masiva', () => { brothers(); fireEvent.click(screen.getByText('Carga Masiva')); fireEvent.click(screen.getByText('Carga terminada')); expect(refresh).toHaveBeenCalledOnce(); });
+  it('refresca al completar carga masiva', () => { brothers(); menu('Carga masiva (CSV)'); fireEvent.click(screen.getByText('Carga terminada')); expect(refresh).toHaveBeenCalledOnce(); });
 });
 const priest: Priest = { id: 1, person_id: 7, parish_id: 10, is_parish_priest: false, person: { id: 7, person_name: 'Padre Juan', phone: '123', mobile: '300', email: 'p@example.com' } };
 function priests(overrides: Partial<React.ComponentProps<typeof PriestsList>> = {}) { return render(<PriestsList priests={[priest]} parishId={10} onRefresh={refresh} {...overrides} />); }
