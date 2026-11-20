@@ -55,6 +55,15 @@ import { CommunityVisits } from '@/components/crud/CommunityVisits';
 import { CommunityInventory } from '@/components/crud/CommunityInventory';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 import { Spinner } from '@/components/ui/spinner';
+import { CommunitySwitcher, type SwitchDirection } from '@/components/crud/CommunitySwitcher';
+import { cn } from '@/lib/utils';
+
+const CONTENT_ANIMATION: Record<SwitchDirection, string> = {
+  forward: 'slide-in-from-right-8',
+  backward: 'slide-in-from-left-8',
+  parish: 'slide-in-from-bottom-6 zoom-in-[0.98]',
+  none: '',
+};
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -89,6 +98,13 @@ function CommunityDetailContent() {
   const [isAuditOpen, setIsAuditOpen] = useState(false);
   const showVisits = useFeatureFlag('community_visits');
   const showInventory = useFeatureFlag('community_inventory');
+
+  const [switchDirection, setSwitchDirection] = useState<SwitchDirection>('none');
+
+  const handleSwitchCommunity = (targetId: number, direction: SwitchDirection) => {
+    setSwitchDirection(direction);
+    router.push(routes.comunidad(targetId));
+  };
 
   const [printContacts, setPrintContacts] = useState(new Map<number, PersonContact>());
   const handlePrint = async (mode: PrintMode) => {
@@ -386,14 +402,12 @@ function CommunityDetailContent() {
             Regresar a Comunidades
           </Button>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Comunidad {community?.number || 'Cargando...'}
-              </h1>
-              <p className="mt-1 text-muted-foreground">
-                {community?.parish?.name || 'Parroquia no especificada'}
-              </p>
-            </div>
+            <CommunitySwitcher
+              communityId={communityId}
+              community={community}
+              onNavigate={handleSwitchCommunity}
+              direction={switchDirection}
+            />
             <div className="flex flex-wrap items-center gap-2">
               {showAnyPrint && (
                 <DropdownMenu>
@@ -484,10 +498,28 @@ function CommunityDetailContent() {
               hideTrigger
             />
           )}
+          {/* Indeterminate progress bar while a switched community loads */}
+          <div
+            aria-hidden
+            className={cn(
+              'relative h-0.5 overflow-hidden rounded-full transition-opacity duration-300',
+              loading && switchDirection !== 'none' ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div className="community-switch-progress absolute inset-y-0 w-1/3 rounded-full bg-primary/70" />
+          </div>
         </div>
 
-        {/* Main Content - 50/50 Split */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Main Content - 50/50 Split; re-keyed so it animates in on switch */}
+        <div
+          key={communityId}
+          data-testid="community-detail-content"
+          className={cn(
+            'grid grid-cols-1 lg:grid-cols-2 gap-6 items-start',
+            'animate-in fade-in duration-500 ease-out fill-mode-backwards motion-reduce:animate-none',
+            CONTENT_ANIMATION[switchDirection]
+          )}
+        >
           {/* Left: Community Info + Teams */}
           <div className="space-y-6">
             <CommunityInfo

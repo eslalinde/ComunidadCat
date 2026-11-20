@@ -944,3 +944,21 @@ input[type="date"].date-input::-moz-calendar-picker-indicator {
 @media (prefers-reduced-motion: reduce) {
   .vitral-spin, .vitral-glow, .vitral-float, .vitral-rise { animation: none; }
 }
+
+/* Indeterminate bar shown while switching communities from the detail header */
+@keyframes community-switch-progress {
+  0% { left: -35%; }
+  100% { left: 100%; }
+}
+
+.community-switch-progress {
+  animation: community-switch-progress 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-switch-progress {
+    animation: none;
+    left: 0;
+    width: 100%;
+  }
+}

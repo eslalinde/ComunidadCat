@@ -48,6 +48,7 @@ export const queryKeys = {
     filtered: (tableName: string, filters: Record<string, unknown>) =>
       ['options', tableName, filters] as const,
     catechistTeams: () => ['options', 'catechistTeams'] as const,
+    communitySwitcher: () => ['options', 'communitySwitcher'] as const,
   },
 
   // Reportes
