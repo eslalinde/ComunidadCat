@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useReportExport } from "@/hooks/useReportExport";
+import { escapeCSVCell } from "@/lib/csvCell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ interface ReportTableProps {
   data: ReportData[];
   loading: boolean;
   onRefresh: () => void;
+  loadExportRows: () => Promise<ReportData[]>;
   exportFileName?: string;
 }
 
@@ -40,35 +42,13 @@ export function ReportTable({
   data,
   loading,
   onRefresh,
+  loadExportRows,
   exportFileName = "reporte"
 }: ReportTableProps) {
-  const [isExporting, setIsExporting] = useState(false);
+  const { handleExport, isExporting } = useReportExport(loadExportRows, (freshRows) => {
+    const headers = columns.map(column => escapeCSVCell(column.label)).join(',');
+    const rows = freshRows.map(row => columns.map(column => escapeCSVCell(row[column.key])).join(','));
 
-  const exportToCSV = () => {
-    setIsExporting(true);
-    
-    // Función para escapar valores CSV correctamente
-    const escapeCSVValue = (value: any): string => {
-      if (value === null || value === undefined) return '';
-      
-      const stringValue = String(value);
-      
-      // Si contiene comillas, comas o saltos de línea, envolver en comillas y escapar comillas internas
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      
-      return stringValue;
-    };
-    
-    const headers = columns.map(col => escapeCSVValue(col.label)).join(',');
-    const rows = data.map(row => 
-      columns.map(col => {
-        const value = row[col.key];
-        return escapeCSVValue(value);
-      }).join(',')
-    );
-    
     const csvContent = [headers, ...rows].join('\n');
     
     // Agregar BOM (Byte Order Mark) para UTF-8 para compatibilidad con Excel
@@ -85,11 +65,11 @@ export function ReportTable({
     link.click();
     document.body.removeChild(link);
     
-    setIsExporting(false);
-  };
+    URL.revokeObjectURL(url);
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:hidden">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href={routes.reportes}>
@@ -114,7 +94,7 @@ export function ReportTable({
             Actualizar
           </Button>
           <Button 
-            onClick={exportToCSV}
+            onClick={handleExport}
             disabled={loading || isExporting || data.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />

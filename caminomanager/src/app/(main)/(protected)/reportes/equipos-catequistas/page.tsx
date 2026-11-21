@@ -89,13 +89,14 @@ const reportConfig: DynamicReportConfig<CatechistTeamRow> = {
 };
 
 export default function CatechistTeamsReport() {
-  const { data, loading, refetch } = useCatechistTeamsReport();
+  const { data, loading, refetch, loadExportRows } = useCatechistTeamsReport();
 
   return (
     <DynamicReportTable
       config={reportConfig}
       data={data}
       loading={loading}
+      loadExportRows={loadExportRows}
       onRefresh={() => refetch()}
     />
   );

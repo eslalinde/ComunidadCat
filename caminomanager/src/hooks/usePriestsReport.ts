@@ -1,3 +1,4 @@
+import { readAuthorizedReport } from "@/lib/reportAccess";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
@@ -70,13 +71,14 @@ async function fetchPriests(): Promise<PriestRow[]> {
 export function usePriestsReport() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["report", "priests"],
-    queryFn: fetchPriests,
+    queryFn: () => readAuthorizedReport(fetchPriests),
   });
 
   return {
-    data: data ?? [],
+    data: error ? [] : data ?? [],
     loading: isLoading,
     error,
     refetch,
+    loadExportRows: fetchPriests,
   };
 }

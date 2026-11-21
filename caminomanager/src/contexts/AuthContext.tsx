@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     let identity: string | null = null;
     let revision = 0;
+    let scopeRequest = 0;
 
     async function fetchProfile(userId: string, request: number) {
       try {
@@ -65,10 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function fetchUserScope(request: number) {
+      const currentRequest = ++scopeRequest;
+      const isCurrent = () => active && request === revision && currentRequest === scopeRequest;
       try {
         const { data, error } = await supabase.rpc('get_user_scope');
-        if (error) throw error;
-        if (active && request === revision && data && data.length > 0) {
+        if (!isCurrent()) return;
+        if (!error && data?.length) {
           const row = data[0];
           setUserScope({
             role: row.role as AppRole,
@@ -76,12 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             zone_id: row.zone_id,
             community_id: row.community_id,
             has_community_grants: row.has_community_grants ?? false,
+            granted_community_ids: row.granted_community_ids ?? [],
           });
-        }
+        } else setUserScope(null);
       } catch {
-        // scope fetch is non-critical; default to null (no permissions)
+        if (isCurrent()) setUserScope(null);
       }
     }
+
+    function refreshScope() {
+      if (identity && document.visibilityState === 'visible') void fetchUserScope(revision);
+    }
+    window.addEventListener('focus', refreshScope);
+    const scopeTimer = window.setInterval(refreshScope, 60_000);
 
     // Use onAuthStateChange as the single source of truth.
     // It fires INITIAL_SESSION when the client finishes restoring
@@ -121,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
       clearTimeout(timeout);
+      window.clearInterval(scopeTimer);
+      window.removeEventListener('focus', refreshScope);
       subscription.unsubscribe();
     };
   }, []);

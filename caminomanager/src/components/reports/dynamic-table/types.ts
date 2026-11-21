@@ -33,4 +33,5 @@ export interface DynamicReportTableProps<TData extends RowData> {
   data: TData[];
   loading: boolean;
   onRefresh: () => void;
+  loadExportRows: () => Promise<TData[]>;
 }
