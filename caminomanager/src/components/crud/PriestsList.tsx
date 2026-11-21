@@ -394,7 +394,7 @@ export function PriestsList({ priests, loading, parishId, onRefresh }: PriestsLi
           setEditingPriest(null);
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingPriest ? 'Editar Sacerdote' : 'Nuevo Sacerdote'}</DialogTitle>
               <DialogDescription>Datos de contacto y rol en la parroquia.</DialogDescription>

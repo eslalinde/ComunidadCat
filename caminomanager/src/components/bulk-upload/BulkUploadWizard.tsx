@@ -231,7 +231,7 @@ export function BulkUploadWizard({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[85dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             Carga Masiva - Comunidad {communityNumber}
@@ -577,7 +577,7 @@ function StepReview({
       )}
 
       {/* Table */}
-      <div className="border rounded-lg overflow-auto max-h-[45vh]">
+      <div className="border rounded-lg overflow-auto max-h-[45dvh]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -693,7 +693,7 @@ function StepResponsables({
         </Badge>
       )}
 
-      <div className="border rounded-lg overflow-auto max-h-[45vh]">
+      <div className="border rounded-lg overflow-auto max-h-[45dvh]">
         <Table>
           <TableHeader>
             <TableRow>

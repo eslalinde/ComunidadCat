@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { needsLocationFields } from "@/config/carisma";
 import { cn } from "@/lib/utils";
-import { buildZodSchema, buildDefaultValues, prepareFormData } from "@/lib/form-schema";
+import { buildZodSchema, buildDefaultValues, prepareFormData, getInputAttributes } from "@/lib/form-schema";
 import {
   useCountryOptions,
   useStateOptions,
@@ -368,7 +368,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
         className={cn(
-          "max-h-[90vh] overflow-y-auto",
+          "max-h-[90dvh] overflow-y-auto",
           isComplexForm && (size === "wide" ? "sm:max-w-3xl" : "sm:max-w-2xl")
         )}
       >
@@ -529,6 +529,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
                         ) : (
                           <Input
                             type={field.type}
+                            {...getInputAttributes(field)}
                             value={(rhfField.value as string) || ""}
                             onChange={rhfField.onChange}
                             onBlur={rhfField.onBlur}

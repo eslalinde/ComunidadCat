@@ -11,7 +11,13 @@ import { DataGrid } from '@/components/ui/data-grid';
 import { toSentenceCase } from '@/lib/text-format';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BaseEntity } from '@/types/database';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -162,6 +168,54 @@ export function EntityTable<T extends BaseEntity>({
     </div>
   );
 
+  // Touch devices: tooltips never show and small adjacent icons invite mis-taps,
+  // so actions live in a 44px "more" menu with visible text labels.
+  const renderMobileActions = (item: T) => {
+    const label = getItemLabel(item);
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-11 -mr-2 -mt-1 shrink-0"
+            aria-label={`Acciones para ${label}`}
+            data-delete-entity-id={item.id}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            <MoreVertical className="w-5 h-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem
+            className="min-h-11 text-base"
+            onSelect={() => {
+              if (onRowClick) { onRowClick(item); } else { onEdit(item); }
+            }}
+          >
+            <Pencil />
+            Editar
+          </DropdownMenuItem>
+          {!hideDeleteInTable && (
+            <DropdownMenuItem
+              variant="destructive"
+              className="min-h-11 text-base"
+              onSelect={() => {
+                if (item.id) {
+                  deleteTriggerRef.current = null;
+                  setDeleteTarget({ id: item.id, label });
+                }
+              }}
+            >
+              <Trash2 />
+              Eliminar
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   const dataGridColumns: ColumnDef<AppTableFeatures, T>[] = [
     ...columns.map((column) => ({
       id: String(column.key),
@@ -210,7 +264,7 @@ export function EntityTable<T extends BaseEntity>({
             {data.map((item, index) => (
               <div
                 key={item.id || index}
-                className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-accent" : ""}`}
+                className={`rounded-lg border bg-card p-3 shadow-sm touch-manipulation ${onRowClick ? "cursor-pointer active:bg-accent" : ""}`}
                 onClick={() => onRowClick?.(item)}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -226,7 +280,7 @@ export function EntityTable<T extends BaseEntity>({
                       </div>
                     ))}
                   </div>
-                  {renderActions(item)}
+                  {renderMobileActions(item)}
                 </div>
               </div>
             ))}

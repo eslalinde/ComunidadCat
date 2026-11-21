@@ -355,7 +355,7 @@ export function CommunityInventory({ communityId, communityNumber }: CommunityIn
                     Ver todo ({count})
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80dvh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Package className="w-5 h-5" />

@@ -56,6 +56,7 @@ vi.mock('@/components/ui/tooltip', () => {
 vi.mock('lucide-react', () => ({
   Pencil: () => <span data-testid="pencil-icon">✏️</span>,
   Trash2: () => <span data-testid="trash-icon">🗑️</span>,
+  MoreVertical: () => <span data-testid="more-icon" />,
   X: () => <span data-testid="x-icon">✕</span>,
   ArrowUp: () => <span data-testid="sort-ascending" />,
   ArrowDown: () => <span data-testid="sort-descending" />,
