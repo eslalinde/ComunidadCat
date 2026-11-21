@@ -1,17 +1,18 @@
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCatechistTeamsReport } from '@/hooks/useCatechistTeamsReport';
 import { useParishCatechesisReport } from '@/hooks/useParishCatechesisReport';
 import { usePriestsReport } from '@/hooks/usePriestsReport';
 import { createQueryHarness, createTableMock, type QueryResponse } from '../helpers/queryHarness';
 
-const db = vi.hoisted(() => ({ from: vi.fn() }));
+const db = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
 let harness: ReturnType<typeof createQueryHarness>;
 let mock: ReturnType<typeof createTableMock>;
 let responses: Record<string, QueryResponse>;
 const ok = (data: unknown): QueryResponse => ({ data, error: null });
 beforeEach(() => {
+  db.rpc.mockReset().mockResolvedValue({ data: [{ role: "zone_leader", zone_id: 9, can_read_reports: true }], error: null });
   harness = createQueryHarness();
   responses = { teams: ok(null), parish_teams: ok(null), parish_catechesis: ok(null), priests: ok(null), communities: ok(null) };
   mock = createTableMock(responses);
@@ -20,6 +21,18 @@ beforeEach(() => {
 afterEach(() => { cleanup(); harness.client.clear(); });
 
 describe('reportes con relaciones y transformaciones reales', () => {
+  it('deja de mostrar el reporte abierto cuando se revoca el permiso antes de actualizar', async () => {
+    responses.priests = ok([{ person: { person_name: 'Anterior' }, parish: null }]);
+    const { result } = renderHook(usePriestsReport, { wrapper: harness.wrapper });
+    await waitFor(() => expect(result.current.data).toHaveLength(1));
+    db.from.mockClear();
+    db.rpc.mockResolvedValue({ data: [{ role: 'viewer', can_read_reports: false }], error: null });
+    await act(async () => { await result.current.refetch(); });
+    await waitFor(() => expect(result.current.data).toEqual([]));
+    expect(db.from).not.toHaveBeenCalled();
+    expect(result.current.error).toBeTruthy();
+  });
+
   it('produce una fila por parroquia llevada y selecciona el responsable del equipo', async () => {
     responses.teams = ok([
       { id: 1, community: { number: '3', parish: { name: 'Origen', diocese: { type: 'archdiocese', name: 'Medellín' } } }, belongs: [{ is_responsible_for_the_team: false, person: { person_name: 'Otro' } }, { is_responsible_for_the_team: true, person: { person_name: 'Ana' } }] },

@@ -4,19 +4,7 @@ import { constructAggregationFn, Table, Row } from "@tanstack/react-table";
 import { DynamicColumnMeta } from "./types";
 import { toSentenceCase } from "@/lib/text-format";
 
-function escapeCSVValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const stringValue = String(value);
-  if (
-    stringValue.includes(",") ||
-    stringValue.includes('"') ||
-    stringValue.includes("\n") ||
-    stringValue.includes("\r")
-  ) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
-  }
-  return stringValue;
-}
+import { escapeCSVCell } from "@/lib/csvCell";
 
 export function exportTableToCSV<TData extends RowData>(
   table: Table<AppTableFeatures, TData>,
@@ -28,7 +16,7 @@ export function exportTableToCSV<TData extends RowData>(
 
   const headers = visibleColumns
     .map((col) =>
-      escapeCSVValue(
+      escapeCSVCell(
         toSentenceCase(
           typeof col.columnDef.header === "string"
             ? col.columnDef.header
@@ -57,7 +45,7 @@ export function exportTableToCSV<TData extends RowData>(
 
   const csvRows = leafRows.map((row) =>
     visibleColumns
-      .map((col) => escapeCSVValue(row.getValue(col.id)))
+      .map((col) => escapeCSVCell(row.getValue(col.id)))
       .join(",")
   );
 

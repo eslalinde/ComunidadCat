@@ -109,7 +109,7 @@ export default function ParishCatechesisReport() {
   const defaults = getDefaultDates();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
-  const { data, loading, refetch } = useParishCatechesisReport(
+  const { data, loading, refetch, loadExportRows } = useParishCatechesisReport(
     startDate,
     endDate
   );
@@ -147,6 +147,7 @@ export default function ParishCatechesisReport() {
         config={reportConfig}
         data={data}
         loading={loading}
+        loadExportRows={loadExportRows}
         onRefresh={() => refetch()}
       />
     </div>

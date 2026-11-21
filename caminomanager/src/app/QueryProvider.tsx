@@ -10,8 +10,9 @@ interface QueryProviderProps {
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
-  const { user } = useAuth();
-  return <SessionQueries key={user?.id ?? 'anonymous'}>{children}</SessionQueries>;
+  const { user, userScope } = useAuth();
+  const authorizationKey = JSON.stringify([user?.id, userScope]);
+  return <SessionQueries key={authorizationKey}>{children}</SessionQueries>;
 }
 
 function SessionQueries({ children }: QueryProviderProps) {

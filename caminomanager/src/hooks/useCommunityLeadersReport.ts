@@ -1,3 +1,4 @@
+import { readAuthorizedReport } from "@/lib/reportAccess";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
@@ -184,13 +185,14 @@ async function fetchCommunityLeaders(): Promise<CommunityLeaderRow[]> {
 export function useCommunityLeadersReport() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["report", "community-leaders"],
-    queryFn: fetchCommunityLeaders,
+    queryFn: () => readAuthorizedReport(fetchCommunityLeaders),
   });
 
   return {
-    data: data ?? [],
+    data: error ? [] : data ?? [],
     loading: isLoading,
     error,
     refetch,
+    loadExportRows: fetchCommunityLeaders,
   };
 }
