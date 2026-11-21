@@ -34,7 +34,7 @@ describe('Fichas y listas imprimibles', () => {
     expect(screen.getByText('Cerrada')).toBeInTheDocument(); expect(screen.getByText('Abierta')).toBeInTheDocument();
     expect(screen.getByText('Celebración')).toBeInTheDocument(); expect(screen.getByText('Lleva San José')).toBeInTheDocument();
     const list = screen.getByText('Lista de Hermanos').closest('.pv-bl') as HTMLElement;
-    expect(within(list).getByText('[R] Juan')).toBeInTheDocument();
+    expect(within(list).getByText('Juan (responsable)')).toBeInTheDocument();
     expect(within(list).getAllByText('Ana')).toHaveLength(1);
     expect(within(list).getByText('Total: 9 hermanos')).toBeInTheDocument();
     expect(within(list).getByText('Responsables (2)')).toBeInTheDocument();
@@ -45,6 +45,19 @@ describe('Fichas y listas imprimibles', () => {
     expect(Boolean(screen.queryByText('Lista de Hermanos'))).toBe(printMode === 'hermanos');
     if (printMode === 'ficha') { expect(screen.getByText('No hay registros en la bitácora')).toBeInTheDocument(); expect(screen.getByText('No registrado')).toBeInTheDocument(); }
     else expect(screen.getByText('Total: 0 hermanos')).toBeInTheDocument();
+  });
+  it('conserva los ceros y los nombres con y, y cuenta sólo personas del listado', () => {
+    render(<CommunityPrintView {...props}
+      community={{ ...community, actual_brothers: 0, born_brothers: 0 }}
+      brothers={props.brothers.slice(1, 2)}
+      stepLogs={[{ community_id: 1, principal_catechist_name: 'Yolanda y Mayra' }]} />);
+    expect(screen.getAllByText('0')).toHaveLength(2);
+    expect(screen.getByText('1 en el listado')).toBeInTheDocument();
+    expect(screen.getByText('Mayra, Yolanda')).toBeInTheDocument();
+    const roster = screen.getByText('Lista de Hermanos').closest('.pv-bl') as HTMLElement;
+    expect(within(roster).getByText('Total: 1 hermano')).toBeInTheDocument();
+    expect(within(roster).getByText('Responsables (1)')).toBeInTheDocument();
+    expect(within(roster).queryByText(/Juan/)).not.toBeInTheDocument();
   });
   it('no imprime una comunidad inexistente', () => { const { container } = render(<CommunityPrintView {...props} community={null} />); expect(container).toBeEmptyDOMElement(); });
   it('muestra información, edad antes y después del aniversario, y permite editar', () => {
