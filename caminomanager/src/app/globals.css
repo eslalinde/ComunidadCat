@@ -49,26 +49,6 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Brand palette sampled from the stained-glass logo ("vitral") */
-@theme {
-  --color-vitral-red: #d7262b;
-  --color-vitral-orange: #f07a1f;
-  --color-vitral-amber: #f6a623;
-  --color-vitral-yellow: #ffd21f;
-  --color-vitral-green: #43a047;
-  --color-vitral-blue: #2a5db0;
-  --color-vitral-sky: #4fb3e8;
-  --color-vitral-cream: #f6f1e4;
-  --color-vitral-paper: #fbf8f1;
-  --color-vitral-ink: #15171c;
-  --color-vitral-navy: #1b3a6f;
-}
-
-/* Inline so the font variable resolves where next/font defines it (landing layout). */
-@theme inline {
-  --font-display: var(--font-fraunces), Georgia, serif;
-}
-
 /*
  * "Sobrio institucional" theme: soft cool-gray canvas (#F6F7F9), white surfaces,
  * navy (#1B3A6F) as the only strong color; logo colors live in icon chips/badges.
@@ -918,31 +898,6 @@ input[type="date"].date-input::-moz-calendar-picker-indicator {
     line-height: 1.5;
     margin: 0;
   }
-}
-
-/* ---------- Landing ("vitral") ---------- */
-@keyframes vitral-spin {
-  to { transform: rotate(360deg); }
-}
-@keyframes vitral-glow {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 0.95; }
-}
-@keyframes vitral-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes vitral-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.vitral-spin { animation: vitral-spin 160s linear infinite; transform-box: fill-box; transform-origin: center; }
-.vitral-glow { animation: vitral-glow 6s ease-in-out infinite; }
-.vitral-float { animation: vitral-float 7s ease-in-out infinite; }
-.vitral-rise { animation: vitral-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.vitral-pane-shadow { box-shadow: 5px 5px 0 0 var(--color-vitral-ink); }
-@media (prefers-reduced-motion: reduce) {
-  .vitral-spin, .vitral-glow, .vitral-float, .vitral-rise { animation: none; }
 }
 
 /* Indeterminate bar shown while switching communities from the detail header */
