@@ -124,6 +124,14 @@ export function DynamicReportTable<TData extends RowData>({
     setPagination((current) => ({ ...current, pageIndex: 0 }));
   }, []);
 
+  // On phones the wide grid scrolls horizontally; keep the first visible
+  // column (usually the row's name) pinned so rows stay identifiable.
+  const firstVisibleColumnId = table.getVisibleLeafColumns()[0]?.id;
+  const stickyFirstColumnClass = (columnId: string) =>
+    columnId === firstVisibleColumnId
+      ? "max-md:sticky max-md:left-0 max-md:z-10 max-md:bg-card max-md:shadow-[1px_0_0_var(--border)]"
+      : "";
+
   // Compute footer aggregations
   const hasAggregations = config.columns.some((col) => {
     const meta = col.meta as DynamicColumnMeta | undefined;
@@ -208,7 +216,7 @@ export function DynamicReportTable<TData extends RowData>({
               const meta = column.columnDef.meta as
                 | DynamicColumnMeta
                 | undefined;
-              return `px-3 py-2 align-top whitespace-nowrap ${alignClass(meta?.align)}`;
+              return `px-2 md:px-3 py-2 align-top whitespace-nowrap ${alignClass(meta?.align)} ${stickyFirstColumnClass(column.id)}`;
             }}
             getRowClassName={(row) =>
               row.getIsGrouped() ? "bg-muted/50 font-semibold" : undefined
@@ -217,7 +225,7 @@ export function DynamicReportTable<TData extends RowData>({
               const meta = cell.column.columnDef.meta as
                 | DynamicColumnMeta
                 | undefined;
-              return `px-3 py-2 whitespace-nowrap ${alignClass(meta?.align)}`;
+              return `px-2 md:px-3 py-2 whitespace-nowrap ${alignClass(meta?.align)} ${stickyFirstColumnClass(cell.column.id)}`;
             }}
             footer={
               hasAggregations && data.length > 0 ? (

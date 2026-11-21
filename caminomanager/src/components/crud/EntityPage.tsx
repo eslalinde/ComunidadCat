@@ -148,7 +148,7 @@ export function EntityPage<T extends BaseEntity>({
   const pluralName = config.pluralName ?? `${config.displayName}s`;
 
   return (
-    <div className="w-full space-y-4">
+    <div className={`w-full space-y-4 ${hideDefaultAddButton ? "" : "max-md:pb-16"}`}>
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -162,7 +162,12 @@ export function EntityPage<T extends BaseEntity>({
         <div className="flex flex-wrap items-center gap-2">
           {extraActions}
           {!hideDefaultAddButton && (
-            <Button onClick={handleAddNew} className="w-full sm:w-auto">
+            <Button
+              onClick={handleAddNew}
+              // Mobile: extended floating action button above the bottom nav,
+              // always within thumb reach while scrolling long lists.
+              className="max-md:fixed max-md:right-4 max-md:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] max-md:z-30 max-md:h-12 max-md:rounded-full max-md:px-5 max-md:shadow-lg md:w-auto"
+            >
               <Plus className="w-4 h-4" />
               Agregar {config.displayName.toLowerCase()}
             </Button>

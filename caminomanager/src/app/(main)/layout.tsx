@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/ui/app-sidebar";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -58,9 +59,10 @@ export default function MainLayout({
               <WindowControls />
             </div>
           </header>
-          <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pl-[max(1.5rem,env(safe-area-inset-left))] md:pr-[max(1.5rem,env(safe-area-inset-right))] print:p-0 print:overflow-visible">
+          <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pl-[max(1.5rem,env(safe-area-inset-left))] md:pr-[max(1.5rem,env(safe-area-inset-right))] print:p-0 print:overflow-visible">
             {children}
           </main>
+          <MobileBottomNav />
         </SidebarInset>
       </SidebarProvider>
     </QueryProvider>
