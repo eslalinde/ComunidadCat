@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { PhoneLinks } from '@/components/ui/phone-links';
 import { Button } from '@/components/ui/button';
 import { Parish } from '@/types/database';
 import { Edit } from 'lucide-react';
@@ -76,7 +77,9 @@ export function ParishInfo({ parish, loading, onEdit }: ParishInfoProps) {
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Teléfono</label>
-            <p className="text-sm text-foreground">{parish.phone || 'No especificado'}</p>
+            <p className="text-sm text-foreground">
+              {parish.phone ? <PhoneLinks number={parish.phone} className="-ml-1" /> : 'No especificado'}
+            </p>
           </div>
 
           <div className="space-y-1">

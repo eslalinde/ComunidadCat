@@ -1,5 +1,5 @@
 import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import {
   functionalUpdate,
   type ColumnDef,
@@ -268,17 +268,26 @@ export function EntityTable<T extends BaseEntity>({
                 onClick={() => onRowClick?.(item)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0 space-y-1">
-                    {visibleColumns.map((column, colIndex) => (
-                      <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
-                        {colIndex > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {toSentenceCase(column.label)}:{' '}
-                          </span>
-                        )}
-                        <span>{getCellValue(item, column)}</span>
+                  <div className="flex-1 min-w-0">
+                    {visibleColumns[0] && (
+                      <div className="text-base font-semibold leading-snug break-words">
+                        {getCellValue(item, visibleColumns[0])}
                       </div>
-                    ))}
+                    )}
+                    {visibleColumns.length > 1 && (
+                      <dl className="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm">
+                        {visibleColumns.slice(1).map((column) => (
+                          <Fragment key={String(column.key)}>
+                            <dt className="text-xs leading-5 text-muted-foreground">
+                              {toSentenceCase(column.label)}
+                            </dt>
+                            <dd className="min-w-0 truncate leading-5 text-foreground/90">
+                              {getCellValue(item, column) || <span className="text-muted-foreground">—</span>}
+                            </dd>
+                          </Fragment>
+                        ))}
+                      </dl>
+                    )}
                   </div>
                   {renderMobileActions(item)}
                 </div>
