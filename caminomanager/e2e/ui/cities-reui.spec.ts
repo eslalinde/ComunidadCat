@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/auth.fixture';
+import { entityActionTrigger, runEntityAction } from '../helpers/entity-actions';
 
 async function selectLocation(page: Page) {
   const country = page.getByRole('combobox', { name: /País/ });
@@ -20,16 +21,13 @@ async function cleanupCity(page: Page, names: string[]) {
 
   for (const name of names) {
     await search.fill(name);
-    const deleteButton = page.getByRole('button', {
-      name: `Eliminar ${name}`,
-      exact: true,
-    });
+    const deleteTrigger = entityActionTrigger(page, 'Eliminar', name);
 
-    if (!(await deleteButton.isVisible({ timeout: 2_000 }).catch(() => false))) {
+    if (!(await deleteTrigger.isVisible({ timeout: 2_000 }).catch(() => false))) {
       continue;
     }
 
-    await deleteButton.click();
+    await runEntityAction(page, 'Eliminar', name);
     const dialog = page.getByRole('alertdialog');
     await dialog.getByLabel(/Escribe eliminar para confirmar/i).fill('eliminar');
     await dialog.getByRole('button', { name: 'Eliminar', exact: true }).click();
@@ -66,8 +64,8 @@ test.describe('Ciudades — piloto ReUI', () => {
   });
 
   test('usa AlertDialog y conserva una salida segura', async ({ page }) => {
-    const deleteTrigger = page.getByRole('button', { name: /Eliminar / }).first();
-    await deleteTrigger.click();
+    const deleteTrigger = entityActionTrigger(page, 'Eliminar');
+    await runEntityAction(page, 'Eliminar');
 
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
@@ -113,10 +111,7 @@ test.describe('Ciudades — piloto ReUI', () => {
 
       const search = page.getByPlaceholder(/Buscar ciudad/i);
       await search.fill(createdName);
-      await page.getByRole('button', {
-        name: `Editar ${createdName}`,
-        exact: true,
-      }).click();
+      await runEntityAction(page, 'Editar', createdName);
 
       await expect(page.getByLabel(/^Nombre/)).toHaveValue(createdName);
       await page.getByLabel(/^Nombre/).fill(editedName);
@@ -124,12 +119,9 @@ test.describe('Ciudades — piloto ReUI', () => {
       await expect(page.getByText('Registro actualizado correctamente')).toBeVisible();
 
       await search.fill(editedName);
-      const deleteButton = page.getByRole('button', {
-        name: `Eliminar ${editedName}`,
-        exact: true,
-      });
+      const deleteButton = entityActionTrigger(page, 'Eliminar', editedName);
       await expect(deleteButton).toBeVisible();
-      await deleteButton.click();
+      await runEntityAction(page, 'Eliminar', editedName);
 
       const dialog = page.getByRole('alertdialog');
       await dialog.getByLabel(/Escribe eliminar para confirmar/i).fill('eliminar');
