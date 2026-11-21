@@ -23,7 +23,8 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   return text ? JSON.parse(text) : null;
 }
 function validId(id: unknown): id is number {
-  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0;
+  // Local demo records use negative primary keys to avoid identity collisions.
+  return typeof id === 'number' && Number.isSafeInteger(id) && id !== 0;
 }
 function validNumber(value: unknown): value is string | null {
   return value === null || (typeof value === 'string' && value.length <= 100);

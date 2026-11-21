@@ -20,7 +20,6 @@ interface CommunityPrintViewProps {
 interface BrotherListRow {
   name: string;
   mobile: string;
-  role?: string;
 }
 
 interface BrotherGroup {
@@ -32,7 +31,8 @@ interface BrotherGroup {
 /** Build the "Responsables" section from team members (team_type_id=4) */
 function buildResponsablesSection(
   teams: Team[],
-  teamMembers: Record<number, Belongs[]>
+  teamMembers: Record<number, Belongs[]>,
+  rosterIds: Set<number>
 ): { rows: BrotherListRow[]; personIds: Set<number> } {
   const personIds = new Set<number>();
   const responsables: { member: Belongs; isResp: boolean }[] = [];
@@ -40,7 +40,7 @@ function buildResponsablesSection(
   for (const team of teams) {
     const members = team.id ? teamMembers[team.id] || [] : [];
     for (const m of members) {
-      if (m.person) {
+      if (m.person && rosterIds.has(m.person_id)) {
         responsables.push({ member: m, isResp: m.is_responsible_for_the_team });
       }
     }
@@ -79,11 +79,10 @@ function buildResponsablesSection(
 
   const rows: BrotherListRow[] = ordered.map((entry) => {
     const person = entry.member.person!;
-    personIds.add(person.id!);
+    personIds.add(entry.member.person_id);
     return {
-      name: (entry.isResp ? '[R] ' : '') + person.person_name,
+      name: entry.isResp ? person.person_name + ' (responsable)' : person.person_name,
       mobile: person.mobile || '',
-      role: entry.isResp ? 'Resp.' : 'Corresp.',
     };
   });
 
@@ -96,7 +95,7 @@ function buildBrotherGroups(
   excludePersonIds: Set<number>
 ): BrotherGroup[] {
   const PLURAL_LABELS: Record<string, string> = {
-    'Matrimonio': 'Matrimonios',
+    'Matrimonio': 'Casados/as',
     'Soltero/a': 'Solteros/as',
     'Presbítero': 'Sacerdotes',
     'Diácono': 'Diáconos',
@@ -108,7 +107,7 @@ function buildBrotherGroups(
 
   // Filter out excluded person IDs and those without a person
   const remaining = brothers.filter(
-    (b) => b.person && b.person.id && !excludePersonIds.has(b.person.id)
+    (b) => b.person && !excludePersonIds.has(b.person_id)
   );
 
   // Group by carisma label
@@ -167,14 +166,15 @@ function mergeTeamMembers(members: Belongs[]): MergedTeamMember[] {
       );
 
       if (spouseMember && spouseMember.person) {
-        const husband = person.gender_id === 1 ? person : spouseMember.person;
-        const wife = person.gender_id === 2 ? person : spouseMember.person;
+        const [first, second] = person.gender_id === 2
+          ? [spouseMember.person, person]
+          : [person, spouseMember.person];
 
         merged.push({
           id: `marriage-${person.id}-${spouseMember.person_id}`,
-          name: `${husband.person_name} y ${wife.person_name}`,
+          name: `${first.person_name} y ${second.person_name}`,
           carisma: 'Matrimonio',
-          mobile: husband.mobile || wife.mobile || '',
+          mobile: first.mobile || second.mobile || '',
           isResponsible:
             member.is_responsible_for_the_team || spouseMember.is_responsible_for_the_team,
           isMarriage: true,
@@ -236,29 +236,19 @@ export function CommunityPrintView({
     year: 'numeric',
   });
 
-  // --- Page 3: Lista de Hermanos data ---
-  const responsablesSection = buildResponsablesSection(teams.responsables, teamMembers);
-  const brotherGroups = buildBrotherGroups(brothers, responsablesSection.personIds);
-  const totalBrothers = brothers.filter((b) => b.person).length;
-
-  // Current catechist team (responsible names)
-  const cathechistTeam = community.cathechist_team as any;
-  const catechistTeamNames: string = cathechistTeam?.belongs
-    ? cathechistTeam.belongs
-        .filter((b: any) => b.is_responsible_for_the_team)
-        .map((b: any) => b.person?.person_name)
-        .filter(Boolean)
-        .join(' y ')
-    : '';
-
-  // Itinerant catechists from most recent step log
-  const lastStepLog = stepLogs.length > 0 ? stepLogs[0] : null;
-  const _itinerantCatechists = lastStepLog?.principal_catechist_name
-    ? lastStepLog.principal_catechist_name
-        .split(/[,;y]/)
-        .map((n) => n.trim())
-        .filter((n) => n !== '')
-    : [];
+  const roster = brothers.filter(b => b.person);
+  const rosterIds = new Set(roster.map(b => b.person_id));
+  const responsablesSection = buildResponsablesSection(teams.responsables, teamMembers, rosterIds);
+  const brotherGroups = buildBrotherGroups(roster, responsablesSection.personIds);
+  const totalBrothers = roster.length;
+  const assignedTeam = community.cathechist_team as (Team & {
+    belongs?: Pick<Belongs, 'is_responsible_for_the_team' | 'person'>[];
+  }) | undefined;
+  const catechistTeamNames = assignedTeam?.belongs
+    ?.filter(member => member.is_responsible_for_the_team)
+    .map(member => member.person?.person_name)
+    .filter(Boolean)
+    .join(' y ') || assignedTeam?.name;
 
   // Itinerantes, presbíteros and monjas from brothers list
   const itinerantesBrothers = mergedBrothers
@@ -272,7 +262,7 @@ export function CommunityPrintView({
   stepLogs.forEach((log) => {
     if (log.principal_catechist_name) {
       log.principal_catechist_name
-        .split(/[,;y]/)
+        .split(/[,;]|\s+y\s+/i)
         .map((n) => n.trim())
         .filter((n) => n !== '')
         .forEach((n) => allCatechistsSet.add(n));
@@ -300,19 +290,13 @@ export function CommunityPrintView({
           </p>
         </div>
         <div className="pv-date-badge">
-          <span className="pv-date-badge-label">Actualizado al</span>
+          <span className="pv-date-badge-label">Fecha de impresión</span>
           <span className="pv-date-badge-value">{todayFormatted}</span>
         </div>
       </header>
 
       {/* Bloque Parroquia */}
       <div className="pv-parish-block">
-        <div className="pv-parish-item pv-parish-item--wide">
-          <span className="pv-parish-label">Parroquia</span>
-          <span className="pv-parish-value">
-            {community.parish?.name || 'No especificada'}
-          </span>
-        </div>
         <div className="pv-parish-item">
           <span className="pv-parish-label">P&aacute;rroco</span>
           <span className="pv-parish-value">
@@ -344,14 +328,15 @@ export function CommunityPrintView({
         </div>
         <div className="pv-info-cell">
           <span className="pv-info-label">Hermanos Actuales</span>
-          <span className={`pv-info-value${!community.actual_brothers ? ' pv-info-value--muted' : ''}`}>
-            {community.actual_brothers || 'No especificado'}
+          <span className={`pv-info-value${community.actual_brothers == null ? ' pv-info-value--muted' : ''}`}>
+            {community.actual_brothers ?? 'No especificado'}
           </span>
+          <span className="pv-info-value--light">{totalBrothers} en el listado</span>
         </div>
         <div className="pv-info-cell">
           <span className="pv-info-label">Hermanos Iniciales</span>
-          <span className={`pv-info-value${!community.born_brothers ? ' pv-info-value--muted' : ''}`}>
-            {community.born_brothers || 'No especificado'}
+          <span className={`pv-info-value${community.born_brothers == null ? ' pv-info-value--muted' : ''}`}>
+            {community.born_brothers ?? 'No especificado'}
           </span>
         </div>
         <div className="pv-info-cell">
@@ -494,22 +479,10 @@ export function CommunityPrintView({
         </div>
       </section>
 
-      {/* Footer Página 1 */}
-      <div className="pv-footer">
-        ComunidadCat &mdash; Documento generado el {todayFormatted}
-      </div>
-
-      {/* ════════════════════════════════════════════════════ */}
-      {/* PÁGINA 2+ — BITÁCORA (TIMELINE)                     */}
-      {/* ════════════════════════════════════════════════════ */}
-
       <div className="pv-bitacora">
         {/* Header Bitácora */}
         <div className="pv-bitacora-header">
           <h2 className="pv-bitacora-title">Bit&aacute;cora</h2>
-          <span className="pv-bitacora-community">
-            Comunidad {community.number} &mdash; {community.parish?.name || ''}
-          </span>
         </div>
 
         {/* Tabla compacta */}
@@ -570,7 +543,7 @@ export function CommunityPrintView({
       </>)}
 
       {/* ════════════════════════════════════════════════════ */}
-      {/* PÁGINA 3 — LISTA DE HERMANOS                        */}
+      {/* LISTA DE HERMANOS                        */}
       {/* ════════════════════════════════════════════════════ */}
 
       {(printMode === 'hermanos' || printMode === 'todo') && (
@@ -578,14 +551,17 @@ export function CommunityPrintView({
         {/* Header */}
         <div className="pv-bl-header">
           <h2 className="pv-bl-title">Lista de Hermanos</h2>
-          <span className="pv-bl-community">
-            Comunidad {community.number} &mdash; {community.parish?.name || ''}
-          </span>
+          <span className="pv-bl-community">Total: {totalBrothers} hermano{totalBrothers !== 1 ? 's' : ''}</span>
         </div>
 
         {/* Tabla unificada de hermanos */}
         <table className="pv-bl-table">
           <thead>
+            <tr>
+              <th colSpan={3} className="pv-roster-caption">
+                Comunidad {community.number} · {community.parish?.name || 'Parroquia no especificada'}
+              </th>
+            </tr>
             <tr>
               <th className="pv-bl-th pv-bl-th--num">#</th>
               <th className="pv-bl-th">Nombre</th>
@@ -637,11 +613,6 @@ export function CommunityPrintView({
             })()}
           </tbody>
         </table>
-
-        {/* Total */}
-        <div className="pv-bl-total">
-          Total: {totalBrothers} hermano{totalBrothers !== 1 ? 's' : ''}
-        </div>
 
         {/* Footer */}
         <div className="pv-footer">

@@ -49,7 +49,12 @@ test('HTTP handler uses verified identity, keeps plaintext out of database reque
   const result = await invoke(request);
   assert.equal(result.headers.get('cache-control'),'no-store');
   assert.deepEqual(await result.json(), { contacts:[{id:10,...expected}] });
+  const demo = {action:'read', ids:[-1030001], community:-1030000, mode:'ficha'};
   permitted=false;
+  const demoResult = await invoke(demo);
+  assert.equal(demoResult.status,200);
+  assert.deepEqual(await demoResult.json(), {contacts:[]});
+  assert.equal((await invoke({...demo, ids:[0]})).status,400);
   assert.deepEqual(await (await invoke(request)).json(), {contacts:[]});
   assert.equal((await invoke({...request,mode:'todo'})).status,400);
 });
