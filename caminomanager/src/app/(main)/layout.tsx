@@ -43,7 +43,7 @@ export default function MainLayout({
         />
         <SidebarInset className="min-w-0">
           <header
-            className="sticky top-0 z-50 bg-card/90 backdrop-blur flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
+            className="sticky top-0 z-50 bg-card/90 backdrop-blur flex min-h-16 shrink-0 items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] print-hidden"
             style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
           >
             <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -58,7 +58,7 @@ export default function MainLayout({
               <WindowControls />
             </div>
           </header>
-          <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 print:p-0 print:overflow-visible">
+          <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pl-[max(1.5rem,env(safe-area-inset-left))] md:pr-[max(1.5rem,env(safe-area-inset-right))] print:p-0 print:overflow-visible">
             {children}
           </main>
         </SidebarInset>

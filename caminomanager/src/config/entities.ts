@@ -252,7 +252,7 @@ export const parishConfig: EntityConfig<Parish> = {
     {
       name: 'phone',
       label: 'Teléfono',
-      type: 'text',
+      type: 'tel',
       required: false,
       maxLength: 50,
       placeholder: 'Ingrese el número de teléfono',
@@ -389,7 +389,7 @@ export const personConfig: EntityConfig<Person> = {
     {
       name: 'phone',
       label: 'Teléfono',
-      type: 'text',
+      type: 'tel',
       required: false,
       maxLength: 50,
       placeholder: 'Ingrese el número de teléfono'
@@ -397,7 +397,7 @@ export const personConfig: EntityConfig<Person> = {
     {
       name: 'mobile',
       label: 'Celular',
-      type: 'text',
+      type: 'tel',
       required: false,
       maxLength: 50,
       placeholder: 'Ingrese el número de celular'

@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { buildZodSchema, buildDefaultValues, prepareFormData } from '@/lib/form-schema';
+import { buildZodSchema, buildDefaultValues, prepareFormData, getInputAttributes } from '@/lib/form-schema';
 
 interface EntityModalProps<T extends BaseEntity> {
   open: boolean;
@@ -71,7 +71,7 @@ export function EntityModal<T extends BaseEntity>({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Los campos marcados con * son obligatorios.</DialogDescription>
@@ -133,6 +133,7 @@ export function EntityModal<T extends BaseEntity>({
                       ) : (
                         <Input
                           type={field.type}
+                          {...getInputAttributes(field)}
                           value={(rhfField.value as string) || ''}
                           onChange={rhfField.onChange}
                           onBlur={rhfField.onBlur}

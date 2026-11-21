@@ -84,7 +84,7 @@ function SelectPersonForTeamModalContent({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Agregar Persona Existente</DialogTitle>
           <DialogDescription>

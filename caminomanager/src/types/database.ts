@@ -202,7 +202,7 @@ export interface FormField {
   name: string;
   label: string;
   tableLabel?: string;
-  type: 'text' | 'email' | 'number' | 'select' | 'textarea' | 'date' | 'checkbox';
+  type: 'text' | 'email' | 'tel' | 'number' | 'select' | 'textarea' | 'date' | 'checkbox';
   required?: boolean;
   maxLength?: number;
   minLength?: number;
