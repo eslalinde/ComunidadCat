@@ -95,13 +95,14 @@ const reportConfig: DynamicReportConfig<PriestRow> = {
 };
 
 export default function PriestsReport() {
-  const { data, loading, refetch } = usePriestsReport();
+  const { data, loading, refetch, loadExportRows } = usePriestsReport();
 
   return (
     <DynamicReportTable
       config={reportConfig}
       data={data}
       loading={loading}
+      loadExportRows={loadExportRows}
       onRefresh={() => refetch()}
     />
   );

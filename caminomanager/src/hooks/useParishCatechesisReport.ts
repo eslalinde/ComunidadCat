@@ -1,3 +1,5 @@
+import { readAuthorizedReport } from "@/lib/reportAccess";
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
@@ -63,15 +65,17 @@ async function fetchParishCatechesis(
 }
 
 export function useParishCatechesisReport(startDate: string, endDate: string) {
+  const loadExportRows = useCallback(() => fetchParishCatechesis(startDate, endDate), [startDate, endDate]);
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["report", "parish-catechesis", startDate, endDate],
-    queryFn: () => fetchParishCatechesis(startDate, endDate),
+    queryFn: () => readAuthorizedReport(loadExportRows),
   });
 
   return {
-    data: data ?? [],
+    data: error ? [] : data ?? [],
     loading: isLoading,
     error,
     refetch,
+    loadExportRows,
   };
 }

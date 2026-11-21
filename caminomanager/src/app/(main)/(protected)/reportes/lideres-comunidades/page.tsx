@@ -151,13 +151,14 @@ const reportConfig: DynamicReportConfig<CommunityLeaderRow> = {
 };
 
 export default function CommunityLeadersReportPage() {
-  const { data, loading, refetch } = useCommunityLeadersReport();
+  const { data, loading, refetch, loadExportRows } = useCommunityLeadersReport();
 
   return (
     <DynamicReportTable
       config={reportConfig}
       data={data}
       loading={loading}
+      loadExportRows={loadExportRows}
       onRefresh={() => refetch()}
     />
   );

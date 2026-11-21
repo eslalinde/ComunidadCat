@@ -12,6 +12,7 @@ export interface UserScope {
   zone_id: number | null;
   community_id: number | null;
   has_community_grants: boolean;
+  granted_community_ids?: number[];
 }
 
 const ROLE_LABELS: Record<AppRole, string> = {

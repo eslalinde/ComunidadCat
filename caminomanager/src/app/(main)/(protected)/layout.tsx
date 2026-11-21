@@ -29,10 +29,10 @@ export default function ProtectedLayout({
     redirected.current = false;
   }, [pathname]);
 
-  if (loading) return null;
+  if (loading || !userScope) return null;
 
   // While we wait for the redirect to take effect, don't render the protected content
-  if (userScope && !canAccessRoute(userScope, pathname)) {
+  if (!canAccessRoute(userScope, pathname)) {
     return null;
   }
 

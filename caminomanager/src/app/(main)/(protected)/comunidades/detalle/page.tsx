@@ -2,11 +2,11 @@
 
 import { flushSync } from 'react-dom';
 import { readContacts, type PersonContact } from '@/lib/personContacts';
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, useLayoutEffect, useRef, type ComponentProps, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
-import { useCommunityData } from '@/hooks/useCommunityData';
+import { fetchCommunityPrintData, useCommunityData } from '@/hooks/useCommunityData';
 import { CommunityInfo } from '@/components/crud/CommunityInfo';
 import { BrothersList } from '@/components/crud/BrothersList';
 import { TeamSection } from '@/components/crud/TeamSection';
@@ -37,6 +37,7 @@ import { routes } from '@/lib/routes';
 import { createCatequistasTeam, createResponsablesTeam } from '@/lib/communityTeams';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  type UserScope,
   canEditCommunity,
   canDeleteCommunity,
   canMergeCommunity,
@@ -65,6 +66,19 @@ const CONTENT_ANIMATION: Record<SwitchDirection, string> = {
   none: '',
 };
 
+async function getPrintScope(client: ReturnType<typeof createClient>, communityId: number, mode: PrintMode): Promise<UserScope> {
+  const [scope, access] = await Promise.all([
+    client.rpc('get_user_scope'),
+    client.rpc('can_access_community', { p_community_id: communityId }),
+  ]);
+  const current = scope.data?.[0];
+  const canPrint = { ficha: canPrintFicha, hermanos: canPrintHermanos, todo: canPrintTodo }[mode];
+  if (scope.error || access.error || access.data !== true || !current || !canPrint(current)) {
+    throw new Error('No tienes permiso para imprimir esta comunidad.');
+  }
+  return current;
+}
+
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -77,7 +91,11 @@ function CommunityDetailContent() {
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [printMode, setPrintMode] = useState<PrintMode>('todo');
+  const [printDocument, setPrintDocument] = useState<ComponentProps<typeof CommunityPrintView> | null>(null);
+  const printRequest = useRef(0);
+  useLayoutEffect(() => {
+    return () => { printRequest.current++; };
+  }, [communityId]);
 
   const { userScope } = useAuth();
 
@@ -106,18 +124,43 @@ function CommunityDetailContent() {
     router.push(routes.comunidad(targetId));
   };
 
-  const [printContacts, setPrintContacts] = useState(new Map<number, PersonContact>());
   const handlePrint = async (mode: PrintMode) => {
+    if (community?.id !== communityId) return;
+    const request = ++printRequest.current;
     try {
-      const ids = [...new Set(brothers.map(b => b.person_id))];
-      const include = userScope && ['admin','contributor','zone_leader','community_responsible'].includes(userScope.role);
-      const contacts = include ? await readContacts(createClient(), ids, communityId, mode) : new Map<number, PersonContact>();
-      flushSync(() => { setPrintMode(mode); setPrintContacts(contacts); });
+      const client = createClient();
+      const scope = await getPrintScope(client, communityId, mode);
+      const snapshot = await fetchCommunityPrintData(client, communityId, mode !== 'hermanos' && canViewStepLog(scope));
+      if (request !== printRequest.current || snapshot.community.id !== communityId) return;
+      const ids = [...new Set(snapshot.brothers.map(b => b.person_id))];
+      const include = ['admin', 'contributor', 'zone_leader', 'community_responsible'].includes(scope.role);
+      const contacts = include ? await readContacts(client, ids, communityId, mode) : new Map<number, PersonContact>();
+      const finalScope = await getPrintScope(client, communityId, mode);
+      if (request !== printRequest.current) return;
+      if (JSON.stringify(scope) !== JSON.stringify(finalScope)) throw new Error('Los permisos han cambiado.');
+
+      function withContact<T extends { person_id: number; person?: { mobile?: string; phone?: string } }>(row: T): T {
+        const contact = contacts.get(row.person_id);
+        return { ...row, person: row.person && { ...row.person, phone: contact?.phone ?? '', mobile: [contact?.mobile, contact?.phone].filter(Boolean).join(' / ') } };
+      }
+
+      flushSync(() => setPrintDocument({
+        ...snapshot,
+        printMode: mode,
+        teamMembers: Object.fromEntries(Object.entries(snapshot.teamMembers).map(([id, members]) => [id, members.map(withContact)])),
+        brothers: snapshot.brothers.map(withContact),
+        mergedBrothers: snapshot.mergedBrothers.map(b => ({
+          ...b, celular: b.personIds.flatMap(id => {
+            const contact = contacts.get(id);
+            return [contact?.mobile, contact?.phone].filter(Boolean);
+          }).join(' / '),
+        })),
+      }));
       window.print();
     } catch {
-      toast.error('No se pudo preparar la impresión.');
+      if (request === printRequest.current) toast.error('No se pudo preparar la impresión.');
     } finally {
-      setPrintContacts(new Map());
+      if (request === printRequest.current) setPrintDocument(null);
     }
   };
 
@@ -129,7 +172,6 @@ function CommunityDetailContent() {
     teamMembers,
     teamParishes,
     stepLogs,
-    parishPriestName,
     loading,
     error,
     refreshCommunity,
@@ -138,12 +180,7 @@ function CommunityDetailContent() {
     invalidateTeamMembers,
     invalidateBrothers,
     invalidateStepLogs,
-  } = useCommunityData(communityId);
-
-  function withPrintedContact<T extends { person_id: number; person?: { mobile?: string; phone?: string } }>(row: T): T {
-    const contact = printContacts.get(row.person_id);
-    return { ...row, person: row.person && { ...row.person, phone: contact?.phone ?? '', mobile: [contact?.mobile, contact?.phone].filter(Boolean).join(' / ') } };
-  }
+  } = useCommunityData(communityId, showStepLog);
 
   // Construir nombre de catequistas responsables del equipo por defecto
   // Incluye el nombre del responsable y su cónyuge si aplica
@@ -654,20 +691,7 @@ function CommunityDetailContent() {
       </div>
 
       {/* Print view - only visible when printing */}
-      <CommunityPrintView
-        community={community}
-        teams={teams}
-        teamMembers={Object.fromEntries(Object.entries(teamMembers).map(([id, members]) => [id, members.map(withPrintedContact)]))}
-        teamParishes={teamParishes}
-        stepLogs={stepLogs}
-        parishPriestName={parishPriestName}
-        mergedBrothers={mergedBrothers.map(b => ({ ...b, celular: b.personIds.flatMap(id => {
-          const c = printContacts.get(id);
-          return [c?.mobile, c?.phone].filter(Boolean);
-        }).join(' / ') }))}
-        brothers={brothers.map(withPrintedContact)}
-        printMode={printMode}
-      />
+      {printDocument && <CommunityPrintView {...printDocument} />}
 
       {/* Modal de edición */}
       {showEdit && (

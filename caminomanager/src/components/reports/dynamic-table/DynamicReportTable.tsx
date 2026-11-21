@@ -1,9 +1,12 @@
 "use client";
 import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import { useReportExport } from "@/hooks/useReportExport";
+import { storeReactivityBindings } from "@tanstack/table-core/store-reactivity-bindings";
 import type { RowData } from "@tanstack/react-table";
 import { useState, useCallback } from "react";
 import {
   useTable,
+  constructTable,
   FlexRender,
   SortingState,
   ColumnFiltersState,
@@ -57,6 +60,7 @@ export function DynamicReportTable<TData extends RowData>({
   data,
   loading,
   onRefresh,
+  loadExportRows,
 }: DynamicReportTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>(
     config.defaultSorting ?? []
@@ -67,7 +71,6 @@ export function DynamicReportTable<TData extends RowData>({
     config.defaultGrouping ?? []
   );
   const [expanded, setExpanded] = useState<ExpandedState>(true);
-  const [isExporting, setIsExporting] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
     config.dataGrid?.defaultColumnVisibility ?? {}
   );
@@ -100,14 +103,16 @@ export function DynamicReportTable<TData extends RowData>({
     enableGrouping: true,
   });
 
-  const handleExport = useCallback(() => {
-    setIsExporting(true);
-    try {
-      exportTableToCSV(table, config.exportFileName ?? "reporte");
-    } finally {
-      setIsExporting(false);
-    }
-  }, [table, config.exportFileName]);
+  const { handleExport, isExporting } = useReportExport(loadExportRows, (rows) => {
+    const features = { ...appTableFeatures, coreReactivityFeature: storeReactivityBindings() };
+    const freshTable = constructTable<AppTableFeatures, TData>({
+      features,
+      columns: config.columns,
+      data: rows,
+      initialState: { columnFilters, globalFilter, columnVisibility },
+    });
+    exportTableToCSV(freshTable, config.exportFileName ?? "reporte");
+  });
 
   const handleGlobalFilterChange = useCallback((value: string) => {
     setGlobalFilter(value);
@@ -131,7 +136,7 @@ export function DynamicReportTable<TData extends RowData>({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
