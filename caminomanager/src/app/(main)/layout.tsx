@@ -47,7 +47,7 @@ export default function MainLayout({
             className="sticky top-0 z-50 bg-card/90 backdrop-blur flex min-h-16 shrink-0 items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] print-hidden"
             style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
           >
-            <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+            <div className="flex min-w-0 items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
               <SidebarTrigger className="-ml-1" />
               <Separator
                 orientation="vertical"
