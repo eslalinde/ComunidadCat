@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
+import { readFile, stat } from 'node:fs/promises';
+import { parse } from 'yaml';
+
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const installer = `ComunidadCat-Cloud-${version}-Setup.exe`;
+const manifest = parse(await readFile('release-cloud/latest.yml', 'utf8'));
+assert.equal(manifest.version, version);
+assert.equal(manifest.path, installer);
+assert.equal(manifest.files.length, 1);
+const [file] = manifest.files;
+assert.equal(file.url, installer);
+const path = `release-cloud/${installer}`;
+assert.equal(file.size, (await stat(path)).size);
+const hash = createHash('sha512');
+for await (const chunk of createReadStream(path)) hash.update(chunk);
+assert.equal(file.sha512, hash.digest('base64'));
+assert.equal(manifest.sha512, file.sha512);
