@@ -1,0 +1,5 @@
+extends: ./electron-builder.yml
+win:
+  signtoolOptions:
+    signingHashAlgorithms: [sha256]
+    sign: ./scripts/sign-esigner.mjs

@@ -1,0 +1,176 @@
+name: Build and verify Windows installers
+description: Build both editions and verify the installer signatures and update manifest.
+inputs:
+  cloud-url:
+    description: Public Supabase URL for Cloud
+    required: true
+  cloud-key:
+    description: Supabase publishable key for Cloud
+    required: true
+  pfx:
+    description: Base64 signing certificate in PFX mode
+    required: false
+  pfx-password:
+    description: PFX password
+    required: false
+  esigner-account:
+    description: eSigner account credential for Jsign
+    required: false
+  esigner-totp:
+    description: eSigner automated signing seed
+    required: false
+  credential-id:
+    description: Cloud signing certificate alias
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: caminomanager/package-lock.json
+
+    - name: Check Cloud backend and signing configuration
+      shell: pwsh
+      env:
+        CLOUD_URL: ${{ inputs.cloud-url }}
+        CLOUD_KEY: ${{ inputs.cloud-key }}
+      working-directory: caminomanager
+      run: |
+        if ($env:CLOUD_URL.TrimEnd('/') -ne 'https://fkezcibdjgbqyraxnmha.supabase.co' -or !$env:CLOUD_KEY) {
+          throw 'Comprueba el proyecto y la clave pública de la edición Cloud.'
+        }
+        if ($env:WINDOWS_SIGNING_PROVIDER -notin 'pfx','esigner') { throw 'Proveedor de firma desconocido.' }
+        if (!$env:WINDOWS_PUBLISHER_DN) { throw 'Configura WINDOWS_PUBLISHER_DN para firmar los instaladores.' }
+
+    - name: Prepare pinned Jsign for the cloud signer
+      if: env.WINDOWS_SIGNING_PROVIDER == 'esigner'
+      shell: pwsh
+      working-directory: caminomanager
+      run: |
+        $jar = Join-Path $env:RUNNER_TEMP 'jsign-7.6.jar'
+        Invoke-WebRequest 'https://github.com/ebourg/jsign/releases/download/7.6/jsign-7.6.jar' -OutFile $jar
+        if ((Get-FileHash -LiteralPath $jar -Algorithm SHA256).Hash -ne '6cf58aa080e7ff82656f320cff8d4a3bff30408df8766806dcba3740dd839fa5') {
+          throw 'La huella de Jsign no coincide con la versión aprobada.'
+        }
+        java -jar $jar --help | Out-Null
+        if ($LASTEXITCODE) { throw 'El runner no puede ejecutar Jsign.' }
+        "JSIGN_JAR=$jar" >> $env:GITHUB_ENV
+
+    - shell: pwsh
+      working-directory: caminomanager
+      run: npm ci
+
+    - name: Test rejection of unsigned and differently signed files
+      shell: pwsh
+      working-directory: caminomanager
+      run: ./scripts/test-update-signature.ps1
+
+    - name: Compile Electron TypeScript
+      shell: pwsh
+      working-directory: caminomanager
+      run: npx tsc -p electron/tsconfig.json
+
+    # ── Phase 1: Cloud Build ──────────────────────────────────────────
+    - name: Build Next.js (Cloud)
+      shell: pwsh
+      working-directory: caminomanager
+      run: npm run build
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: ${{ inputs.cloud-url }}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ inputs.cloud-key }}
+
+    - name: Build Electron installer (Cloud)
+      env:
+        WIN_CSC_LINK: ${{ inputs.pfx }}
+        WIN_CSC_KEY_PASSWORD: ${{ inputs.pfx-password }}
+        ESIGNER_ACCOUNT: ${{ inputs.esigner-account }}
+        ESIGNER_TOTP_SECRET: ${{ inputs.esigner-totp }}
+        ESIGNER_CREDENTIAL_ID: ${{ inputs.credential-id }}
+      shell: pwsh
+      working-directory: caminomanager
+      run: ./scripts/build-signed-installer.ps1 -Edition Cloud
+
+    - name: Move Cloud artifacts
+      shell: pwsh
+      working-directory: caminomanager
+      run: |
+        New-Item -ItemType Directory -Force -Path release-cloud
+        Move-Item -Path release/*.exe -Destination release-cloud/
+        Move-Item -Path release/*.exe.blockmap -Destination release-cloud/
+        Move-Item -Path release/latest.yml -Destination release-cloud/
+
+    # ── Phase 2: Standalone Build ─────────────────────────────────────
+    - name: Clean build output for Standalone
+      shell: pwsh
+      working-directory: caminomanager
+      run: |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue out
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue release
+
+    - name: Build Next.js (Standalone)
+      shell: pwsh
+      working-directory: caminomanager
+      run: npm run build
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+
+    - name: Build Electron installer (Standalone)
+      env:
+        WIN_CSC_LINK: ${{ inputs.pfx }}
+        WIN_CSC_KEY_PASSWORD: ${{ inputs.pfx-password }}
+        ESIGNER_ACCOUNT: ${{ inputs.esigner-account }}
+        ESIGNER_TOTP_SECRET: ${{ inputs.esigner-totp }}
+        ESIGNER_CREDENTIAL_ID: ${{ inputs.credential-id }}
+      shell: pwsh
+      working-directory: caminomanager
+      run: ./scripts/build-signed-installer.ps1 -Edition Standalone
+
+    # ── Phase 3: Assemble Standalone ZIP ──────────────────────────────
+    - name: Assemble Standalone ZIP
+      shell: pwsh
+      working-directory: caminomanager
+      run: |
+        $version = (Get-Content package.json | ConvertFrom-Json).version
+        $zipName = "ComunidadCat-Standalone-$version"
+        $stageDir = "release/$zipName"
+
+        # Create directory structure
+        New-Item -ItemType Directory -Force -Path "$stageDir/deploy/scripts"
+        New-Item -ItemType Directory -Force -Path "$stageDir/supabase/migrations"
+
+        # Copy deploy scripts
+        Copy-Item -Path "../deploy/Install-Prerequisites.ps1" -Destination "$stageDir/deploy/"
+        Copy-Item -Path "../deploy/README-DEPLOY.md" -Destination "$stageDir/deploy/"
+        Copy-Item -Path "../deploy/scripts/*" -Destination "$stageDir/deploy/scripts/"
+
+        # Copy supabase config and migrations
+        Copy-Item -Path "../supabase/config.toml" -Destination "$stageDir/supabase/"
+        Copy-Item -Path "../supabase/seed.sql" -Destination "$stageDir/supabase/"
+        Copy-Item -Path "../supabase/migrations/*.sql" -Destination "$stageDir/supabase/migrations/"
+
+        # Copy standalone .exe into ZIP root
+        Copy-Item -Path "release/ComunidadCat-Standalone-$version-Setup.exe" -Destination "$stageDir/"
+
+        # Create ZIP
+        Compress-Archive -Path "$stageDir" -DestinationPath "release/$zipName.zip"
+
+    - name: Collect both editions for the release draft
+      shell: pwsh
+      working-directory: caminomanager
+      run: |
+        $version = (Get-Content package.json | ConvertFrom-Json).version
+        Copy-Item -LiteralPath "release/ComunidadCat-Standalone-$version-Setup.exe" -Destination release-cloud/
+        Copy-Item -LiteralPath "release/ComunidadCat-Standalone-$version.zip" -Destination release-cloud/
+        node scripts/verify-cloud-update.mjs
+
+    - name: Attach signed installers to the production preparation
+      if: github.event_name == 'push'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      with:
+        name: signed-windows
+        path: caminomanager/release-cloud/
+        if-no-files-found: error
+        retention-days: 14

@@ -29,10 +29,31 @@ El job `draft` prepara las notas desde los PR y sube las cinco descargas. Guarda
 
 - En GitHub, restringir `production` a `main` y mantener al menos un revisor obligatorio. Mantener los permisos de escritura de contenido limitados a los jobs de borrador y publicación.
 - En Vercel, proyecto `comunidad-cat`, raíz `caminomanager`, rama productiva `main`. `caminomanager/vercel.json` desactiva la publicación Git de `main`. Mantener los previews protegidos y configurar URL, redirects y credenciales públicas de Supabase por entorno. En Actions, configurar el secreto `VERCEL_TOKEN` y las variables `VERCEL_TEAM_ID` y `VERCEL_PROJECT_ID`.
-- Para Windows, configurar en Actions los secretos `WINDOWS_SIGNING_PFX` (PFX en base64), `WINDOWS_SIGNING_PASSWORD`, `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_DEFAULT_KEY`. La variable `WINDOWS_PUBLISHER_DN` contiene el `SignerCertificate.Subject` completo del editor. El job de preparación los lee en el ámbito del repositorio o de la organización.
+- Para Windows, configurar `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_DEFAULT_KEY` en Actions para la edición Cloud. La firma admite PFX y SSL.com eSigner. Con PFX (modo predeterminado), se mantienen los secretos de repositorio `WINDOWS_SIGNING_PFX` (base64), `WINDOWS_SIGNING_PASSWORD` y la variable `WINDOWS_PUBLISHER_DN` con el Subject completo del certificado.
 - Para Supabase, configurar `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD` e `INTEGRATION_SUPABASE_ACCESS_TOKEN` para integración. Para producción, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD` y `PRODUCTION_SUPABASE_ACCESS_TOKEN`. Usar un token distinto por proyecto y mantener alineadas las variables de repositorio y del environment. El workflow independiente **Supabase Migrations** permite inspeccionar producción manualmente.
 
 Las protecciones de `dev` y `main` incluyen PR obligatorio y bloqueo de borrados y force pushes. Los checks requeridos son Release Source, Lint, Type Check, Test, Build, Database Integration, Playwright Smoke, Dependency Audit y Chromium desktop and mobile. CI también corre para PR de documentación. Dependabot apunta a `dev`.
+
+## Firma individual de Windows con SSL.com eSigner
+
+Antes de contratar, solicitar confirmación escrita de que SSL.com valida a una persona natural residente en Colombia con su documentación y habilita **firma desatendida mediante la API CSC con TOTP** para el certificado individual ofrecido. Confirmar el precio del certificado, la suscripción de firma y el número de operaciones incluidas. Cloud y Standalone firman varios ejecutables por entrega. Windows mostrará el nombre personal validado en el certificado. La verificación de identidad se realiza directamente con el proveedor.
+
+Una vez emitido el certificado y habilitada la firma automatizada:
+
+1. En GitHub, crear el entorno `windows-signing`. Elegir al responsable de aprobar el uso de la credencial y configurar las dos reglas de tipo **branch** para `dev` y `main`. El workflow comprueba que el entorno ya exista, que tenga revisor y que sus ramas permitidas sean las indicadas. Esta aprobación autoriza operaciones de firma y es independiente de la aprobación de publicación en `production`.
+2. Guardar en ese entorno los secretos y variables de la tabla. Introducir los secretos directamente en GitHub. Usar una credencial dedicada a la automatización. A partir de un certificado público descargado del proveedor, PowerShell muestra el DN mediante `(Get-PfxCertificate -FilePath .\editor.cer).Subject`.
+3. En las **variables de repositorio** de Actions, establecer `WINDOWS_SIGNING_PROVIDER=esigner` para seleccionar el proveedor antes de entrar al entorno protegido.
+
+| Configuración en `windows-signing` | Tipo | Valor |
+|---|---|---|
+| `ESIGNER_ACCOUNT` | Secreto | Usuario y contraseña de SSL.com concatenados en ese orden con una barra vertical (U+007C) para Jsign. |
+| `ESIGNER_TOTP_SECRET` | Secreto | Semilla de firma automática de esa credencial, codificada en Base64 como exige Jsign. Un código temporal de seis dígitos caduca y no sirve en este campo. |
+| `ESIGNER_CREDENTIAL_ID` | Variable | Identificador de la credencial CSC de firma que entregó SSL.com. |
+| `WINDOWS_PUBLISHER_DN` | Variable | Subject completo del certificado de firma emitido, tal como lo presenta Windows. |
+
+**Ensayo antes de producción.** Con el cambio integrado en `dev`, abrir Actions → **Build signed Windows installers** → **Run workflow** y seleccionar `dev`. Revisar el SHA y aprobar el uso del entorno. El ensayo consume firmas reales de la cuenta. Comprueba el editor y el sello de tiempo de la aplicación y del instalador de cada edición, y contrasta el instalador Cloud con `latest.yml`. La ejecución manual termina con la verificación. La subida de artefactos está reservada al flujo de producción.
+
+[Certificados individuales de SSL.com](https://www.ssl.com/products/software-integrity/code-signing/) · [eSigner y precios](https://www.ssl.com/products/software-integrity/signing-service/) · [Integración de Jsign con eSigner](https://ebourg.github.io/jsign/)
 
 ## Fallos y recuperación
 
