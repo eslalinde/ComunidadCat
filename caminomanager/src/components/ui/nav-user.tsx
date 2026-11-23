@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle, ToggleLeft } from "lucide-react";
+import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle, BookOpen, ToggleLeft } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
 import { signOut } from "@/lib/signOut";
-import { useAppVersion, DOWNLOAD_URL } from "@/hooks/useAppVersion";
+import { useAppVersion, DOWNLOAD_URL, releaseNotesUrl } from "@/hooks/useAppVersion";
 import { FeatureFlagsDialog } from "@/components/ui/FeatureFlagsDialog";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -110,6 +110,12 @@ export function NavUser({
                   <UserIcon />
                   Mi Perfil
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={releaseNotesUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen />
+                  Novedades de esta versión · {currentVersion}
+                </a>
               </DropdownMenuItem>
               {availableFlags.length > 0 && (
                 <DropdownMenuItem onClick={() => setFeatureFlagsOpen(true)}>

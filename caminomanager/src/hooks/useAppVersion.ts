@@ -2,29 +2,17 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 
-const GITHUB_REPO = 'eslalinde/VibeCaminoManager';
-export const DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-const RELEASES_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
-const CURRENT_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0';
+import { compareVersions, validateStrict } from 'compare-versions';
+import { repository, version as currentVersion } from '../../package.json';
 
-function compareVersions(a: string, b: string): number {
-  const normalize = (v: string) => v.replace(/^v/, '');
-  const pa = normalize(a).split(/[-.]/).map(s => isNaN(Number(s)) ? s : Number(s));
-  const pb = normalize(b).split(/[-.]/).map(s => isNaN(Number(s)) ? s : Number(s));
+const releasesUrl = `${repository.url}/releases`;
+export const DOWNLOAD_URL = `${releasesUrl}/latest`;
+export const releaseNotesUrl = `${releasesUrl}/tag/v${currentVersion}`;
+const RELEASES_API = `https://api.github.com/repos${new URL(repository.url).pathname}/releases/latest`;
 
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const va = pa[i] ?? 0;
-    const vb = pb[i] ?? 0;
-    if (typeof va === 'number' && typeof vb === 'number') {
-      if (va !== vb) return va - vb;
-    } else {
-      const sa = String(va);
-      const sb = String(vb);
-      if (sa < sb) return -1;
-      if (sa > sb) return 1;
-    }
-  }
-  return 0;
+export function isNewerRelease(tag: string, installed: string): boolean {
+  const version = tag.replace(/^v/, '');
+  return validateStrict(version) && compareVersions(version, installed) > 0;
 }
 
 const subscribeNoop = () => () => {};
@@ -41,18 +29,18 @@ export function useAppVersion() {
     fetch(RELEASES_API)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data?.tag_name) {
+        if (typeof data?.tag_name === 'string') {
           setLatestVersion(data.tag_name);
         }
       })
       .catch(() => {});
   }, []);
 
-  const hasUpdate = latestVersion !== null && compareVersions(latestVersion, CURRENT_VERSION) > 0;
+  const hasUpdate = latestVersion !== null && isNewerRelease(latestVersion, currentVersion);
 
   return {
     isElectron,
-    currentVersion: CURRENT_VERSION,
+    currentVersion,
     latestVersion,
     hasUpdate,
     showDownload: !isElectron,
