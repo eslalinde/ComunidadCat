@@ -10,6 +10,7 @@ import { fetchCommunityPrintData, useCommunityData } from '@/hooks/useCommunityD
 import { CommunityInfo } from '@/components/crud/CommunityInfo';
 import { BrothersList } from '@/components/crud/BrothersList';
 import { TeamSection } from '@/components/crud/TeamSection';
+import { CommunitySectionNav, type CommunitySection } from '@/components/crud/CommunitySectionNav';
 import { CommunityStepLogCompact } from '@/components/crud/CommunityStepLogCompact';
 import { CommunityPrintView } from '@/components/crud/CommunityPrintView';
 import { DynamicEntityModal } from '@/components/crud/DynamicEntityModal';
@@ -184,6 +185,16 @@ function CommunityDetailContent() {
 
   // Construir nombre de catequistas responsables del equipo por defecto
   // Incluye el nombre del responsable y su cónyuge si aplica
+  // Jump targets for the mobile section bar, in on-screen order.
+  const mobileSections: CommunitySection[] = [
+    { id: 'seccion-info', label: 'Información' },
+    { id: 'seccion-equipos', label: 'Equipos' },
+    ...(showVisits ? [{ id: 'seccion-visitas', label: 'Visitas' }] : []),
+    ...(showInventory ? [{ id: 'seccion-inventario', label: 'Inventario' }] : []),
+    ...(showStepLog ? [{ id: 'seccion-etapas', label: 'Etapas' }] : []),
+    { id: 'seccion-hermanos', label: 'Hermanos' },
+  ];
+
   const defaultCatechistName = useMemo(() => {
     const team = community?.cathechist_team as any;
     if (!team?.belongs) return '';
@@ -547,6 +558,8 @@ function CommunityDetailContent() {
           </div>
         </div>
 
+        <CommunitySectionNav sections={mobileSections} />
+
         {/* Main Content - 50/50 Split; re-keyed so it animates in on switch */}
         <div
           key={communityId}
@@ -559,6 +572,7 @@ function CommunityDetailContent() {
         >
           {/* Left: Community Info + Teams */}
           <div className="space-y-6">
+            <div id="seccion-info" className="scroll-mt-32 md:scroll-mt-20">
             <CommunityInfo
               community={community}
               loading={loading}
@@ -566,9 +580,10 @@ function CommunityDetailContent() {
               brothersInList={mergedBrothers.reduce((n, b) => n + b.personIds.length, 0)}
               stageFromStepLog={stageFromStepLog}
             />
+            </div>
 
             {/* Responsables Team */}
-            <div>
+            <div id="seccion-equipos" className="scroll-mt-32 md:scroll-mt-20">
               {teams.responsables.length > 0 ? (
                 teams.responsables.map((team, index) => (
                   <div key={team.id || `responsable-${index}`}>
@@ -647,21 +662,26 @@ function CommunityDetailContent() {
           {/* Right: Visits + Step Log + Brothers List */}
           <div className="space-y-6">
             {showVisits && (
+              <div id="seccion-visitas" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityVisits
                 communityId={communityId}
                 communityNumber={community?.number || ''}
                 defaultVisitorName={defaultCatechistName}
               />
+              </div>
             )}
 
             {showInventory && (
+              <div id="seccion-inventario" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityInventory
                 communityId={communityId}
                 communityNumber={community?.number || ''}
               />
+              </div>
             )}
 
             {showStepLog && (
+              <div id="seccion-etapas" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityStepLogCompact
                 communityId={communityId}
                 communityNumber={community?.number || ''}
@@ -673,8 +693,10 @@ function CommunityDetailContent() {
                 actualBrothers={community?.actual_brothers}
                 readOnly={!canEditStepLog(userScope)}
               />
+              </div>
             )}
 
+            <div id="seccion-hermanos" className="scroll-mt-32 md:scroll-mt-20">
             <BrothersList
               canAssignTeam={showManageTeams}
               brothers={mergedBrothers}
@@ -686,6 +708,7 @@ function CommunityDetailContent() {
               onAdd={showManageBrothers ? invalidateBrothers : undefined}
               onPersonUpdated={handlePersonUpdated}
             />
+            </div>
           </div>
         </div>
       </div>
