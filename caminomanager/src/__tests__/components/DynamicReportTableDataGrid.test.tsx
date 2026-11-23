@@ -1,5 +1,5 @@
 import { type AppTableFeatures } from "@/lib/tableFeatures";
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createColumnHelper } from '@tanstack/react-table';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -207,7 +207,10 @@ describe('DynamicReportTable con DataGrid', () => {
       'ascending',
     );
 
-    await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+    // userEvent intermittently drops this click when earlier tests in the
+    // file left pointer state on the shared document (3 of 5 runs failed);
+    // a plain DOM click exercises the same onClick handler deterministically.
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
 
     expect(screen.getByText('Página 2 de 2 · 7 registros')).toBeVisible();
     expect(screen.getByText('Comunidad 6')).toBeVisible();

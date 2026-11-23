@@ -191,9 +191,9 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex-shrink-0">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle>Bitácora</CardTitle>
-          <div className="flex items-center gap-2 print-hidden">
+          <div className="flex flex-wrap items-center gap-2 print-hidden">
             {!readOnly && (
               <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
                 <Plus className="h-4 w-4" />
