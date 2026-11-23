@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, User, Users, FileUp, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, User, Users, FileUp, Pencil, MoreVertical } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -41,6 +42,7 @@ interface CarismaGroup {
 }
 
 export function BrothersList({ canAssignTeam = false, brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
+  const isMobile = useIsMobile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -238,6 +240,112 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
   const menuItemClass =
     'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm outline-none hover:bg-accent focus:bg-accent';
 
+  // Phones: grouped list with stacked rows and one labelled actions menu per
+  // brother, so nothing scrolls sideways and the page scrolls as one.
+  const renderMobileBrothers = () => (
+    <div className="-mx-1">
+      {groupedBrothers.map((group) => {
+        const isCollapsed = collapsedGroups.has(group.carisma);
+        const groupLabel = group.carisma || 'Sin carisma';
+        return (
+          <section key={`group-${group.carisma}`} className="border-b last:border-b-0">
+            <button
+              type="button"
+              className="flex min-h-11 w-full items-center gap-1.5 rounded-md bg-muted/50 px-2 py-2 text-left touch-manipulation active:bg-muted"
+              onClick={() => toggleGroup(group.carisma)}
+              aria-expanded={!isCollapsed}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
+              )}
+              <CarismaBadge carisma={groupLabel} size="md" />
+              <span className="text-xs text-muted-foreground">({group.brothers.length})</span>
+            </button>
+            {!isCollapsed && (
+              <ul className="divide-y">
+                {group.brothers.map((brother) => {
+                  const isInTeam = isBrotherInTeam(brother);
+                  const isDeleting = deletingId === brother.id;
+                  return (
+                    <li key={brother.id} className="flex items-start gap-2 py-2.5 pl-3 pr-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          {isNew(brother.createdAt) && (
+                            <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          )}
+                          <span className="text-base font-medium leading-snug break-words">{brother.name}</span>
+                        </div>
+                        {brother.isItinerante && (
+                          <div className="mt-1 flex">
+                            <CarismaBadge carisma="Itinerante" size="sm" />
+                          </div>
+                        )}
+                        <div className="mt-0.5 -ml-3 text-sm">
+                          <BrotherContact personIds={brother.personIds} communityId={communityId} />
+                        </div>
+                      </div>
+                      {onDelete && (
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-11 shrink-0 print-hidden"
+                              aria-label={`Acciones para ${brother.name}`}
+                              disabled={isDeleting}
+                            >
+                              <MoreVertical className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content
+                              align="end"
+                              sideOffset={4}
+                              className="min-w-56 max-w-[calc(100vw-2rem)] rounded-lg bg-popover text-popover-foreground p-1 shadow-lg border z-50"
+                            >
+                              <DropdownMenu.Item
+                                className={`${menuItemClass} min-h-11 text-base`}
+                                onSelect={() => setEditPersonIds(brother.personIds)}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                                Editar datos
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                              <DropdownMenu.Item
+                                className={`${menuItemClass} min-h-11 text-base text-destructive data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60`}
+                                disabled={isInTeam}
+                                onSelect={() => handleRequestDelete(brother)}
+                              >
+                                <UserMinus className="h-4 w-4" />
+                                <span className="flex flex-col">
+                                  Quitar de la comunidad
+                                  {isInTeam && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Pertenece a un equipo de la comunidad
+                                    </span>
+                                  )}
+                                </span>
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+
   if (loading) {
     return (
       <Card className="h-full">
@@ -305,6 +413,7 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
           </div>
         </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
+        {isMobile && brothers.length > 0 ? renderMobileBrothers() : (
         <div className="h-full overflow-y-auto">
           <Table>
             <TableHeader>
@@ -448,6 +557,7 @@ export function BrothersList({ canAssignTeam = false, brothers, loading, communi
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
     </Card>
 

@@ -12,7 +12,16 @@ import {
 } from '@/components/ui/dialog';
 import { Team, Belongs, Parish } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, Crown, UserPlus, Pencil, Church } from 'lucide-react';
+import { Trash2, UserMinus, Crown, UserPlus, Pencil, Church, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PhoneLinks } from '@/components/ui/phone-links';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { getCarismaLabel } from '@/config/carisma';
@@ -53,6 +62,7 @@ const isNew = (createdAt: string | null) => {
 };
 
 export function TeamSection({ team, members, parishes, loading, teamNumber, communityId: _communityId, onDelete, onAddMember, onEditMember }: TeamSectionProps) {
+  const isMobile = useIsMobile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [removingResponsibleId, setRemovingResponsibleId] = useState<string | null>(null);
   const [assigningResponsibleId, setAssigningResponsibleId] = useState<string | null>(null);
@@ -318,6 +328,118 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
     }
   };
 
+  const isMemberBusy = (member: MergedMember) =>
+    deletingId === member.id ||
+    removingResponsibleId === member.id ||
+    assigningResponsibleId === member.id;
+
+  // Phones: a stacked list instead of a 3-column table, so nothing scrolls
+  // sideways and every action is a labelled, thumb-sized menu item.
+  const renderMobileMembers = () => {
+    if (mergedMembers.length === 0) {
+      return (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          No hay miembros en este equipo
+        </p>
+      );
+    }
+
+    return (
+      <ul className="-mx-1 divide-y" aria-label={`Miembros de ${getTeamTitle()}`}>
+        {mergedMembers.map((member) => {
+          const showCarisma =
+            team.team_type_id === 3 && member.carisma && member.carisma !== 'Matrimonio';
+          const busy = isMemberBusy(member);
+          return (
+            <li key={member.id} className="flex items-start gap-2 px-1 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  {isNew(member.createdAt) && (
+                    <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                  )}
+                  <span className="text-base font-medium leading-snug break-words">{member.name}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {member.isResponsible ? (
+                    <Badge variant="warning" className="gap-1">
+                      <Crown className="w-3.5 h-3.5" />
+                      Responsable
+                    </Badge>
+                  ) : team.team_type_id !== 3 ? (
+                    <Badge variant="muted">Corresponsable</Badge>
+                  ) : null}
+                  {showCarisma && <CarismaBadge carisma={member.carisma!} />}
+                </div>
+                <div className="mt-1 text-sm">
+                  {member.mobile ? (
+                    <PhoneLinks number={member.mobile} whatsapp className="-ml-1" />
+                  ) : (
+                    <span className="text-muted-foreground">Sin celular</span>
+                  )}
+                </div>
+              </div>
+              {onDelete && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 -mr-1 shrink-0 print-hidden"
+                      aria-label={`Acciones para ${member.name}`}
+                      disabled={busy || deletingTeam}
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-56">
+                    {onEditMember && (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => onEditMember(member.personIds[0], member.personIds)}
+                      >
+                        <Pencil />
+                        Editar datos
+                      </DropdownMenuItem>
+                    )}
+                    {member.isResponsible ? (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => setMemberToRemoveResponsible(member)}
+                      >
+                        <Crown />
+                        Quitar responsabilidad
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => setMemberToAssignResponsible(member)}
+                      >
+                        <Crown />
+                        Hacer responsable
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      className="min-h-11 text-base"
+                      onSelect={() => setMemberToDelete(member)}
+                    >
+                      <UserMinus />
+                      Quitar del equipo
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -333,7 +455,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                   disabled={deletingTeam || deletingId !== null}
                 >
                   <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agregar</span>
+                  <span>Agregar</span>
                 </Button>
               </Hint>
             )}
@@ -373,6 +495,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         )}
       </CardHeader>
       <CardContent>
+        {isMobile ? renderMobileMembers() : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -532,6 +655,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
 
       {/* Diálogo de confirmación para eliminar equipo */}

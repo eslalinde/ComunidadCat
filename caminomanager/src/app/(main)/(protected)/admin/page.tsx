@@ -245,7 +245,7 @@ export default function AdminPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Shield className="w-7 h-7 text-primary" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
