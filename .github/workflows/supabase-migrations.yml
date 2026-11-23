@@ -6,12 +6,6 @@ on:
     types: [completed]
     branches: [dev]
   workflow_dispatch:
-    inputs:
-      confirm_production:
-        description: Aplicar las migraciones de main a producción (desmarcado solo comprueba)
-        required: true
-        type: boolean
-        default: false
   pull_request:
     branches: [dev, main]
     types: [opened, synchronize, reopened, labeled, edited]
@@ -43,7 +37,7 @@ jobs:
       - run: node --test .github/scripts/validate-supabase-env.test.mjs
 
   migrate-production:
-    name: Production migration plan / apply
+    name: Inspect production migrations
     needs: validate
     if: >-
       github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -64,7 +58,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/supabase-migrate
         with:
-          apply: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production }}
+          apply: 'false'
 
   migrate-integration:
     name: Integration migration plan / apply

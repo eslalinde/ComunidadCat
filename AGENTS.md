@@ -144,9 +144,9 @@ npm run electron:build    # Production Electron installer (Windows)
 ## CI/CD
 
 - **ci.yml**: Quality, coverage, build, database and smoke checks on PRs/pushes to dev and main.
-- **Vercel Git integration**: Automatic previews for PR branches and dev; main is deployed manually from Vercel. See docs/deployment.md.
-- **electron-release.yml**: Build and publish Electron releases
-- **supabase-migrations.yml**: Integration after successful dev CI; production requires manual dispatch on main.
+- **Vercel Git integration**: Automatic previews for PR branches and dev; Production Release stages main and promotes the same Vercel build after approval. See docs/deployment.md.
+- **electron-release.yml**: Build signed Cloud and Standalone artifacts for the production release draft
+- **supabase-migrations.yml**: Integration after successful dev CI; production inspection supports manual dispatch; Production Release applies migrations after approval.
 - **security.yml**: CodeQL security scanning
 
 ## Testing
