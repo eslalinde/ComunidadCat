@@ -290,8 +290,8 @@ export default function ReporteEstadoPasos() {
     <div className={printReady ? "space-y-6" : "space-y-6 print:hidden"}>
       {error && <p role="alert">{error}</p>}
       {/* Header */}
-      <div className="flex items-center justify-between print:hidden">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <div className="flex items-start gap-3">
           <Link href={routes.reportes}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -308,7 +308,7 @@ export default function ReporteEstadoPasos() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => refresh()} disabled={loading}>
             <RefreshCw
               className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
