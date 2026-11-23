@@ -145,9 +145,9 @@ Referencias: [Personal Access Tokens](https://supabase.com/docs/guides/platform/
 | PR con `run-migrations` | Ninguno por esa etiqueta | No; ya no se admite escritura desde PR |
 | CI exitoso de un push a dev del propio repo | Integración, SHA exacto validado | Sí, después del dry-run y respetando el environment |
 | CI fallido, de un PR, de otra rama o de otro repo | Ninguno | No |
-| Manual desde main, `confirm_production` desmarcado | Producción | No; también respeta las protecciones del environment |
-| Manual desde main, `confirm_production` marcado | Producción | Sí, con aprobación del environment cuando corresponda |
-| Push/merge a main | Ninguno | No |
+| Supabase Migrations manual desde main | Producción | Solo inspección y dry-run |
+| Push/merge a main | Producción | Production Release prepara el plan SQL |
+| Aprobación de Publish approved release | Producción | Aplica las pendientes del SHA revisado |
 
 Después de configurar los dos tokens, quitar y volver a añadir
 `check-migrations` al PR #172. Revisar ambos jobs de inspección. Estos usan secretos
@@ -157,7 +157,7 @@ que escriben. No se modifican las protecciones de `integration`/`production`.
 El PR apunta a `dev`. Su merge inicia CI y, si pasa, el workflow vigente puede
 aplicar pendientes en integración. En la comprobación actual no hay pendientes,
 pero debe revisarse cualquier SQL que llegue entretanto a dev. Producción sigue
-requiriendo promoción de dev a main y ejecución manual explícita. El acceso a
+requiriendo promoción de dev a main y aprobación del release. El acceso a
 producción quedó verificado; su inicialización es una operación posterior al PR.
 
 Las comprobaciones sin aplicación incluyen un inventario con `psql`, disponible
