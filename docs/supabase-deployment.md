@@ -177,6 +177,34 @@ Las 21 pruebas del validador pasaron localmente y en la comprobación remota
 que también completó la inspección y el dry-run de ambos proyectos con sus PAT
 separados. Repetir la revisión si cambia el esquema o llegan nuevas migraciones.
 
+## Carga inicial del catálogo de producción
+
+Una vez aplicadas las migraciones, ejecutar el archivo completo
+[`supabase/seed.production.sql`](../supabase/seed.production.sql) en el editor SQL
+del proyecto de producción. Es un paso manual independiente del workflow de migraciones.
+El archivo `supabase/seed.sql` se reserva para desarrollo y pruebas con comunidades de ejemplo.
+
+En una base recién migrada, la carga deja Colombia, 32 departamentos, 32 ciudades,
+11 pasos del Camino y 20 parroquias vinculadas a la Arquidiócesis de Medellín.
+Las migraciones ya aportan las 14 arquidiócesis y las demás jurisdicciones del catálogo.
+Los campos de contacto y zona de las parroquias quedan disponibles para completar
+con datos confirmados. La carga se puede repetir y conserva las filas preexistentes.
+
+Para comprobar el resultado de la carga inicial, ejecutar con el mismo rol del editor SQL.
+Los conteos esperados son 32, 11, 20, 14 y 0, en ese orden.
+
+```sql
+select
+  (select count(*) from public.cities) as ciudades,
+  (select count(*) from public.step_ways) as pasos,
+  (select count(*) from public.parishes p
+   join public.cities c on c.id = p.city_id
+   join public.dioceses d on d.id = p.diocese_id
+   where c.name = 'Medellín' and d.name = 'Arquidiócesis de Medellín') as parroquias_medellin,
+  (select count(*) from public.dioceses where type = 'arquidiocesis') as arquidiocesis,
+  (select count(*) from public.communities) as comunidades;
+```
+
 ## Activación de teléfonos cifrados
 
 La función `person-contacts` utiliza AES-256-GCM y valida la sesión con Supabase Auth. Su secreto `PERSON_CONTACT_KEY_V1` contiene 32 bytes aleatorios en Base64 estándar. Usa una clave propia por entorno y conserva una copia en el gestor de secretos que se usa para recuperación. Para rotar una clave que ya tenga contactos, conserva la versión anterior durante el recifrado. Sustituir el valor de V1 impediría recuperar esos contactos.
