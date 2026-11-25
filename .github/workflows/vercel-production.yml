@@ -47,6 +47,9 @@ jobs:
           done
 
   windows:
+    permissions:
+      actions: read
+      contents: read
     needs: candidate
     uses: ./.github/workflows/electron-release.yml
     secrets:
