@@ -132,6 +132,7 @@ jobs:
       group: supabase-production
       cancel-in-progress: false
     env:
+      PRODUCTION_HOST: comunidad-cat-eight.vercel.app
       RELEASE_ID: ${{ needs.draft.outputs.release_id }}
       RELEASE_HASHES: ${{ needs.draft.outputs.hashes }}
       DEPLOYMENT: ${{ needs.stage-web.outputs.deployment }}
@@ -163,7 +164,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Promote the reviewed build
         run: |
-          if bash .github/scripts/verify-vercel.sh comunidad-cat.vercel.app; then
+          if bash .github/scripts/verify-vercel.sh "$PRODUCTION_HOST"; then
             echo "El dominio ya sirve el build aprobado."
           else
             vercel promote "$DEPLOYMENT" --yes
@@ -174,11 +175,11 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          bash .github/scripts/verify-vercel.sh comunidad-cat.vercel.app
+          bash .github/scripts/verify-vercel.sh "$PRODUCTION_HOST"
           version=$(node -p "require('./caminomanager/package.json').version")
           release="https://github.com/$GITHUB_REPOSITORY/releases"
-          for url in "https://comunidad-cat.vercel.app/login" "$release/tag/v$version" \
+          for url in "https://$PRODUCTION_HOST/login" "$release/tag/v$version" \
             "$release/download/v$version/ComunidadCat-Cloud-$version-Setup.exe"; do
             curl --fail --silent --show-error --head --location --retry 4 "$url" >/dev/null
           done
-          echo "Migraciones aplicadas. [Web verificada](https://comunidad-cat.vercel.app/login) · [Build promovido]($DEPLOYMENT) · [Release $version]($release/tag/v$version)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Migraciones aplicadas. [Web verificada](https://$PRODUCTION_HOST/login) · [Build promovido]($DEPLOYMENT) · [Release $version]($release/tag/v$version)." >> "$GITHUB_STEP_SUMMARY"
