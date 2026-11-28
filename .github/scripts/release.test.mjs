@@ -13,26 +13,31 @@ test('publishes only stable versions in sync with both lockfile entries', () => 
   assert.throws(() => releaseVersion({ version }, { ...lock, packages: { '': { version: '0.1.0' } } }));
 });
 
-const hashes = Object.fromEntries(assetNames(version).map(name => [name, 'sha256:' + 'a'.repeat(64)]));
+const hashes = Object.fromEntries(assetNames("1.0.1").map(name => [name, 'sha256:' + 'a'.repeat(64)]));
 const assets = Object.entries(hashes).map(([name, digest]) => ({ name, digest, size: 10, state: 'uploaded' }));
 
 test('accepts the complete signed candidate in any upload order', () => {
-  verifyAssets([...assets].reverse(), hashes, version);
+  verifyAssets([...assets].reverse(), hashes, '1.0.1');
 });
 
 test('blocks incomplete, replaced or extra downloads before publication or retry', () => {
   for (const change of [{ digest: 'sha256:' + 'b'.repeat(64) }, { size: 0 }, { state: 'new' }]) {
-    assert.throws(() => verifyAssets([{ ...assets[0], ...change }, ...assets.slice(1)], hashes, version));
+    assert.throws(() => verifyAssets([{ ...assets[0], ...change }, ...assets.slice(1)], hashes, '1.0.1'));
   }
-  assert.throws(() => verifyAssets(assets.slice(1), hashes, version));
-  assert.throws(() => verifyAssets([...assets, assets[0]], hashes, version));
-  assert.throws(() => verifyAssets(assets, {}, version));
+  assert.throws(() => verifyAssets(assets.slice(1), hashes, '1.0.1'));
+  assert.throws(() => verifyAssets([...assets, assets[0]], hashes, '1.0.1'));
+  assert.throws(() => verifyAssets(assets, {}, '1.0.1'));
+});
+
+test('web release requires zero attachments', () => {
+  verifyAssets([], {}, version);
+  assert.throws(() => verifyAssets(assets, hashes, version));
 });
 
 test('resumes the exact draft or published release and rejects a conflicting SHA', () => {
   const sha = 'a'.repeat(40);
   for (const draft of [true, false]) {
-    const release = { tag_name: 'v1.0.0', target_commitish: sha, prerelease: false, draft };
+    const release = { tag_name: 'web-v1.0.0', target_commitish: sha, prerelease: false, draft };
     assert.equal(checkReleaseHistory([release], version, sha), release);
     assert.throws(() => checkReleaseHistory([release], version, 'b'.repeat(40)));
   }
