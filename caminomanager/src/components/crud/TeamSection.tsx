@@ -12,12 +12,23 @@ import {
 } from '@/components/ui/dialog';
 import { Team, Belongs, Parish } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserMinus, Crown, UserPlus, Pencil, Church } from 'lucide-react';
+import { Trash2, UserMinus, Crown, UserPlus, Pencil, Church, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PhoneLinks } from '@/components/ui/phone-links';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { getCarismaLabel } from '@/config/carisma';
 import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import { Hint } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface TeamSectionProps {
   team: Team;
@@ -51,6 +62,7 @@ const isNew = (createdAt: string | null) => {
 };
 
 export function TeamSection({ team, members, parishes, loading, teamNumber, communityId: _communityId, onDelete, onAddMember, onEditMember }: TeamSectionProps) {
+  const isMobile = useIsMobile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [removingResponsibleId, setRemovingResponsibleId] = useState<string | null>(null);
   const [assigningResponsibleId, setAssigningResponsibleId] = useState<string | null>(null);
@@ -69,7 +81,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         <CardContent>
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-4 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -175,11 +187,11 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         }
       }
 
-      toast.success('Miembro eliminado del equipo');
+      toast.success('Miembro quitado del equipo');
       if (onDelete) onDelete();
     } catch (error) {
       console.error('Error deleting team member:', error);
-      toast.error(friendlyError(error, 'Error al eliminar el miembro del equipo'));
+      toast.error(friendlyError(error, 'Error al quitar el miembro del equipo'));
     } finally {
       setDeletingId(null);
       setMemberToDelete(null);
@@ -202,7 +214,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         if (error) throw error;
       }
 
-      toast.success('Responsabilidad removida');
+      toast.success('Responsabilidad quitada');
       if (onDelete) onDelete();
     } catch (error) {
       console.error('Error removing responsible:', error);
@@ -316,36 +328,150 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
     }
   };
 
+  const isMemberBusy = (member: MergedMember) =>
+    deletingId === member.id ||
+    removingResponsibleId === member.id ||
+    assigningResponsibleId === member.id;
+
+  // Phones: a stacked list instead of a 3-column table, so nothing scrolls
+  // sideways and every action is a labelled, thumb-sized menu item.
+  const renderMobileMembers = () => {
+    if (mergedMembers.length === 0) {
+      return (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          No hay miembros en este equipo
+        </p>
+      );
+    }
+
+    return (
+      <ul className="-mx-1 divide-y" aria-label={`Miembros de ${getTeamTitle()}`}>
+        {mergedMembers.map((member) => {
+          const showCarisma =
+            team.team_type_id === 3 && member.carisma && member.carisma !== 'Matrimonio';
+          const busy = isMemberBusy(member);
+          return (
+            <li key={member.id} className="flex items-start gap-2 px-1 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  {isNew(member.createdAt) && (
+                    <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                  )}
+                  <span className="text-base font-medium leading-snug break-words">{member.name}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {member.isResponsible ? (
+                    <Badge variant="warning" className="gap-1">
+                      <Crown className="w-3.5 h-3.5" />
+                      Responsable
+                    </Badge>
+                  ) : team.team_type_id !== 3 ? (
+                    <Badge variant="muted">Corresponsable</Badge>
+                  ) : null}
+                  {showCarisma && <CarismaBadge carisma={member.carisma!} />}
+                </div>
+                <div className="mt-1 text-sm">
+                  {member.mobile ? (
+                    <PhoneLinks number={member.mobile} whatsapp className="-ml-1" />
+                  ) : (
+                    <span className="text-muted-foreground">Sin celular</span>
+                  )}
+                </div>
+              </div>
+              {onDelete && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 -mr-1 shrink-0 print-hidden"
+                      aria-label={`Acciones para ${member.name}`}
+                      disabled={busy || deletingTeam}
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-56">
+                    {onEditMember && (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => onEditMember(member.personIds[0], member.personIds)}
+                      >
+                        <Pencil />
+                        Editar datos
+                      </DropdownMenuItem>
+                    )}
+                    {member.isResponsible ? (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => setMemberToRemoveResponsible(member)}
+                      >
+                        <Crown />
+                        Quitar responsabilidad
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        className="min-h-11 text-base"
+                        onSelect={() => setMemberToAssignResponsible(member)}
+                      >
+                        <Crown />
+                        Hacer responsable
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      className="min-h-11 text-base"
+                      onSelect={() => setMemberToDelete(member)}
+                    >
+                      <UserMinus />
+                      Quitar del equipo
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-lg">{getTeamTitle()}</CardTitle>
+          <CardTitle>{getTeamTitle()}</CardTitle>
           <div className="flex items-center gap-2 print-hidden">
             {onAddMember && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onAddMember}
-                disabled={deletingTeam || deletingId !== null}
-                title="Agregar miembro al equipo"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Agregar</span>
-              </Button>
+              <Hint label="Agregar miembro al equipo">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddMember}
+                  disabled={deletingTeam || deletingId !== null}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Agregar</span>
+                </Button>
+              </Hint>
             )}
             {onDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                onClick={() => setShowDeleteTeamDialog(true)}
-                disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
-                title="Eliminar equipo completo"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">{deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}</span>
-              </Button>
+              <Hint label="Eliminar equipo completo">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                  onClick={() => setShowDeleteTeamDialog(true)}
+                  disabled={deletingTeam || deletingId !== null || removingResponsibleId !== null || assigningResponsibleId !== null}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">{deletingTeam ? 'Eliminando...' : 'Eliminar Equipo'}</span>
+                </Button>
+              </Hint>
             )}
           </div>
         </div>
@@ -353,8 +479,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
           <div className="mt-2 space-y-1">
             {parishes.map((parish) => (
               <div key={parish.id} className="flex items-center gap-1.5">
-                <Church className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-sm text-gray-500">Lleva</span>
+                <Church className="h-3.5 w-3.5 text-muted-foreground/70 flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Lleva</span>
                 <a
                   href={`/parroquias/detalle?id=${parish.id}`}
                   target="_blank"
@@ -369,6 +495,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         )}
       </CardHeader>
       <CardContent>
+        {isMobile ? renderMobileMembers() : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -381,7 +508,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
             <TableBody>
               {mergedMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                     No hay miembros en este equipo
                   </TableCell>
                 </TableRow>
@@ -393,17 +520,17 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                         <>
                           <div className="flex items-center gap-1.5">
                             {isNew(member.createdAt) && (
-                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                              <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                               </span>
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible && (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                              <Badge variant="warning" className="hidden sm:inline-flex gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             )}
                             {member.carisma && member.carisma !== 'Matrimonio' && (
                               <span className="hidden sm:inline-flex">
@@ -414,10 +541,10 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                           {(member.isResponsible || (member.carisma && member.carisma !== 'Matrimonio')) && (
                             <div className="flex flex-wrap gap-1 sm:hidden mt-0.5">
                               {member.isResponsible && (
-                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                <Badge variant="warning" className="gap-1">
                                   <Crown className="w-3.5 h-3.5" />
                                   Responsable
-                                </span>
+                                </Badge>
                               )}
                               {member.carisma && member.carisma !== 'Matrimonio' && (
                                 <CarismaBadge carisma={member.carisma} />
@@ -429,33 +556,33 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                         <>
                           <div className="flex items-center gap-1.5">
                             {isNew(member.createdAt) && (
-                              <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                              <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                               </span>
                             )}
                             <span>{member.name}</span>
                             {member.isResponsible ? (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded items-center gap-1">
+                              <Badge variant="warning" className="hidden sm:inline-flex gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="hidden sm:inline-flex text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                              <Badge variant="muted" className="hidden sm:inline-flex">
                                 Corresponsable
-                              </span>
+                              </Badge>
                             )}
                           </div>
                           <div className="flex sm:hidden mt-0.5">
                             {member.isResponsible ? (
-                              <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <Badge variant="warning" className="gap-1">
                                 <Crown className="w-3.5 h-3.5" />
                                 Responsable
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                              <Badge variant="muted">
                                 Corresponsable
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         </>
@@ -468,51 +595,57 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
                       <TableCell className="print-hidden py-1.5">
                         <div className="flex gap-1">
                           {onEditMember && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onEditMember(member.personIds[0], member.personIds)}
-                              disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                              title="Editar datos de la persona"
-                              aria-label={`Editar datos de ${member.name}`}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            <Hint label="Editar datos de la persona">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onEditMember(member.personIds[0], member.personIds)}
+                                disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
+                                aria-label={`Editar datos de ${member.name}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Hint>
                           )}
                           {member.isResponsible ? (
+                            <Hint label="Quitar responsabilidad (la persona permanecerá en el equipo)">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-pressed={true}
+                                className="text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+                                onClick={() => setMemberToRemoveResponsible(member)}
+                                disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
+                              >
+                                <Crown className="h-4 w-4 fill-current" />
+                              </Button>
+                            </Hint>
+                          ) : (
+                            <Hint label={hasResponsible ? "Hacer responsable (reemplaza al responsable actual)" : "Asignar responsabilidad"}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-pressed={false}
+                                className="text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
+                                onClick={() => setMemberToAssignResponsible(member)}
+                                disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
+                                aria-label={`Hacer responsable a ${member.name}`}
+                              >
+                                <Crown className="h-4 w-4" />
+                              </Button>
+                            </Hint>
+                          )}
+                          <Hint label="Quitar del equipo">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-orange-500 hover:bg-orange-50"
-                              onClick={() => setMemberToRemoveResponsible(member)}
-                              disabled={removingResponsibleId === member.id || deletingId === member.id || assigningResponsibleId === member.id}
-                              title="Quitar responsabilidad (la persona permanecerá en el equipo)"
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => setMemberToDelete(member)}
+                              disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
                             >
                               <UserMinus className="h-4 w-4" />
                             </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-green-600 hover:bg-green-50"
-                              onClick={() => setMemberToAssignResponsible(member)}
-                              disabled={assigningResponsibleId === member.id || deletingId === member.id || removingResponsibleId === member.id}
-                              title={hasResponsible ? "Hacer responsable (reemplaza al responsable actual)" : "Asignar responsabilidad"}
-                              aria-label={`Hacer responsable a ${member.name}`}
-                            >
-                              <Crown className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:bg-destructive/10"
-                            onClick={() => setMemberToDelete(member)}
-                            disabled={deletingId === member.id || removingResponsibleId === member.id || assigningResponsibleId === member.id}
-                            title="Eliminar miembro del equipo"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </Hint>
                         </div>
                       </TableCell>
                     )}
@@ -522,6 +655,7 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
 
       {/* Diálogo de confirmación para eliminar equipo */}
@@ -531,7 +665,8 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         onConfirm={handleDeleteTeam}
         title="¿Eliminar equipo?"
         itemName={getTeamTitle()}
-        description="¿Estás seguro de que deseas eliminar este equipo? Se eliminarán todos los miembros."
+        description="Se eliminará el equipo y se quitarán todos sus miembros. Esta acción no se puede deshacer."
+        previewTitle="Esto afectará a:"
         preview={[
           `${mergedMembers.length} miembro(s) del equipo`,
           ...(parishes.length > 0 ? [`${parishes.length} parroquia(s) asignada(s)`] : []),
@@ -544,9 +679,13 @@ export function TeamSection({ team, members, parishes, loading, teamNumber, comm
         open={memberToDelete !== null}
         onClose={() => setMemberToDelete(null)}
         onConfirm={handleDeleteMember}
-        title="¿Eliminar miembro del equipo?"
+        title="¿Quitar del equipo?"
         itemName={memberToDelete?.name}
-        description="¿Estás seguro de que deseas eliminar a este miembro del equipo?"
+        description="La persona seguirá registrada en Personas; solo se quitará de este equipo."
+        requireTypedConfirmation={false}
+        confirmLabel="Quitar"
+        icon={UserMinus}
+        loadingLabel="Quitando..."
         loading={deletingId !== null}
       />
 

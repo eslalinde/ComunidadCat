@@ -1,6 +1,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCommunityData } from '@/hooks/useCommunityData';
+import { fetchCommunityPrintData, useCommunityData } from '@/hooks/useCommunityData';
+import { createClient } from '@/utils/supabase/client';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Brother, Person } from '@/types/database';
 import { createQueryHarness, createTableMock, type QueryResponse } from '../helpers/queryHarness';
@@ -27,9 +28,38 @@ beforeEach(() => {
   db.from.mockReset().mockImplementation(mock.from);
 });
 afterEach(() => { cleanup(); harness.client.clear(); vi.restoreAllMocks(); });
-const setup = (id = 10) => renderHook(() => useCommunityData(id), { wrapper: harness.wrapper });
+const setup = (id = 10, includeStepLogs = true) => renderHook(() => useCommunityData(id, includeStepLogs), { wrapper: harness.wrapper });
 
 describe('detalle de comunidad', () => {
+  it('consulta de nuevo las membresías antes de imprimir y omite la bitácora sin permiso', async () => {
+    responses.brothers = ok([brother(person(1, 'Actual')), brother(person(2, 'Retirado'))]);
+    const { result } = setup(10, false);
+    await waitFor(() => expect(result.current.mergedBrothers).toHaveLength(2));
+    responses.brothers = ok([brother(person(1, 'Actual'))]);
+    const snapshot = await fetchCommunityPrintData(createClient(), 10, false);
+    expect(snapshot.mergedBrothers.map(b => b.name)).toEqual(['Actual']);
+    expect(snapshot.stepLogs).toEqual([]);
+    expect(snapshot.teams.responsables).toHaveLength(1);
+    expect(db.from).not.toHaveBeenCalledWith('community_step_log');
+  });
+
+  it('prepara la bitácora autorizada y omite relaciones ausentes', async () => {
+    responses.communities = ok({ id: 10, parish_id: null });
+    responses.teams = ok([]);
+    const snapshot = await fetchCommunityPrintData(createClient(), 10, true);
+    expect(snapshot.stepLogs).toEqual([{ id: 1, community_id: 10 }]);
+    expect(snapshot.teamMembers).toEqual({});
+    expect(snapshot.teamParishes).toEqual({});
+    expect(snapshot.parishPriestName).toBeNull();
+  });
+  it('does not query or expose cached step logs without permission', async () => {
+    harness.client.setQueryData(queryKeys.community.stepLogs(10), [{ id: 99 }]);
+    const { result } = setup(10, false);
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(db.from).not.toHaveBeenCalledWith('community_step_log');
+    expect(result.current.stepLogs).toEqual([]);
+  });
+
   it('espera identificadores antes de consultar relaciones y agrupa equipos y parroquias', async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.parishPriestName).toBe('Presbítero'));
@@ -53,7 +83,7 @@ describe('detalle de comunidad', () => {
     expect(db.from).not.toHaveBeenCalledWith('priests');
   });
 
-  it.each(['communities', 'brothers', 'teams', 'community_step_log', 'belongs', 'parish_teams'])('propaga errores de %s', async (table) => {
+  it.each(['communities', 'brothers', 'teams', 'community_step_log', 'belongs', 'parish_teams', 'priests'])('propaga errores de %s', async (table) => {
     responses[table] = { data: null, error: { message: `Error ${table}` } };
     const { result } = setup();
     await waitFor(() => expect(result.current.error).toBe(`Error ${table}`));

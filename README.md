@@ -84,8 +84,8 @@ keys do not replace it. Configure the two named repository secrets for preflight
 if a protected GitHub environment overrides either name, keep its value aligned.
 
 Integration migrations run only after a successful push CI run on `dev`, using
-that exact commit. Production migrations require a manual run from `main` and
-explicitly selecting `confirm_production`; an unchecked manual run only previews.
+that exact commit. Production Release applies production migrations after approval
+of the reviewed main commit. A manual Supabase Migrations run only previews.
 Write jobs retain the protected `integration` and `production` environments.
 
 Before merging, add `check-migrations` to a matching same-repository pull request
@@ -112,4 +112,4 @@ All rights reserved.
 
 ## Entornos y entregas
 
-Consulte [la guía de CI/CD](docs/deployment.md): PR a dev, previews automáticos y producción manual desde main en Vercel.
+Consulte [la guía de CI/CD](docs/deployment.md): PR a dev, previews automáticos y preparación automática desde main y publicación aprobada en GitHub Actions.

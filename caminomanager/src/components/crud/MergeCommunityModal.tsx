@@ -1,5 +1,13 @@
 'use client';
 
+import { FormAlert } from "@/components/ui/form-alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +30,8 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
+  FormRoot,
+} from "@/components/ui/form";
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
@@ -199,7 +208,7 @@ export function MergeCommunityModal({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
               {/* Comunidad principal */}
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-700 font-medium">Comunidad Principal (permanece)</p>
@@ -213,21 +222,20 @@ export function MergeCommunityModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Seleccionar comunidad a absorber:</FormLabel>
-                    <FormControl>
-                      <select
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={loading}
-                      >
-                        <option value="">-- Seleccionar comunidad --</option>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <FormControl>
+                        <SelectTrigger onBlur={field.onBlur}>
+                          <SelectValue placeholder="Seleccionar comunidad" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
                         {communities.map((c) => (
-                          <option key={c.id} value={String(c.id)}>
+                          <SelectItem key={c.id} value={String(c.id)}>
                             Comunidad {c.number} ({c.actual_brothers ?? 0} hermanos)
-                          </option>
+                          </SelectItem>
                         ))}
-                      </select>
-                    </FormControl>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -235,10 +243,10 @@ export function MergeCommunityModal({
 
               {/* Vista previa */}
               {selectedCommunityId && (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Vista previa de la fusión:</p>
+                <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                  <p className="text-sm font-medium text-foreground mb-2">Vista previa de la fusión:</p>
                   {loadingPreview ? (
-                    <p className="text-sm text-gray-500">Cargando datos...</p>
+                    <p className="text-sm text-muted-foreground">Cargando datos...</p>
                   ) : preview ? (
                     <div className="space-y-1 text-sm">
                       <p>Hermanos a transferir: <span className="font-semibold">{preview.brothers}</span></p>
@@ -284,9 +292,7 @@ export function MergeCommunityModal({
 
               {/* Error */}
               {error && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-                  {error}
-                </div>
+                <FormAlert tone="error">{error}</FormAlert>
               )}
 
               <DialogFooter className="gap-3">
@@ -301,7 +307,7 @@ export function MergeCommunityModal({
                   {loading ? 'Fusionando comunidades...' : 'Fusionar'}
                 </Button>
               </DialogFooter>
-            </form>
+            </FormRoot>
           </Form>
       </DialogContent>
     </Dialog>

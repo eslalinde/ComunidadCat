@@ -1,20 +1,18 @@
 "use client";
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import { useReportExport } from "@/hooks/useReportExport";
+import { storeReactivityBindings } from "@tanstack/table-core/store-reactivity-bindings";
+import type { RowData } from "@tanstack/react-table";
 import { useState, useCallback } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getGroupedRowModel,
-  getExpandedRowModel,
-  getFacetedUniqueValues,
-  getPaginationRowModel,
-  flexRender,
+  useTable,
+  constructTable,
+  FlexRender,
   SortingState,
   ColumnFiltersState,
   ExpandedState,
   PaginationState,
-  VisibilityState,
+  ColumnVisibilityState,
   Row,
   type Table as TanStackTable,
 } from "@tanstack/react-table";
@@ -34,6 +32,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableHeader,
   TableBody,
@@ -48,12 +53,14 @@ import { GlobalFilter } from "./GlobalFilter";
 import { ColumnFilter } from "./ColumnFilter";
 import { GroupingControls } from "./GroupingControls";
 import { ColumnVisibilityControl } from "./ColumnVisibilityControl";
+import { Spinner } from "@/components/ui/spinner";
 
-export function DynamicReportTable<TData>({
+export function DynamicReportTable<TData extends RowData>({
   config,
   data,
   loading,
   onRefresh,
+  loadExportRows,
 }: DynamicReportTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>(
     config.defaultSorting ?? []
@@ -64,8 +71,7 @@ export function DynamicReportTable<TData>({
     config.defaultGrouping ?? []
   );
   const [expanded, setExpanded] = useState<ExpandedState>(true);
-  const [isExporting, setIsExporting] = useState(false);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
     config.dataGrid?.defaultColumnVisibility ?? {}
   );
   const [pagination, setPagination] = useState<PaginationState>({
@@ -73,7 +79,8 @@ export function DynamicReportTable<TData>({
     pageSize: config.dataGrid?.pageSize ?? 10,
   });
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns: config.columns,
     state: {
@@ -92,26 +99,20 @@ export function DynamicReportTable<TData>({
     onExpandedChange: setExpanded,
     onColumnVisibilityChange: setColumnVisibility,
     ...(config.dataGrid ? { onPaginationChange: setPagination } : {}),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getGroupedRowModel: getGroupedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    ...(config.dataGrid
-      ? { getPaginationRowModel: getPaginationRowModel() }
-      : {}),
+    manualPagination: !config.dataGrid,
     enableGrouping: true,
   });
 
-  const handleExport = useCallback(() => {
-    setIsExporting(true);
-    try {
-      exportTableToCSV(table, config.exportFileName ?? "reporte");
-    } finally {
-      setIsExporting(false);
-    }
-  }, [table, config.exportFileName]);
+  const { handleExport, isExporting } = useReportExport(loadExportRows, (rows) => {
+    const features = { ...appTableFeatures, coreReactivityFeature: storeReactivityBindings() };
+    const freshTable = constructTable<AppTableFeatures, TData>({
+      features,
+      columns: config.columns,
+      data: rows,
+      initialState: { columnFilters, globalFilter, columnVisibility },
+    });
+    exportTableToCSV(freshTable, config.exportFileName ?? "reporte");
+  });
 
   const handleGlobalFilterChange = useCallback((value: string) => {
     setGlobalFilter(value);
@@ -122,6 +123,14 @@ export function DynamicReportTable<TData>({
     setGrouping(newGrouping);
     setPagination((current) => ({ ...current, pageIndex: 0 }));
   }, []);
+
+  // On phones the wide grid scrolls horizontally; keep the first visible
+  // column (usually the row's name) pinned so rows stay identifiable.
+  const firstVisibleColumnId = table.getVisibleLeafColumns()[0]?.id;
+  const stickyFirstColumnClass = (columnId: string) =>
+    columnId === firstVisibleColumnId
+      ? "max-md:sticky max-md:left-0 max-md:z-10 max-md:bg-card max-md:shadow-[1px_0_0_var(--border)]"
+      : "";
 
   // Compute footer aggregations
   const hasAggregations = config.columns.some((col) => {
@@ -135,7 +144,7 @@ export function DynamicReportTable<TData>({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -146,10 +155,10 @@ export function DynamicReportTable<TData>({
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {config.title}
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">{config.description}</p>
+            <p className="text-sm sm:text-base text-muted-foreground">{config.description}</p>
           </div>
         </div>
 
@@ -203,21 +212,20 @@ export function DynamicReportTable<TData>({
             renderColumnFilter={(column) => (
               <ColumnFilter column={column} />
             )}
+            getHeaderClassName={(column) => {
+              const meta = column.columnDef.meta as
+                | DynamicColumnMeta
+                | undefined;
+              return `px-2 md:px-3 py-2 align-top whitespace-nowrap ${alignClass(meta?.align)} ${stickyFirstColumnClass(column.id)}`;
+            }}
             getRowClassName={(row) =>
-              row.getIsGrouped() ? "bg-gray-50 font-semibold" : undefined
+              row.getIsGrouped() ? "bg-muted/50 font-semibold" : undefined
             }
             getCellClassName={(cell) => {
               const meta = cell.column.columnDef.meta as
                 | DynamicColumnMeta
                 | undefined;
-              const align = meta?.align ?? "left";
-              return `px-3 py-2 ${
-                align === "center"
-                  ? "text-center"
-                  : align === "right"
-                    ? "text-right"
-                    : "text-left"
-              }`;
+              return `px-2 md:px-3 py-2 whitespace-nowrap ${alignClass(meta?.align)} ${stickyFirstColumnClass(cell.column.id)}`;
             }}
             footer={
               hasAggregations && data.length > 0 ? (
@@ -227,12 +235,12 @@ export function DynamicReportTable<TData>({
           />
         ) : loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando datos...</span>
+            <Spinner />
+            <span className="ml-3 text-muted-foreground">Cargando datos...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hay datos disponibles</p>
+            <p className="text-muted-foreground text-lg">No hay datos disponibles</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -255,15 +263,12 @@ export function DynamicReportTable<TData>({
                               <div
                                 className={`flex items-center gap-1 ${
                                   header.column.getCanSort()
-                                    ? "cursor-pointer select-none hover:text-gray-900"
+                                    ? "cursor-pointer select-none hover:text-foreground"
                                     : ""
                                 }`}
                                 onClick={header.column.getToggleSortingHandler()}
                               >
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
+                                <FlexRender header={header} />
                                 {header.column.getCanSort() && (
                                   <span className="ml-1">
                                     {header.column.getIsSorted() === "asc" ? (
@@ -272,7 +277,7 @@ export function DynamicReportTable<TData>({
                                       "desc" ? (
                                       <ArrowDown className="h-3 w-3" />
                                     ) : (
-                                      <ArrowUpDown className="h-3 w-3 text-gray-400" />
+                                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/70" />
                                     )}
                                   </span>
                                 )}
@@ -292,7 +297,7 @@ export function DynamicReportTable<TData>({
                   <TableRow
                     key={row.id}
                     className={
-                      row.getIsGrouped() ? "bg-gray-50 font-semibold" : ""
+                      row.getIsGrouped() ? "bg-muted/50 font-semibold" : ""
                     }
                   >
                     {row.getVisibleCells().map((cell) => {
@@ -315,26 +320,14 @@ export function DynamicReportTable<TData>({
                               ) : (
                                 <ChevronRight className="h-4 w-4" />
                               )}
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}{" "}
-                              <span className="text-gray-500 font-normal text-xs">
+                              <FlexRender cell={cell} />{" "}
+                              <span className="text-muted-foreground font-normal text-xs">
                                 ({row.subRows.length})
                               </span>
                             </button>
-                          ) : cell.getIsAggregated() ? (
-                            flexRender(
-                              cell.column.columnDef.aggregatedCell ??
-                                cell.column.columnDef.cell,
-                              cell.getContext()
-                            )
-                          ) : cell.getIsPlaceholder() ? null : (
-                            flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )
-                          )}
+                          ) : (
+                      <FlexRender cell={cell} />
+                    )}
                         </TableCell>
                       );
                     })}
@@ -351,28 +344,31 @@ export function DynamicReportTable<TData>({
 
         {data.length > 0 &&
           (config.dataGrid ? (
-            <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <span>
-                  Página {table.getState().pagination.pageIndex + 1} de{" "}
+                  Página {table.state.pagination.pageIndex + 1} de{" "}
                   {Math.max(1, table.getPageCount())} · {filteredLeafRowCount}{" "}
                   registros
                 </span>
-                <label className="flex items-center gap-2">
-                  <span className="sr-only sm:not-sr-only">Filas:</span>
-                  <select
-                    aria-label="Filas por página"
-                    value={table.getState().pagination.pageSize}
-                    onChange={(event) => table.setPageSize(Number(event.target.value))}
-                    className="h-9 rounded-md border bg-background px-2 text-foreground"
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="hidden sm:inline">Filas:</span>
+                  <Select
+                    value={String(table.state.pagination.pageSize)}
+                    onValueChange={(value) => table.setPageSize(Number(value))}
                   >
-                    {[5, 10, 20, 50].map((pageSize) => (
-                      <option key={pageSize} value={pageSize}>
-                        {pageSize}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <SelectTrigger aria-label="Filas por página" className="h-9 w-[4.75rem]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 10, 20, 50].map((pageSize) => (
+                        <SelectItem key={pageSize} value={String(pageSize)}>
+                          {pageSize}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -398,7 +394,7 @@ export function DynamicReportTable<TData>({
               </div>
             </div>
           ) : (
-            <div className="mt-4 text-center text-sm text-gray-500">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Mostrando {filteredLeafRowCount} registros
               {filteredLeafRowCount !== data.length &&
                 ` (de ${data.length} totales)`}
@@ -409,10 +405,10 @@ export function DynamicReportTable<TData>({
   );
 }
 
-function AggregationFooter<TData>({
+function AggregationFooter<TData extends RowData>({
   table,
 }: {
-  table: TanStackTable<TData>;
+  table: TanStackTable<AppTableFeatures, TData>;
 }) {
   const allRows = table.getFilteredRowModel().flatRows;
   const visibleColumns = table.getVisibleLeafColumns();
@@ -423,7 +419,7 @@ function AggregationFooter<TData>({
 
   return (
     <TableFooter>
-      <TableRow className="bg-gray-100 font-semibold">
+      <TableRow className="bg-muted font-semibold">
         {visibleColumns.map((column) => {
           const meta = column.columnDef.meta as DynamicColumnMeta | undefined;
           const align = meta?.align ?? "left";
@@ -478,7 +474,13 @@ function AggregationFooter<TData>({
   );
 }
 
-function countLeafRows<TData>(row: Row<TData>): number {
+function alignClass(align: DynamicColumnMeta["align"]): string {
+  if (align === "center") return "text-center";
+  if (align === "right") return "text-right";
+  return "text-left";
+}
+
+function countLeafRows<TData extends RowData>(row: Row<AppTableFeatures, TData>): number {
   if (row.subRows && row.subRows.length > 0) {
     return row.subRows.reduce((count, subRow) => count + countLeafRows(subRow), 0);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle, ToggleLeft } from "lucide-react";
+import { LogOut, User as UserIcon, ChevronsUpDown, Download, ArrowUpCircle, BookOpen, ToggleLeft } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -20,8 +20,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { routes } from "@/lib/routes";
-import { createClient } from "@/utils/supabase/client";
-import { useAppVersion, DOWNLOAD_URL } from "@/hooks/useAppVersion";
+import { signOut } from "@/lib/signOut";
+import { useAppVersion, DOWNLOAD_URL, releaseNotesUrl } from "@/hooks/useAppVersion";
 import { FeatureFlagsDialog } from "@/components/ui/FeatureFlagsDialog";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -111,6 +111,12 @@ export function NavUser({
                   Mi Perfil
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={releaseNotesUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen />
+                  Novedades de esta versión · {currentVersion}
+                </a>
+              </DropdownMenuItem>
               {availableFlags.length > 0 && (
                 <DropdownMenuItem onClick={() => setFeatureFlagsOpen(true)}>
                   <ToggleLeft />
@@ -154,16 +160,7 @@ export function NavUser({
 
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={async () => {
-                const supabase = createClient();
-                try {
-                  await Promise.race([
-                    supabase.auth.signOut(),
-                    new Promise((r) => setTimeout(r, 1000)),
-                  ]);
-                } catch {}
-                window.location.reload();
-              }}
+              onClick={signOut}
             >
               <LogOut />
               Cerrar Sesión

@@ -147,7 +147,7 @@ async function fetchStepLogs(supabase: SupabaseClient, communityId: number) {
 }
 
 async function fetchParishPriest(supabase: SupabaseClient, parishId: number) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('priests')
     .select('person:people(person_name)')
     .eq('parish_id', parishId)
@@ -155,15 +155,116 @@ async function fetchParishPriest(supabase: SupabaseClient, parishId: number) {
     .limit(1)
     .maybeSingle();
 
+  if (error) throw error;
   if (data?.person) {
     return (data.person as any).person_name as string | null;
   }
   return null;
 }
 
+function groupTeams(teams: Team[]) {
+  return {
+    responsables: teams.filter(team => team.team_type_id === 4),
+    catequistas: teams.filter(team => team.team_type_id === 3),
+  };
+}
+
+function mergeBrothers(brothers: Brother[]): MergedBrother[] {
+  const processedIds = new Set<number>();
+  const merged: MergedBrother[] = [];
+
+  const nonMarriageTypes = NON_MARRIAGE_TYPE_IDS;
+
+  brothers.forEach(brother => {
+    if (processedIds.has(brother.person_id)) return;
+
+    const person = brother.person;
+    if (!person) return;
+
+    const cannotBeMarried = person.person_type_id && nonMarriageTypes.includes(person.person_type_id);
+
+    if (!cannotBeMarried && person.spouse_id) {
+      const spouseBrother = brothers.find(b =>
+        b.person_id === person.spouse_id &&
+        !processedIds.has(b.person_id)
+      );
+
+      if (spouseBrother && spouseBrother.person) {
+        const spouseCannotBeMarried = spouseBrother.person.person_type_id &&
+          nonMarriageTypes.includes(spouseBrother.person.person_type_id);
+
+        if (!spouseCannotBeMarried) {
+          const husband = person.gender_id === 1 ? person : spouseBrother.person;
+          const wife = person.gender_id === 2 ? person : spouseBrother.person;
+
+          // Use the most recent created_at between the two spouses
+          const marriageCreatedAt = brother.created_at && spouseBrother.created_at
+            ? (new Date(brother.created_at) > new Date(spouseBrother.created_at) ? brother.created_at : spouseBrother.created_at)
+            : brother.created_at || spouseBrother.created_at || null;
+
+          merged.push({
+            id: `marriage-${person.id}-${spouseBrother.person_id}`,
+            name: `${husband.person_name} y ${wife.person_name}`,
+            carisma: 'Matrimonio',
+            celular: husband.mobile || wife.mobile || '',
+            isMarriage: true,
+            isPresbitero: false,
+            isItinerante: person.is_itinerante === true || spouseBrother.person?.is_itinerante === true,
+            personIds: [person.id!, spouseBrother.person_id],
+            createdAt: marriageCreatedAt ?? null,
+          });
+
+          processedIds.add(person.id!);
+          processedIds.add(spouseBrother.person_id);
+          return;
+        }
+      }
+    }
+
+    const carisma = getCarismaLabel(person.person_type_id);
+
+    merged.push({
+      id: `person-${person.id}`,
+      name: person.person_name,
+      carisma,
+      celular: person.mobile || '',
+      isMarriage: false,
+      isPresbitero: person.person_type_id === 3,
+      isItinerante: person.is_itinerante === true,
+      personIds: [person.id!],
+      createdAt: brother.created_at ?? null,
+    });
+
+    processedIds.add(person.id!);
+  });
+
+  return merged;
+}
+
+type PrintData = Omit<CommunityData, 'loading' | 'error' | 'community'> & { community: Community; mergedBrothers: MergedBrother[] };
+
+export async function fetchCommunityPrintData(client: SupabaseClient, communityId: number, includeStepLogs: boolean): Promise<PrintData> {
+  const [community, brothers, teams, stepLogs] = await Promise.all([
+    fetchCommunity(client, communityId),
+    fetchBrothers(client, communityId),
+    fetchTeams(client, communityId),
+    includeStepLogs ? fetchStepLogs(client, communityId) : [],
+  ]);
+  const teamIds = teams.map(team => team.id!);
+  const [teamMembers, teamParishes, parishPriestName] = await Promise.all([
+    teamIds.length ? fetchTeamMembers(client, teamIds) : {},
+    teamIds.length ? fetchTeamParishes(client, teamIds) : {},
+    community.parish_id ? fetchParishPriest(client, community.parish_id) : null,
+  ]);
+  return {
+    community, brothers, teams: groupTeams(teams), stepLogs,
+    teamMembers, teamParishes, parishPriestName, mergedBrothers: mergeBrothers(brothers),
+  };
+}
+
 // --- Hook ---
 
-export function useCommunityData(communityId: number): CommunityData & {
+export function useCommunityData(communityId: number, includeStepLogs: boolean): CommunityData & {
   mergedBrothers: MergedBrother[];
   refreshCommunity: () => Promise<void>;
   invalidateDetail: () => Promise<void>;
@@ -198,7 +299,7 @@ export function useCommunityData(communityId: number): CommunityData & {
   const stepLogsQuery = useQuery({
     queryKey: queryKeys.community.stepLogs(communityId),
     queryFn: () => fetchStepLogs(supabase, communityId),
-    enabled: !!communityId,
+    enabled: !!communityId && includeStepLogs,
   });
 
   // Dependent queries - need teamIds from teamsQuery
@@ -261,88 +362,8 @@ export function useCommunityData(communityId: number): CommunityData & {
     [queryClient]
   );
 
-  // Group teams by type
-  const groupedTeams = useMemo(() => {
-    const teams = teamsQuery.data ?? [];
-    return {
-      responsables: teams.filter(team => team.team_type_id === 4),
-      catequistas: teams.filter(team => team.team_type_id === 3),
-    };
-  }, [teamsQuery.data]);
-
-  // Merge married couples
-  const mergedBrothers = useMemo(() => {
-    const brothers = brothersQuery.data ?? [];
-    const processedIds = new Set<number>();
-    const merged: MergedBrother[] = [];
-
-    const nonMarriageTypes = NON_MARRIAGE_TYPE_IDS;
-
-    brothers.forEach(brother => {
-      if (processedIds.has(brother.person_id)) return;
-
-      const person = brother.person;
-      if (!person) return;
-
-      const cannotBeMarried = person.person_type_id && nonMarriageTypes.includes(person.person_type_id);
-
-      if (!cannotBeMarried && person.spouse_id) {
-        const spouseBrother = brothers.find(b =>
-          b.person_id === person.spouse_id &&
-          !processedIds.has(b.person_id)
-        );
-
-        if (spouseBrother && spouseBrother.person) {
-          const spouseCannotBeMarried = spouseBrother.person.person_type_id &&
-            nonMarriageTypes.includes(spouseBrother.person.person_type_id);
-
-          if (!spouseCannotBeMarried) {
-            const husband = person.gender_id === 1 ? person : spouseBrother.person;
-            const wife = person.gender_id === 2 ? person : spouseBrother.person;
-
-            // Use the most recent created_at between the two spouses
-            const marriageCreatedAt = brother.created_at && spouseBrother.created_at
-              ? (new Date(brother.created_at) > new Date(spouseBrother.created_at) ? brother.created_at : spouseBrother.created_at)
-              : brother.created_at || spouseBrother.created_at || null;
-
-            merged.push({
-              id: `marriage-${person.id}-${spouseBrother.person_id}`,
-              name: `${husband.person_name} y ${wife.person_name}`,
-              carisma: 'Matrimonio',
-              celular: husband.mobile || wife.mobile || '',
-              isMarriage: true,
-              isPresbitero: false,
-              isItinerante: person.is_itinerante === true || spouseBrother.person?.is_itinerante === true,
-              personIds: [person.id!, spouseBrother.person_id],
-              createdAt: marriageCreatedAt ?? null,
-            });
-
-            processedIds.add(person.id!);
-            processedIds.add(spouseBrother.person_id);
-            return;
-          }
-        }
-      }
-
-      const carisma = getCarismaLabel(person.person_type_id);
-
-      merged.push({
-        id: `person-${person.id}`,
-        name: person.person_name,
-        carisma,
-        celular: person.mobile || '',
-        isMarriage: false,
-        isPresbitero: person.person_type_id === 3,
-        isItinerante: person.is_itinerante === true,
-        personIds: [person.id!],
-        createdAt: brother.created_at ?? null,
-      });
-
-      processedIds.add(person.id!);
-    });
-
-    return merged;
-  }, [brothersQuery.data]);
+  const groupedTeams = useMemo(() => groupTeams(teamsQuery.data ?? []), [teamsQuery.data]);
+  const mergedBrothers = useMemo(() => mergeBrothers(brothersQuery.data ?? []), [brothersQuery.data]);
 
   // Combine loading/error state
   const loading = communityQuery.isLoading || brothersQuery.isLoading || teamsQuery.isLoading || stepLogsQuery.isLoading;
@@ -361,7 +382,7 @@ export function useCommunityData(communityId: number): CommunityData & {
     teams: groupedTeams,
     teamMembers: teamMembersQuery.data ?? {},
     teamParishes: teamParishesQuery.data ?? {},
-    stepLogs: stepLogsQuery.data ?? [],
+    stepLogs: includeStepLogs ? stepLogsQuery.data ?? [] : [],
     parishPriestName: parishPriestQuery.data ?? null,
     loading,
     error,

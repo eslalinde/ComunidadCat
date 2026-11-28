@@ -30,6 +30,7 @@ import {
 import { getRoleLabel, getRoleBadgeClass } from '@/lib/permissions';
 import { UserPlus, Trash2, Users, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Props {
   communityId: number;
@@ -104,7 +105,6 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
               aria-label="Usuarios con acceso"
             >
               <Users className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
         )}
         <SheetContent side="right" className="sm:max-w-md w-full flex flex-col">
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+            <SheetTitle>
               <Users className="h-5 w-5" />
               Usuarios con acceso
             </SheetTitle>
@@ -126,9 +126,8 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
               size="sm"
               variant="outline"
               onClick={() => setIsAddOpen(true)}
-              className="flex items-center gap-1"
             >
-              <UserPlus className="h-3.5 w-3.5" />
+              <UserPlus className="h-4 w-4" />
               Agregar usuario
             </Button>
           </div>
@@ -137,28 +136,25 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
+                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground/70" />
               </div>
             ) : accessUsers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No hay usuarios con acceso especial a esta comunidad.</p>
-              </div>
+              <EmptyState icon={Users} title="No hay usuarios con acceso especial a esta comunidad." />
             ) : (
               <div className="space-y-2">
                 {accessUsers.map((user) => (
                   <div
                     key={`${user.user_id}-${user.source}`}
-                    className="flex items-center justify-between py-3 px-3 rounded-lg bg-gray-50"
+                    className="flex items-center justify-between py-3 px-3 rounded-lg bg-muted/50"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {user.full_name || user.email}
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500 truncate">{user.email}</span>
+                        <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                         {user.source === 'profile' && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-200 text-blue-600">
+                          <Badge variant="info">
                             Asignado
                           </Badge>
                         )}
@@ -172,10 +168,10 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setRevokeTarget(user)}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       ) : (
                         <div className="w-9" /> /* spacer for alignment */
@@ -201,11 +197,11 @@ export function CommunityAccessSection({ communityId, open: openProp, onOpenChan
           <div className="space-y-4">
             {loadingUsers ? (
               <div className="flex items-center justify-center py-4">
-                <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
-                <span className="ml-2 text-sm text-gray-500">Cargando usuarios...</span>
+                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground/70" />
+                <span className="ml-2 text-sm text-muted-foreground">Cargando usuarios...</span>
               </div>
             ) : availableUsers.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 No hay mas usuarios disponibles para agregar.
               </p>
             ) : (

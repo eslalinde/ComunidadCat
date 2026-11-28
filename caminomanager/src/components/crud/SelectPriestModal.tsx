@@ -96,7 +96,7 @@ function SelectPriestModalContent({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Asignar Sacerdote Existente</DialogTitle>
           <DialogDescription>
@@ -116,13 +116,13 @@ function SelectPriestModalContent({
 
           {/* Lista de personas disponibles */}
           {loading ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               Cargando presbíteros disponibles...
             </div>
           ) : error ? (
             <div className="text-center py-8 text-red-500">{error}</div>
           ) : filteredPeople.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               {searchTerm
                 ? 'No se encontraron presbíteros con ese nombre'
                 : 'No hay presbíteros disponibles para asignar'}
@@ -135,12 +135,12 @@ function SelectPriestModalContent({
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     selectedPersonId === person.id
                       ? 'bg-blue-50 border-blue-500'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-muted/50'
                   }`}
                   onClick={() => setSelectedPersonId(person.id!)}
                 >
                   <div className="font-medium">{person.person_name}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {person.mobile && `Celular: ${person.mobile}`}
                     {person.email && ` · Email: ${person.email}`}
                   </div>
@@ -152,7 +152,7 @@ function SelectPriestModalContent({
           {/* Selector de rol */}
           {selectedPersonId && (
             <div className="border-t pt-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block">
                 Rol en la parroquia:
               </label>
               <div className="flex gap-3">
@@ -161,7 +161,7 @@ function SelectPriestModalContent({
                   className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     !selectedRole
                       ? 'bg-blue-50 border-blue-500 text-blue-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      : 'bg-background border-input text-foreground hover:bg-muted/50'
                   }`}
                   onClick={() => setSelectedRole(false)}
                 >
@@ -172,7 +172,7 @@ function SelectPriestModalContent({
                   className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     selectedRole
                       ? 'bg-amber-50 border-amber-500 text-amber-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      : 'bg-background border-input text-foreground hover:bg-muted/50'
                   }`}
                   onClick={() => setSelectedRole(true)}
                 >

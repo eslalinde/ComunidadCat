@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildZodSchema, buildDefaultValues, prepareFormData } from '@/lib/form-schema';
+import { buildZodSchema, buildDefaultValues, prepareFormData, getInputAttributes } from '@/lib/form-schema';
 import type { FormField } from '@/types/database';
 
 describe('form-schema utilities', () => {
@@ -231,5 +231,29 @@ describe('form-schema utilities', () => {
       const result = prepareFormData({ name: 'Test Name' }, fields);
       expect(result.name).toBe('Test Name');
     });
+  });
+});
+
+describe('getInputAttributes', () => {
+  it('requests the phone keypad and autofill for tel fields', () => {
+    expect(getInputAttributes({ type: 'tel' })).toEqual({ inputMode: 'tel', autoComplete: 'tel' });
+  });
+
+  it('requests the email keyboard and autofill for email fields', () => {
+    expect(getInputAttributes({ type: 'email' })).toEqual({ inputMode: 'email', autoComplete: 'email' });
+  });
+
+  it('requests a numeric keypad for number fields', () => {
+    expect(getInputAttributes({ type: 'number' })).toEqual({ inputMode: 'numeric' });
+  });
+
+  it('adds nothing for plain text fields', () => {
+    expect(getInputAttributes({ type: 'text' })).toEqual({});
+  });
+
+  it('keeps tel fields as optional strings in the schema', () => {
+    const fields: FormField[] = [{ name: 'phone', label: 'Teléfono', type: 'tel' }];
+    expect(buildZodSchema(fields).safeParse({ phone: '' }).success).toBe(true);
+    expect(buildZodSchema(fields).safeParse({ phone: '+57 300 123 4567' }).success).toBe(true);
   });
 });

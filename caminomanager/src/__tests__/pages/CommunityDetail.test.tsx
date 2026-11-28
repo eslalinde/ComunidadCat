@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import type { AppRole, UserScope } from '@/lib/permissions';
@@ -101,6 +101,7 @@ vi.mock('@tanstack/react-query', () => ({
 
 // Supabase mock builder
 const mockSupabaseChain = {
+  rpc: vi.fn(),
   from: vi.fn().mockReturnThis(),
   select: vi.fn().mockReturnThis(),
   insert: vi.fn().mockReturnThis(),
@@ -157,8 +158,14 @@ const mockInvalidateStepLogs = vi.fn().mockResolvedValue(undefined);
 const mockRefreshCommunity = vi.fn().mockResolvedValue(undefined);
 
 let mockCommunityDataOverrides: Record<string, any> = {};
+const mockFreshData = {
+  community: mockCommunity, brothers: [], teams: mockTeams, teamMembers: {}, teamParishes: {},
+  stepLogs: mockStepLogs, parishPriestName: null, mergedBrothers: [mockMergedBrothers[0]],
+};
+const mockFetchPrintData = vi.fn();
 
 vi.mock('@/hooks/useCommunityData', () => ({
+  fetchCommunityPrintData: (...args: unknown[]) => mockFetchPrintData(...args),
   useCommunityData: () => ({
     community: mockCommunity,
     brothers: [],
@@ -178,6 +185,12 @@ vi.mock('@/hooks/useCommunityData', () => ({
     invalidateStepLogs: mockInvalidateStepLogs,
     ...mockCommunityDataOverrides,
   }),
+}));
+
+// The switcher's own behaviour is covered in CommunitySwitcher.test.tsx; here it
+// falls back to the detail payload for the header labels.
+vi.mock('@/hooks/useCommunitySwitcher', () => ({
+  useCommunitySwitcher: () => ({ parishes: [], loading: false, error: false }),
 }));
 
 vi.mock('@/lib/queryKeys', () => ({
@@ -269,7 +282,8 @@ vi.mock('@/components/crud/CommunityStepLogCompact', () => ({
 }));
 
 vi.mock('@/components/crud/CommunityPrintView', () => ({
-  CommunityPrintView: () => <div data-testid="print-view" />,
+  CommunityPrintView: ({ printMode, stepLogs, mergedBrothers }: { printMode: string; stepLogs: unknown[]; mergedBrothers: { name: string }[] }) =>
+    <div data-testid="print-view">{printMode}:{stepLogs.length}:{mergedBrothers.map(b => b.name).join(',')}</div>,
 }));
 
 vi.mock('@/components/crud/DynamicEntityModal', () => ({
@@ -341,6 +355,8 @@ beforeEach(() => {
   mockUserScope = makeScope('admin');
   mockFeatureFlags = { community_visits: true };
   mockCommunityDataOverrides = {};
+  mockFetchPrintData.mockReset().mockResolvedValue(mockFreshData);
+  mockSearchParams.set('id', '1');
 });
 
 // ===========================================================================
@@ -637,6 +653,59 @@ describe('CommunityDetailPage - Permission Matrix', () => {
 // ===========================================================================
 
 describe('CommunityDetailPage - Print Dropdown', () => {
+  it('comprueba el permiso vigente antes de montar el documento', async () => {
+    mockUserScope = makeScope('admin');
+    mockSupabaseChain.rpc.mockResolvedValueOnce({ data: [makeScope('community_responsible')] })
+      .mockResolvedValueOnce({ data: true });
+    render(<CommunityDetailPage />);
+    expect(screen.queryByTestId('print-view')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText('Ficha completa'));
+    expect(mockSupabaseChain.rpc).toHaveBeenCalledWith('can_access_community', { p_community_id: 1 });
+    expect(window.print).not.toHaveBeenCalled();
+  });
+
+  it('monta la ficha autorizada únicamente durante la impresión', async () => {
+    const viewer = makeScope('viewer', { zone_id: 10 });
+    mockUserScope = viewer;
+    mockSupabaseChain.rpc.mockImplementation(async (name: string) =>
+      ({ data: name === 'get_user_scope' ? [viewer] : true }));
+    let documentDuringPrint: string | null = null;
+    vi.mocked(window.print).mockImplementationOnce(() => {
+      documentDuringPrint = screen.getByTestId('print-view').textContent;
+    });
+    render(<CommunityDetailPage />);
+    await userEvent.click(screen.getByText('Ficha completa'));
+    expect(documentDuringPrint).toBe('ficha:1:Juan');
+    expect(documentDuringPrint).not.toContain('Pedro y Ana');
+    expect(screen.queryByTestId('print-view')).not.toBeInTheDocument();
+  });
+
+  it('cancela la impresión al cambiar el ámbito durante la carga', async () => {
+    const scope = makeScope('viewer', { zone_id: 10 });
+    mockUserScope = scope;
+    mockSupabaseChain.rpc.mockResolvedValueOnce({ data: [scope] }).mockResolvedValueOnce({ data: true })
+      .mockResolvedValueOnce({ data: [{ ...scope, zone_id: 11 }] }).mockResolvedValueOnce({ data: true });
+    render(<CommunityDetailPage />);
+    await userEvent.click(screen.getByText('Ficha completa'));
+    expect(mockFetchPrintData).toHaveBeenCalledOnce();
+    expect(window.print).not.toHaveBeenCalled();
+  });
+
+  it('cancela un documento pendiente al navegar a otra comunidad', async () => {
+    const scope = makeScope('viewer', { zone_id: 10 });
+    mockUserScope = scope;
+    mockSupabaseChain.rpc.mockImplementation(async (name: string) =>
+      ({ data: name === 'get_user_scope' ? [scope] : true }));
+    let resolveSnapshot!: (snapshot: typeof mockFreshData) => void;
+    mockFetchPrintData.mockReturnValueOnce(new Promise(resolve => { resolveSnapshot = resolve; }));
+    const view = render(<CommunityDetailPage />);
+    await userEvent.click(screen.getByText('Ficha completa'));
+    expect(mockFetchPrintData).toHaveBeenCalledOnce();
+    mockSearchParams.set('id', '2');
+    view.rerender(<CommunityDetailPage />);
+    await act(async () => { resolveSnapshot(mockFreshData); });
+    expect(window.print).not.toHaveBeenCalled();
+  });
   it('admin sees all 3 print options', () => {
     mockUserScope = makeScope('admin');
     render(<CommunityDetailPage />);

@@ -31,7 +31,7 @@ export function GlobalFilter({
 
   return (
     <div className="relative w-full sm:w-[28rem]">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
       <Input
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
@@ -42,10 +42,10 @@ export function GlobalFilter({
         <button
           type="button"
           onClick={() => setLocalValue("")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
           aria-label="Limpiar búsqueda"
         >
-          <X className="h-4 w-4 text-gray-400" />
+          <X className="h-4 w-4 text-muted-foreground/70" />
         </button>
       )}
     </div>

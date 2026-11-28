@@ -6,7 +6,7 @@ function Field({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="field"
-      className={cn("grid gap-2", className)}
+      className={cn("grid content-start gap-2", className)}
       {...props}
     />
   )
@@ -37,7 +37,7 @@ function FieldError({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="field-error"
       role="alert"
-      className={cn("text-sm font-medium text-destructive", className)}
+      className={cn("text-xs leading-4 text-field-error-foreground", className)}
       {...props}
     />
   )

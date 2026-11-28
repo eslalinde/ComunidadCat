@@ -14,7 +14,11 @@ test.describe('EntityTable con DataGrid', () => {
 
     if (testInfo.project.name === 'chromium-mobile') {
       await expect(grid).toHaveCount(0);
-      await expect(page.getByRole('button', { name: /Editar / }).first()).toBeVisible();
+      // Mobile cards group row actions behind one labelled menu.
+      await page.getByRole('button', { name: /^Acciones para / }).first().click();
+      await expect(page.getByRole('menuitem', { name: 'Editar', exact: true })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Eliminar', exact: true })).toBeVisible();
+      await page.keyboard.press('Escape');
       return;
     }
 

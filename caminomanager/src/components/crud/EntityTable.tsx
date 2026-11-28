@@ -1,17 +1,23 @@
-import { useRef, useState } from 'react';
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import { Fragment, useRef, useState } from 'react';
 import {
   functionalUpdate,
-  getCoreRowModel,
   type ColumnDef,
   type SortingState,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { DataGrid } from '@/components/ui/data-grid';
 import { toSentenceCase } from '@/lib/text-format';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BaseEntity } from '@/types/database';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -130,7 +136,7 @@ export function EntityTable<T extends BaseEntity>({
                 if (onRowClick) { onRowClick(item); } else { onEdit(item); }
               }}
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Editar</TooltipContent>
@@ -152,7 +158,7 @@ export function EntityTable<T extends BaseEntity>({
                   }
                 }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Eliminar</TooltipContent>
@@ -162,7 +168,55 @@ export function EntityTable<T extends BaseEntity>({
     </div>
   );
 
-  const dataGridColumns: ColumnDef<T>[] = [
+  // Touch devices: tooltips never show and small adjacent icons invite mis-taps,
+  // so actions live in a 44px "more" menu with visible text labels.
+  const renderMobileActions = (item: T) => {
+    const label = getItemLabel(item);
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-11 -mr-2 -mt-1 shrink-0"
+            aria-label={`Acciones para ${label}`}
+            data-delete-entity-id={item.id}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            <MoreVertical className="w-5 h-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem
+            className="min-h-11 text-base"
+            onSelect={() => {
+              if (onRowClick) { onRowClick(item); } else { onEdit(item); }
+            }}
+          >
+            <Pencil />
+            Editar
+          </DropdownMenuItem>
+          {!hideDeleteInTable && (
+            <DropdownMenuItem
+              variant="destructive"
+              className="min-h-11 text-base"
+              onSelect={() => {
+                if (item.id) {
+                  deleteTriggerRef.current = null;
+                  setDeleteTarget({ id: item.id, label });
+                }
+              }}
+            >
+              <Trash2 />
+              Eliminar
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  const dataGridColumns: ColumnDef<AppTableFeatures, T>[] = [
     ...columns.map((column) => ({
       id: String(column.key),
       accessorFn: (item: T) => item[column.key],
@@ -182,7 +236,9 @@ export function EntityTable<T extends BaseEntity>({
   const sorting: SortingState = [
     { id: String(sort.field), desc: !sort.asc },
   ];
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
+    manualPagination: true,
     data,
     columns: dataGridColumns,
     state: { sorting },
@@ -193,7 +249,6 @@ export function EntityTable<T extends BaseEntity>({
       const nextColumn = nextSorting[0];
       if (nextColumn) onSort(nextColumn.id as keyof T);
     },
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (
@@ -209,23 +264,32 @@ export function EntityTable<T extends BaseEntity>({
             {data.map((item, index) => (
               <div
                 key={item.id || index}
-                className={`rounded-lg border bg-card p-3 shadow-sm ${onRowClick ? "cursor-pointer active:bg-gray-50" : ""}`}
+                className={`rounded-lg border bg-card p-3 shadow-sm touch-manipulation ${onRowClick ? "cursor-pointer active:bg-accent" : ""}`}
                 onClick={() => onRowClick?.(item)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0 space-y-1">
-                    {visibleColumns.map((column, colIndex) => (
-                      <div key={String(column.key)} className={colIndex === 0 ? "font-medium text-sm" : "text-sm text-muted-foreground"}>
-                        {colIndex > 0 && (
-                          <span className="text-xs text-gray-400">
-                            {toSentenceCase(column.label)}:{' '}
-                          </span>
-                        )}
-                        <span>{getCellValue(item, column)}</span>
+                  <div className="flex-1 min-w-0">
+                    {visibleColumns[0] && (
+                      <div className="text-base font-semibold leading-snug break-words">
+                        {getCellValue(item, visibleColumns[0])}
                       </div>
-                    ))}
+                    )}
+                    {visibleColumns.length > 1 && (
+                      <dl className="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm">
+                        {visibleColumns.slice(1).map((column) => (
+                          <Fragment key={String(column.key)}>
+                            <dt className="text-xs leading-5 text-muted-foreground">
+                              {toSentenceCase(column.label)}
+                            </dt>
+                            <dd className="min-w-0 truncate leading-5 text-foreground/90">
+                              {getCellValue(item, column) || <span className="text-muted-foreground">—</span>}
+                            </dd>
+                          </Fragment>
+                        ))}
+                      </dl>
+                    )}
                   </div>
-                  {renderActions(item)}
+                  {renderMobileActions(item)}
                 </div>
               </div>
             ))}
@@ -250,7 +314,7 @@ export function EntityTable<T extends BaseEntity>({
             return configured?.width ? { width: configured.width } : undefined;
           }}
           getRowClassName={() =>
-            onRowClick ? 'cursor-pointer hover:bg-gray-50' : undefined
+            onRowClick ? 'cursor-pointer' : undefined
           }
           getCellClassName={(cell) =>
             cell.column.id === 'actions'
@@ -274,7 +338,7 @@ export function EntityTable<T extends BaseEntity>({
         onConfirm={handleDeleteConfirmed}
         title="¿Eliminar registro?"
         itemName={deleteTarget?.label}
-        description="¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer."
+        description="Esta acción no se puede deshacer."
       />
     </>
   );

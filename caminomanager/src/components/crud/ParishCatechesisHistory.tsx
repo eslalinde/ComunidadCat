@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDeleteDialog } from '@/components/crud/ConfirmDeleteDialog';
 import { useCrud } from '@/hooks/useCrud';
 import { ParishCatechesis } from '@/types/database';
 import { Calendar, FileText, ExternalLink, Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -13,6 +14,8 @@ import { parishCatechesisConfig } from '@/config/entities';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
+import { Hint } from '@/components/ui/tooltip';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface ParishCatechesisHistoryProps {
   parishId: number;
@@ -159,12 +162,12 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Catequesis Realizadas</CardTitle>
+          <CardTitle>Catequesis Realizadas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -176,26 +179,23 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
-            Catequesis Realizadas {count > 0 && <span className="text-gray-400 font-normal">({count})</span>}
+          <CardTitle>
+            Catequesis Realizadas {count > 0 && <span className="text-muted-foreground/70 font-normal">({count})</span>}
           </CardTitle>
           <div className="flex items-center gap-2 print-hidden">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4" />
               Agregar
             </Button>
             {count > itemsPerPage && (
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost">
-                    <ExternalLink className="w-4 h-4 mr-1" />
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-4 w-4" />
                     Ver todos
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80dvh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <FileText className="w-5 h-5" />
@@ -207,7 +207,7 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
                       <div key={entry.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Calendar className="w-4 h-4" />
                               <span>Inicio: {formatDateFull(entry.actual_start_date)}</span>
                             </div>
@@ -219,47 +219,51 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
                             )}
                           </div>
                           <div className="flex gap-2 shrink-0">
-                            <button
-                              type="button"
-                              className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                              onClick={() => handleEditClick(entry)}
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                              onClick={() => handleDeleteClick(entry.id!)}
-                              disabled={deletingId === entry.id}
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <Hint label="Editar">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground"
+                                onClick={() => handleEditClick(entry)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Hint>
+                            <Hint label="Eliminar">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => handleDeleteClick(entry.id!)}
+                                disabled={deletingId === entry.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </Hint>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="font-medium text-gray-600">Planificado:</span>{' '}
+                            <span className="font-medium text-muted-foreground">Planificado:</span>{' '}
                             {formatDateFull(entry.planned_start_date)}
                           </div>
                           <div>
-                            <span className="font-medium text-gray-600">Inicio real:</span>{' '}
+                            <span className="font-medium text-muted-foreground">Inicio real:</span>{' '}
                             {formatDateFull(entry.actual_start_date)}
                           </div>
                           <div>
-                            <span className="font-medium text-gray-600">Convivencia:</span>{' '}
+                            <span className="font-medium text-muted-foreground">Convivencia:</span>{' '}
                             {formatDateFull(entry.birth_retreat_date)}
                           </div>
                           <div>
-                            <span className="font-medium text-gray-600">Asistencia:</span>{' '}
+                            <span className="font-medium text-muted-foreground">Asistencia:</span>{' '}
                             {entry.attendance_count ?? 'No registrada'}
                           </div>
                         </div>
 
                         {entry.catechist_team && (
-                          <div className="text-sm text-gray-700">
+                          <div className="text-sm text-foreground">
                             <p className="font-medium mb-1">Equipo de Catequistas:</p>
                             <p className="whitespace-pre-wrap">{entry.catechist_team}</p>
                           </div>
@@ -278,59 +282,60 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
         {/* Screen view - horizontal cards */}
         <div className="print-hidden">
           {displayedLogs.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <FileText className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm">No hay catequesis registradas</p>
-            </div>
+            <EmptyState icon={FileText} title="No hay catequesis registradas" />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {displayedLogs.map((entry) => (
                 <div key={entry.id} className="border rounded-lg p-3 space-y-2 relative group">
                   {/* Date header */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-foreground">
                       {formatDate(entry.actual_start_date || entry.planned_start_date) || 'Sin fecha'}
                     </span>
                     <div className="flex gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                        onClick={() => handleEditClick(entry)}
-                        title="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-10 h-10 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        onClick={() => handleDeleteClick(entry.id!)}
-                        disabled={deletingId === entry.id}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <Hint label="Editar">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground"
+                          onClick={() => handleEditClick(entry)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Hint>
+                      <Hint label="Eliminar">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => handleDeleteClick(entry.id!)}
+                          disabled={deletingId === entry.id}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </Hint>
                     </div>
                   </div>
 
                   {/* Attendance */}
                   {entry.attendance_count && (
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Users className="w-3.5 h-3.5 text-gray-400" />
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Users className="w-3.5 h-3.5 text-muted-foreground/70" />
                       <span>{entry.attendance_count} asistentes</span>
                     </div>
                   )}
 
                   {/* Retreat date */}
                   {entry.birth_retreat_date && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3 text-gray-400" />
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3 text-muted-foreground/70" />
                       <span>Conv. {formatDate(entry.birth_retreat_date)}</span>
                     </div>
                   )}
 
                   {/* Team */}
                   {entry.catechist_team && (
-                    <p className="text-xs text-gray-500 line-clamp-2">
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                       {entry.catechist_team}
                     </p>
                   )}
@@ -343,7 +348,7 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
         {/* Print view */}
         <div className="hidden print:block">
           {sortedList.length === 0 ? (
-            <p className="text-sm text-gray-500">No hay catequesis registradas</p>
+            <p className="text-sm text-muted-foreground">No hay catequesis registradas</p>
           ) : (
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -356,7 +361,7 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
               </thead>
               <tbody>
                 {sortedList.map((entry) => (
-                  <tr key={entry.id} className="border-b border-gray-200">
+                  <tr key={entry.id} className="border-b border-border">
                     <td className="py-1 px-2 whitespace-nowrap">{formatDateFull(entry.actual_start_date || entry.planned_start_date)}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{formatDateFull(entry.birth_retreat_date)}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{entry.attendance_count ?? '-'}</td>
@@ -396,41 +401,18 @@ export function ParishCatechesisHistory({ parishId, parishName }: ParishCateches
         loading={isSaving}
       />
 
-      {/* Dialogo de confirmacion para eliminar */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-        if (!open) {
+      <ConfirmDeleteDialog
+        open={isDeleteDialogOpen}
+        onClose={() => {
           setIsDeleteDialogOpen(false);
           setDeletingId(null);
-        }
-      }}>
-        <DialogContent>
-            <DialogHeader>
-              <DialogTitle>¿Eliminar catequesis?</DialogTitle>
-              <DialogDescription>
-                ¿Estas seguro de que deseas eliminar este registro de catequesis? Esta accion no se puede deshacer.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteDialogOpen(false);
-                  setDeletingId(null);
-                }}
-                disabled={isDeleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting || !deletingId}
-              >
-                {isDeleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="¿Eliminar catequesis?"
+        description={`Se eliminará este registro de catequesis de ${parishName}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        loading={isDeleting}
+      />
     </Card>
   );
 }

@@ -1,3 +1,5 @@
+import { preparePerson } from '@/lib/personContacts';
+import { FormAlert } from "@/components/ui/form-alert";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +13,17 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormRoot,
+  RequiredMark,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { friendlyError } from "@/lib/supabaseErrors";
 
@@ -72,14 +84,14 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
       // Create husband
       const { data: husband, error: husbandError } = await supabase
         .from("people")
-        .insert({
+        .insert(await preparePerson(supabase, {
           person_name: values.husband_name,
           phone: values.husband_phone || null,
           mobile: values.husband_mobile || null,
           email: values.husband_email || null,
           person_type_id: 1, // Matrimonio
           gender_id: 1, // Masculino
-        })
+        }))
         .select()
         .single();
 
@@ -88,7 +100,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
       // Create wife
       const { data: wife, error: wifeError } = await supabase
         .from("people")
-        .insert({
+        .insert(await preparePerson(supabase, {
           person_name: values.wife_name,
           phone: values.wife_phone || null,
           mobile: values.wife_mobile || null,
@@ -96,7 +108,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
           person_type_id: 1, // Matrimonio
           gender_id: 2, // Femenino
           spouse_id: husband.id,
-        })
+        }))
         .select()
         .single();
 
@@ -120,32 +132,37 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
     }
   };
 
-  if (!open) return null;
+  const submitting = form.formState.isSubmitting;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-        <h2 className="text-lg font-bold mb-4">Crear Matrimonio</h2>
+    <Dialog open={open} onOpenChange={(next) => !next && !submitting && onClose()}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Crear Matrimonio</DialogTitle>
+          <DialogDescription>
+            Se registran ambos esposos y quedan vinculados entre sí.
+          </DialogDescription>
+        </DialogHeader>
 
         {form.formState.errors.root && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <FormAlert tone="error" className="mb-4">
             {form.formState.errors.root.message}
-          </div>
+          </FormAlert>
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <FormRoot onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Husband Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-blue-600">Esposo</h3>
+                <h3 className="text-base font-semibold text-blue-600">Esposo</h3>
 
                 <FormField
                   control={form.control}
                   name="husband_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre del Esposo *</FormLabel>
+                      <FormLabel>Nombre del Esposo <RequiredMark /></FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Ingrese el nombre del esposo"
@@ -214,14 +231,14 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
 
               {/* Wife Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-pink-600">Esposa</h3>
+                <h3 className="text-base font-semibold text-pink-600">Esposa</h3>
 
                 <FormField
                   control={form.control}
                   name="wife_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre de la Esposa *</FormLabel>
+                      <FormLabel>Nombre de la Esposa <RequiredMark /></FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Ingrese el nombre de la esposa"
@@ -289,7 +306,7 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end mt-6">
+            <DialogFooter className="mt-6 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -301,10 +318,10 @@ export function MarriageModal({ open, onClose, onSuccess }: MarriageModalProps) 
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Creando..." : "Crear Matrimonio"}
               </Button>
-            </div>
-          </form>
+            </DialogFooter>
+          </FormRoot>
         </Form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

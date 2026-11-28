@@ -202,7 +202,7 @@ export interface FormField {
   name: string;
   label: string;
   tableLabel?: string;
-  type: 'text' | 'email' | 'number' | 'select' | 'textarea' | 'date' | 'checkbox';
+  type: 'text' | 'email' | 'tel' | 'number' | 'select' | 'textarea' | 'date' | 'checkbox';
   required?: boolean;
   maxLength?: number;
   minLength?: number;
@@ -232,6 +232,8 @@ export interface ForeignKeyConfig {
 export interface EntityConfig<T> {
   tableName: string;
   displayName: string;
+  /** Plural used for page titles and empty states (e.g. "Países"). */
+  pluralName?: string;
   formSize?: "default" | "wide";
   fields: FormField[];
   searchFields: (keyof T)[];

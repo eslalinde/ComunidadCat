@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
+import { flushSync } from 'react-dom';
+import { readContacts, type PersonContact } from '@/lib/personContacts';
+import { useState, useMemo, useLayoutEffect, useRef, type ComponentProps, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
-import { useCommunityData } from '@/hooks/useCommunityData';
+import { fetchCommunityPrintData, useCommunityData } from '@/hooks/useCommunityData';
 import { CommunityInfo } from '@/components/crud/CommunityInfo';
 import { BrothersList } from '@/components/crud/BrothersList';
 import { TeamSection } from '@/components/crud/TeamSection';
+import { CommunitySectionNav, type CommunitySection } from '@/components/crud/CommunitySectionNav';
 import { CommunityStepLogCompact } from '@/components/crud/CommunityStepLogCompact';
 import { CommunityPrintView } from '@/components/crud/CommunityPrintView';
 import { DynamicEntityModal } from '@/components/crud/DynamicEntityModal';
@@ -35,6 +38,7 @@ import { routes } from '@/lib/routes';
 import { createCatequistasTeam, createResponsablesTeam } from '@/lib/communityTeams';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  type UserScope,
   canEditCommunity,
   canDeleteCommunity,
   canMergeCommunity,
@@ -52,6 +56,29 @@ import { CommunityAccessSection } from '@/components/crud/CommunityAccessSection
 import { CommunityVisits } from '@/components/crud/CommunityVisits';
 import { CommunityInventory } from '@/components/crud/CommunityInventory';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
+import { Spinner } from '@/components/ui/spinner';
+import { CommunitySwitcher, type SwitchDirection } from '@/components/crud/CommunitySwitcher';
+import { cn } from '@/lib/utils';
+
+const CONTENT_ANIMATION: Record<SwitchDirection, string> = {
+  forward: 'slide-in-from-right-8',
+  backward: 'slide-in-from-left-8',
+  parish: 'slide-in-from-bottom-6 zoom-in-[0.98]',
+  none: '',
+};
+
+async function getPrintScope(client: ReturnType<typeof createClient>, communityId: number, mode: PrintMode): Promise<UserScope> {
+  const [scope, access] = await Promise.all([
+    client.rpc('get_user_scope'),
+    client.rpc('can_access_community', { p_community_id: communityId }),
+  ]);
+  const current = scope.data?.[0];
+  const canPrint = { ficha: canPrintFicha, hermanos: canPrintHermanos, todo: canPrintTodo }[mode];
+  if (scope.error || access.error || access.data !== true || !current || !canPrint(current)) {
+    throw new Error('No tienes permiso para imprimir esta comunidad.');
+  }
+  return current;
+}
 
 function CommunityDetailContent() {
   const searchParams = useSearchParams();
@@ -65,7 +92,11 @@ function CommunityDetailContent() {
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [printMode, setPrintMode] = useState<PrintMode>('todo');
+  const [printDocument, setPrintDocument] = useState<ComponentProps<typeof CommunityPrintView> | null>(null);
+  const printRequest = useRef(0);
+  useLayoutEffect(() => {
+    return () => { printRequest.current++; };
+  }, [communityId]);
 
   const { userScope } = useAuth();
 
@@ -87,9 +118,51 @@ function CommunityDetailContent() {
   const showVisits = useFeatureFlag('community_visits');
   const showInventory = useFeatureFlag('community_inventory');
 
-  const handlePrint = (mode: PrintMode) => {
-    setPrintMode(mode);
-    setTimeout(() => window.print(), 0);
+  const [switchDirection, setSwitchDirection] = useState<SwitchDirection>('none');
+
+  const handleSwitchCommunity = (targetId: number, direction: SwitchDirection) => {
+    setSwitchDirection(direction);
+    router.push(routes.comunidad(targetId));
+  };
+
+  const handlePrint = async (mode: PrintMode) => {
+    if (community?.id !== communityId) return;
+    const request = ++printRequest.current;
+    try {
+      const client = createClient();
+      const scope = await getPrintScope(client, communityId, mode);
+      const snapshot = await fetchCommunityPrintData(client, communityId, mode !== 'hermanos' && canViewStepLog(scope));
+      if (request !== printRequest.current || snapshot.community.id !== communityId) return;
+      const ids = [...new Set(snapshot.brothers.map(b => b.person_id))];
+      const include = ['admin', 'contributor', 'zone_leader', 'community_responsible'].includes(scope.role);
+      const contacts = include ? await readContacts(client, ids, communityId, mode) : new Map<number, PersonContact>();
+      const finalScope = await getPrintScope(client, communityId, mode);
+      if (request !== printRequest.current) return;
+      if (JSON.stringify(scope) !== JSON.stringify(finalScope)) throw new Error('Los permisos han cambiado.');
+
+      function withContact<T extends { person_id: number; person?: { mobile?: string; phone?: string } }>(row: T): T {
+        const contact = contacts.get(row.person_id);
+        return { ...row, person: row.person && { ...row.person, phone: contact?.phone ?? '', mobile: [contact?.mobile, contact?.phone].filter(Boolean).join(' / ') } };
+      }
+
+      flushSync(() => setPrintDocument({
+        ...snapshot,
+        printMode: mode,
+        teamMembers: Object.fromEntries(Object.entries(snapshot.teamMembers).map(([id, members]) => [id, members.map(withContact)])),
+        brothers: snapshot.brothers.map(withContact),
+        mergedBrothers: snapshot.mergedBrothers.map(b => ({
+          ...b, celular: b.personIds.flatMap(id => {
+            const contact = contacts.get(id);
+            return [contact?.mobile, contact?.phone].filter(Boolean);
+          }).join(' / '),
+        })),
+      }));
+      window.print();
+    } catch {
+      if (request === printRequest.current) toast.error('No se pudo preparar la impresión.');
+    } finally {
+      if (request === printRequest.current) setPrintDocument(null);
+    }
   };
 
   const {
@@ -100,7 +173,6 @@ function CommunityDetailContent() {
     teamMembers,
     teamParishes,
     stepLogs,
-    parishPriestName,
     loading,
     error,
     refreshCommunity,
@@ -109,10 +181,20 @@ function CommunityDetailContent() {
     invalidateTeamMembers,
     invalidateBrothers,
     invalidateStepLogs,
-  } = useCommunityData(communityId);
+  } = useCommunityData(communityId, showStepLog);
 
   // Construir nombre de catequistas responsables del equipo por defecto
   // Incluye el nombre del responsable y su cónyuge si aplica
+  // Jump targets for the mobile section bar, in on-screen order.
+  const mobileSections: CommunitySection[] = [
+    { id: 'seccion-info', label: 'Información' },
+    { id: 'seccion-equipos', label: 'Equipos' },
+    ...(showVisits ? [{ id: 'seccion-visitas', label: 'Visitas' }] : []),
+    ...(showInventory ? [{ id: 'seccion-inventario', label: 'Inventario' }] : []),
+    ...(showStepLog ? [{ id: 'seccion-etapas', label: 'Etapas' }] : []),
+    { id: 'seccion-hermanos', label: 'Hermanos' },
+  ];
+
   const defaultCatechistName = useMemo(() => {
     const team = community?.cathechist_team as any;
     if (!team?.belongs) return '';
@@ -368,14 +450,12 @@ function CommunityDetailContent() {
             Regresar a Comunidades
           </Button>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-foreground">
-                Comunidad {community?.number || 'Cargando...'}
-              </h1>
-              <p className="mt-1 text-muted-foreground">
-                {community?.parish?.name || 'Parroquia no especificada'}
-              </p>
-            </div>
+            <CommunitySwitcher
+              communityId={communityId}
+              community={community}
+              onNavigate={handleSwitchCommunity}
+              direction={switchDirection}
+            />
             <div className="flex flex-wrap items-center gap-2">
               {showAnyPrint && (
                 <DropdownMenu>
@@ -466,12 +546,33 @@ function CommunityDetailContent() {
               hideTrigger
             />
           )}
+          {/* Indeterminate progress bar while a switched community loads */}
+          <div
+            aria-hidden
+            className={cn(
+              'relative h-0.5 overflow-hidden rounded-full transition-opacity duration-300',
+              loading && switchDirection !== 'none' ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div className="community-switch-progress absolute inset-y-0 w-1/3 rounded-full bg-primary/70" />
+          </div>
         </div>
 
-        {/* Main Content - 50/50 Split */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <CommunitySectionNav sections={mobileSections} />
+
+        {/* Main Content - 50/50 Split; re-keyed so it animates in on switch */}
+        <div
+          key={communityId}
+          data-testid="community-detail-content"
+          className={cn(
+            'grid grid-cols-1 lg:grid-cols-2 gap-6 items-start',
+            'animate-in fade-in duration-500 ease-out fill-mode-backwards motion-reduce:animate-none',
+            CONTENT_ANIMATION[switchDirection]
+          )}
+        >
           {/* Left: Community Info + Teams */}
           <div className="space-y-6">
+            <div id="seccion-info" className="scroll-mt-32 md:scroll-mt-20">
             <CommunityInfo
               community={community}
               loading={loading}
@@ -479,9 +580,10 @@ function CommunityDetailContent() {
               brothersInList={mergedBrothers.reduce((n, b) => n + b.personIds.length, 0)}
               stageFromStepLog={stageFromStepLog}
             />
+            </div>
 
             {/* Responsables Team */}
-            <div>
+            <div id="seccion-equipos" className="scroll-mt-32 md:scroll-mt-20">
               {teams.responsables.length > 0 ? (
                 teams.responsables.map((team, index) => (
                   <div key={team.id || `responsable-${index}`}>
@@ -560,21 +662,26 @@ function CommunityDetailContent() {
           {/* Right: Visits + Step Log + Brothers List */}
           <div className="space-y-6">
             {showVisits && (
+              <div id="seccion-visitas" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityVisits
                 communityId={communityId}
                 communityNumber={community?.number || ''}
                 defaultVisitorName={defaultCatechistName}
               />
+              </div>
             )}
 
             {showInventory && (
+              <div id="seccion-inventario" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityInventory
                 communityId={communityId}
                 communityNumber={community?.number || ''}
               />
+              </div>
             )}
 
             {showStepLog && (
+              <div id="seccion-etapas" className="scroll-mt-32 md:scroll-mt-20">
               <CommunityStepLogCompact
                 communityId={communityId}
                 communityNumber={community?.number || ''}
@@ -586,9 +693,12 @@ function CommunityDetailContent() {
                 actualBrothers={community?.actual_brothers}
                 readOnly={!canEditStepLog(userScope)}
               />
+              </div>
             )}
 
+            <div id="seccion-hermanos" className="scroll-mt-32 md:scroll-mt-20">
             <BrothersList
+              canAssignTeam={showManageTeams}
               brothers={mergedBrothers}
               loading={loading}
               communityId={communityId}
@@ -598,22 +708,13 @@ function CommunityDetailContent() {
               onAdd={showManageBrothers ? invalidateBrothers : undefined}
               onPersonUpdated={handlePersonUpdated}
             />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Print view - only visible when printing */}
-      <CommunityPrintView
-        community={community}
-        teams={teams}
-        teamMembers={teamMembers}
-        teamParishes={teamParishes}
-        stepLogs={stepLogs}
-        parishPriestName={parishPriestName}
-        mergedBrothers={mergedBrothers}
-        brothers={brothers}
-        printMode={printMode}
-      />
+      {printDocument && <CommunityPrintView {...printDocument} />}
 
       {/* Modal de edición */}
       {showEdit && (
@@ -643,6 +744,7 @@ function CommunityDetailContent() {
 
       {/* Modal para editar datos de un miembro de equipo */}
       <EditPersonModal
+        communityId={communityId}
         personIds={editPersonIds}
         onClose={() => setEditPersonIds(null)}
         onSaved={handlePersonUpdated}
@@ -656,7 +758,8 @@ function CommunityDetailContent() {
           onConfirm={handleDeleteCommunity}
           title="¿Eliminar comunidad?"
           itemName={`Comunidad ${community?.number || ''}`}
-          description="¿Estás seguro de que deseas eliminar esta comunidad? Se eliminarán todos los datos asociados."
+          description="Se eliminarán la comunidad y todos sus datos asociados. Esta acción no se puede deshacer."
+          previewTitle="Esto afectará a:"
           preview={[
             `${mergedBrothers.length} hermano(s)`,
             `${teams.responsables.length + teams.catequistas.length} equipo(s)`,
@@ -715,7 +818,7 @@ export default function CommunityDetailPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F]"></div>
+          <Spinner />
         </div>
       }
     >

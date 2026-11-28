@@ -6,13 +6,14 @@ import { useCommunityLeadersReport } from '@/hooks/useCommunityLeadersReport';
 import * as options from '@/hooks/useEntityOptions';
 import { createQueryHarness, createTableMock, type QueryResponse } from '../helpers/queryHarness';
 
-const db = vi.hoisted(() => ({ from: vi.fn() }));
+const db = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
 vi.mock('@/utils/supabase/client', () => ({ createClient: () => db }));
 let harness: ReturnType<typeof createQueryHarness>;
 let mock: ReturnType<typeof createTableMock>;
 let responses: Record<string, QueryResponse>;
 const ok = (data: unknown, count?: number): QueryResponse => ({ data, error: null, count });
 beforeEach(() => {
+  db.rpc.mockReset().mockResolvedValue({ data: [{ role: "zone_leader", zone_id: 9, can_read_reports: true }], error: null });
   harness = createQueryHarness();
   responses = Object.fromEntries(['audit_log', 'people', 'teams', 'belongs', 'communities', 'priests', 'countries', 'states', 'cities', 'city_zones', 'dioceses', 'parishes'].map((name) => [name, ok(null)]));
   mock = createTableMock(responses); db.from.mockReset().mockImplementation(mock.from);

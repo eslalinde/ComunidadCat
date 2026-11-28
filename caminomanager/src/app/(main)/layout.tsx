@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/ui/app-sidebar";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -11,6 +12,8 @@ import {
 import { WindowControls } from "@/components/electron/WindowControls";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { QueryProvider } from "@/app/QueryProvider";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function MainLayout({
   children,
@@ -22,7 +25,7 @@ export default function MainLayout({
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <Spinner />
       </div>
     );
   }
@@ -32,33 +35,36 @@ export default function MainLayout({
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar
-        userName={profile?.full_name ?? undefined}
-        userEmail={user.email}
-        className="print-hidden"
-      />
-      <SidebarInset>
-        <header
-          className="sticky top-0 z-50 bg-background flex h-16 shrink-0 items-center gap-2 border-b px-4 print-hidden"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        >
-          <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumbs />
-          </div>
-          <div className="ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <WindowControls />
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 print:p-0 print:overflow-visible">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <QueryProvider>
+      <SidebarProvider>
+        <AppSidebar
+          userName={profile?.full_name ?? undefined}
+          userEmail={user.email}
+          className="print-hidden"
+        />
+        <SidebarInset className="min-w-0">
+          <header
+            className="sticky top-0 z-50 bg-card/90 backdrop-blur flex min-h-16 shrink-0 items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] print-hidden"
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          >
+            <div className="flex min-w-0 items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              <Breadcrumbs />
+            </div>
+            <div className="ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              <WindowControls />
+            </div>
+          </header>
+          <main className="min-w-0 flex-1 overflow-y-auto max-md:overflow-x-clip max-md:overflow-y-visible p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pl-[max(1.5rem,env(safe-area-inset-left))] md:pr-[max(1.5rem,env(safe-area-inset-right))] print:p-0 print:overflow-visible">
+            {children}
+          </main>
+          <MobileBottomNav />
+        </SidebarInset>
+      </SidebarProvider>
+    </QueryProvider>
   );
 }

@@ -1,10 +1,20 @@
 "use client";
-import { useState } from "react";
+import { useReportExport } from "@/hooks/useReportExport";
+import { escapeCSVCell } from "@/lib/csvCell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ReportData {
   [key: string]: any;
@@ -21,6 +31,7 @@ interface ReportTableProps {
   data: ReportData[];
   loading: boolean;
   onRefresh: () => void;
+  loadExportRows: () => Promise<ReportData[]>;
   exportFileName?: string;
 }
 
@@ -31,35 +42,13 @@ export function ReportTable({
   data,
   loading,
   onRefresh,
+  loadExportRows,
   exportFileName = "reporte"
 }: ReportTableProps) {
-  const [isExporting, setIsExporting] = useState(false);
+  const { handleExport, isExporting } = useReportExport(loadExportRows, (freshRows) => {
+    const headers = columns.map(column => escapeCSVCell(column.label)).join(',');
+    const rows = freshRows.map(row => columns.map(column => escapeCSVCell(row[column.key])).join(','));
 
-  const exportToCSV = () => {
-    setIsExporting(true);
-    
-    // Función para escapar valores CSV correctamente
-    const escapeCSVValue = (value: any): string => {
-      if (value === null || value === undefined) return '';
-      
-      const stringValue = String(value);
-      
-      // Si contiene comillas, comas o saltos de línea, envolver en comillas y escapar comillas internas
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      
-      return stringValue;
-    };
-    
-    const headers = columns.map(col => escapeCSVValue(col.label)).join(',');
-    const rows = data.map(row => 
-      columns.map(col => {
-        const value = row[col.key];
-        return escapeCSVValue(value);
-      }).join(',')
-    );
-    
     const csvContent = [headers, ...rows].join('\n');
     
     // Agregar BOM (Byte Order Mark) para UTF-8 para compatibilidad con Excel
@@ -76,13 +65,13 @@ export function ReportTable({
     link.click();
     document.body.removeChild(link);
     
-    setIsExporting(false);
-  };
+    URL.revokeObjectURL(url);
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="space-y-6 print:hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
           <Link href={routes.reportes}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -90,12 +79,12 @@ export function ReportTable({
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-            <p className="text-gray-600">{description}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+            <p className="text-muted-foreground">{description}</p>
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
             onClick={onRefresh}
@@ -105,7 +94,7 @@ export function ReportTable({
             Actualizar
           </Button>
           <Button 
-            onClick={exportToCSV}
+            onClick={handleExport}
             disabled={loading || isExporting || data.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
@@ -117,48 +106,43 @@ export function ReportTable({
       <Card className="p-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando datos...</span>
+            <Spinner />
+            <span className="ml-3 text-muted-foreground">Cargando datos...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hay datos disponibles</p>
+            <p className="text-muted-foreground text-lg">No hay datos disponibles</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
                   {columns.map((column) => (
-                    <th 
-                      key={column.key}
-                      className="text-left py-3 px-4 font-semibold text-gray-900"
-                    >
-                      {column.label}
-                    </th>
+                    <TableHead key={column.key}>{column.label}</TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.map((row, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
+                  <TableRow key={index}>
                     {columns.map((column) => (
-                      <td key={column.key} className="py-3 px-4 text-gray-700">
-                        {column.render 
+                      <TableCell key={column.key}>
+                        {column.render
                           ? column.render(row[column.key], row)
                           : row[column.key] || '-'
                         }
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
         
         {data.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 text-center">
+          <div className="mt-4 text-sm text-muted-foreground text-center">
             Mostrando {data.length} registros
           </div>
         )}

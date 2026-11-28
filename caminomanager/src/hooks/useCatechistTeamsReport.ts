@@ -1,3 +1,4 @@
+import { readAuthorizedReport } from "@/lib/reportAccess";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
@@ -100,13 +101,14 @@ async function fetchCatechistTeams(): Promise<CatechistTeamRow[]> {
 export function useCatechistTeamsReport() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["report", "catechist-teams"],
-    queryFn: fetchCatechistTeams,
+    queryFn: () => readAuthorizedReport(fetchCatechistTeams),
   });
 
   return {
-    data: data ?? [],
+    data: error ? [] : data ?? [],
     loading: isLoading,
     error,
     refetch,
+    loadExportRows: fetchCatechistTeams,
   };
 }

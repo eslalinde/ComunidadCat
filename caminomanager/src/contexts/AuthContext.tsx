@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { publicRoutes } from '@/lib/routes';
+import { publicRoutes, routes } from '@/lib/routes';
 import type { AppRole, UserScope } from '@/lib/permissions';
 
 interface Profile {
@@ -45,15 +45,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient();
     let active = true;
+    let identity: string | null = null;
+    let revision = 0;
+    let scopeRequest = 0;
 
-    async function fetchProfile(userId: string) {
+    async function fetchProfile(userId: string, request: number) {
       try {
         const { data } = await supabase
           .from('profiles')
           .select('full_name, feature_flags')
           .eq('id', userId)
           .single();
-        if (active) {
+        if (active && request === revision) {
           setProfile(data ? { full_name: data.full_name } : null);
           setFeatureFlags((data?.feature_flags as FeatureFlags) || {});
         }
@@ -62,11 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    async function fetchUserScope() {
+    async function fetchUserScope(request: number) {
+      const currentRequest = ++scopeRequest;
+      const isCurrent = () => active && request === revision && currentRequest === scopeRequest;
       try {
         const { data, error } = await supabase.rpc('get_user_scope');
-        if (error) throw error;
-        if (active && data && data.length > 0) {
+        if (!isCurrent()) return;
+        if (!error && data?.length) {
           const row = data[0];
           setUserScope({
             role: row.role as AppRole,
@@ -74,12 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             zone_id: row.zone_id,
             community_id: row.community_id,
             has_community_grants: row.has_community_grants ?? false,
+            granted_community_ids: row.granted_community_ids ?? [],
           });
-        }
+        } else setUserScope(null);
       } catch {
-        // scope fetch is non-critical; default to null (no permissions)
+        if (isCurrent()) setUserScope(null);
       }
     }
+
+    function refreshScope() {
+      if (identity && document.visibilityState === 'visible') void fetchUserScope(revision);
+    }
+    window.addEventListener('focus', refreshScope);
+    const scopeTimer = window.setInterval(refreshScope, 60_000);
 
     // Use onAuthStateChange as the single source of truth.
     // It fires INITIAL_SESSION when the client finishes restoring
@@ -89,16 +101,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
 
         const currentUser = session?.user ?? null;
+        const nextIdentity = currentUser?.id ?? null;
+        if (identity !== nextIdentity) {
+          identity = nextIdentity;
+          revision++;
+          setProfile(null);
+          setUserScope(null);
+          setFeatureFlags({});
+        }
         setUser(currentUser);
         setLoading(false);
 
         if (currentUser) {
-          fetchProfile(currentUser.id);
-          fetchUserScope();
-        } else {
-          setProfile(null);
-          setUserScope(null);
-          setFeatureFlags({});
+          fetchProfile(currentUser.id, revision);
+          fetchUserScope(revision);
         }
 
         if (event === 'SIGNED_OUT') {
@@ -115,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
       clearTimeout(timeout);
+      window.clearInterval(scopeTimer);
+      window.removeEventListener('focus', refreshScope);
       subscription.unsubscribe();
     };
   }, []);
@@ -126,8 +144,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
     if (!user && !isPublic) {
+      // Web visitors entering through the root see the public landing page.
+      // The desktop app (Electron) goes straight to the login screen.
+      if (pathname === routes.home && !window.electronAPI) {
+        router.replace(routes.publico);
+        return;
+      }
       const fullPath = pathname + (window.location.search || '');
-      router.replace(`/login?redirectTo=${encodeURIComponent(fullPath)}`);
+      router.replace(`${routes.login}?redirectTo=${encodeURIComponent(fullPath)}`);
     }
   }, [user, loading, pathname, router]);
 

@@ -10,7 +10,8 @@ test.describe('Carga masiva — piloto Stepper ReUI', () => {
     await loginAs('admin');
     await page.goto('/comunidades/detalle?id=1');
     await page.waitForLoadState('networkidle');
-    await page.getByTitle('Carga masiva desde archivo CSV').click();
+    await page.getByRole('button', { name: 'Agregar hermanos' }).click();
+    await page.getByRole('menuitem', { name: 'Carga masiva (CSV)' }).click();
   });
 
   test('expone el progreso y permite volver sin guardar datos', async ({ page }) => {

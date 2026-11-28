@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BulkUploadWizard } from '@/components/bulk-upload/BulkUploadWizard';
+import { executeBulkUpload } from '@/lib/bulk-upload-service';
 import { Stepper } from '@/components/ui/stepper';
 import { parseCsvFile, type ParsedBrother } from '@/lib/csv-parser';
 
@@ -78,10 +79,32 @@ describe('BulkUploadWizard con Stepper', () => {
     });
   });
 
+  it('permite reintentar la carga sin seleccionar responsables', async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    const upload = vi.mocked(executeBulkUpload);
+    upload.mockRejectedValueOnce(new Error('Respuesta perdida')).mockResolvedValueOnce({
+      success: true, peopleCreated: 1, brothersLinked: 1, marriagesLinked: 0,
+      responsablesAssigned: 0, errors: [],
+    });
+    render(<BulkUploadWizard open canAssignTeam={false} onClose={vi.fn()}
+      communityId={1} communityNumber="1" onComplete={onComplete} />);
+    await user.upload(screen.getByLabelText('Archivo CSV de hermanos'),
+      new File(['nombre'], 'hermanos.csv', { type: 'text/csv' }));
+    await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar Carga' }));
+    expect(onComplete).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
+    expect(upload.mock.calls[0][3]).toEqual(expect.any(String));
+    expect(upload.mock.calls[1][3]).toBe(upload.mock.calls[0][3]);
+    expect(onComplete).toHaveBeenCalledOnce();
+  });
+
   it('avanza por los cuatro pasos y permite regresar sin perder datos', async () => {
     const user = userEvent.setup();
     render(
       <BulkUploadWizard
+        canAssignTeam
         open
         onClose={vi.fn()}
         communityId={1}

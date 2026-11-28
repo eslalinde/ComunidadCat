@@ -61,7 +61,7 @@ describe('Entity Configurations', () => {
     });
 
     it('should have valid field types', () => {
-      const validTypes = ['text', 'email', 'number', 'select', 'textarea', 'date', 'checkbox'];
+      const validTypes = ['text', 'email', 'tel', 'number', 'select', 'textarea', 'date', 'checkbox'];
       config.fields.forEach(field => {
         expect(validTypes).toContain(field.type);
       });

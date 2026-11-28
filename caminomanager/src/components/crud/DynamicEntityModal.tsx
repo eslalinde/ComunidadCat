@@ -1,3 +1,4 @@
+import { FormAlert } from "@/components/ui/form-alert";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +22,8 @@ import {
   FormControl,
   FormDescription,
   FormMessage,
+  FormRoot,
+  RequiredMark,
 } from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from "@/types/database";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { needsLocationFields } from "@/config/carisma";
 import { cn } from "@/lib/utils";
-import { buildZodSchema, buildDefaultValues, prepareFormData } from "@/lib/form-schema";
+import { buildZodSchema, buildDefaultValues, prepareFormData, getInputAttributes } from "@/lib/form-schema";
 import {
   useCountryOptions,
   useStateOptions,
@@ -75,6 +78,8 @@ export function DynamicEntityModal<T extends BaseEntity>({
 
   const form = useForm({
     resolver: zodResolver(schema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: buildDefaultValues(fields, initial as Record<string, unknown> | null),
   });
 
@@ -363,20 +368,20 @@ export function DynamicEntityModal<T extends BaseEntity>({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent
         className={cn(
-          "max-h-[90vh] overflow-y-auto",
+          "max-h-[90dvh] overflow-y-auto",
           isComplexForm && (size === "wide" ? "sm:max-w-3xl" : "sm:max-w-2xl")
         )}
       >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Complete los campos requeridos. Puede buscar escribiendo en los
-            selectores de relaciones.
+            Los campos marcados con * son obligatorios. Puede buscar
+            escribiendo en los selectores de relaciones.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form
+          <FormRoot
             onSubmit={form.handleSubmit(onSubmit)}
             className={cn(
               "grid grid-cols-1 gap-4",
@@ -399,7 +404,9 @@ export function DynamicEntityModal<T extends BaseEntity>({
                       render={({ field: rhfField }) => (
                         <FormItem
                           className={cn(
-                            "flex flex-row items-center gap-3 space-y-0 rounded-md border p-3",
+                            // Same height as a control; on two columns, offset by the
+                            // label row (14px + 8px gap) so it lines up with its neighbor.
+                            "flex h-9 flex-row items-center gap-3 space-y-0 self-start rounded-md border px-3 sm:mt-[1.375rem]",
                             field.fullWidth && "sm:col-span-2"
                           )}
                         >
@@ -439,7 +446,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
                         <FormLabel>
                           {field.label}
                           {field.required && (
-                            <span className="text-red-500 ml-1">*</span>
+                            <RequiredMark />
                           )}
                         </FormLabel>
                         <FormControl>
@@ -522,6 +529,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
                         ) : (
                           <Input
                             type={field.type}
+                            {...getInputAttributes(field)}
                             value={(rhfField.value as string) || ""}
                             onChange={rhfField.onChange}
                             onBlur={rhfField.onBlur}
@@ -540,7 +548,10 @@ export function DynamicEntityModal<T extends BaseEntity>({
                         )}
                         </FormControl>
                         {field.description && (
-                          <FormDescription>{field.description}</FormDescription>
+                          // While invalid, the error replaces the hint so they don't stack.
+                          <FormDescription className="group-data-invalid/field:hidden">
+                            {field.description}
+                          </FormDescription>
                         )}
                         <FormMessage />
                       </FormItem>
@@ -551,16 +562,13 @@ export function DynamicEntityModal<T extends BaseEntity>({
             })}
 
             {submitError && (
-              <div
-                role="alert"
-                className="col-span-full rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-              >
+              <FormAlert tone="error" className="col-span-full">
                 {submitError}
-              </div>
+              </FormAlert>
             )}
 
             <DialogFooter
-              className="col-span-full mt-2 w-full gap-3 border-t border-gray-100 pt-4 sm:justify-end"
+              className="col-span-full mt-2 w-full gap-3 border-t border-border pt-4 sm:justify-end"
             >
               <Button
                 type="button"
@@ -574,7 +582,7 @@ export function DynamicEntityModal<T extends BaseEntity>({
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
             </DialogFooter>
-          </form>
+          </FormRoot>
         </Form>
       </DialogContent>
     </Dialog>

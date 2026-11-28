@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { chooseOption } from '../helpers/radixSelect';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Catechesis from '@/app/(main)/(protected)/reportes/catequesis-parroquia/page';
 import Leaders from '@/app/(main)/(protected)/reportes/lideres-comunidades/page';
@@ -10,14 +11,13 @@ vi.mock('@/hooks/useCommunityLeadersReport', () => ({ useCommunityLeadersReport:
 vi.mock('@/hooks/usePriestsReport', () => ({ usePriestsReport: () => ({ data: [{ priest_name: 'Padre José', is_parish_priest: 'Párroco', parish_name: 'San José', diocese: 'Central', city_name: 'Bogotá', communities_count: 2, phone: '123', mobile: '300', email: 'p@example.com' }, { priest_name: 'Padre Juan', is_parish_priest: 'Vicario', parish_name: '', diocese: '', city_name: '', communities_count: 0, phone: '', mobile: '', email: '' }], loading: mocks.loading, refetch: mocks.refresh }) }));
 vi.mock('@/hooks/useCatechistTeamsReport', () => ({ useCatechistTeamsReport: () => ({ data: [{ diocese_name: 'Central', parish_name: 'San José', community_number: '7', responsible_name: 'Juan y Ana', has_parish_llevan: 'Sí', parish_llevan: 'San Pedro' }, { diocese_name: 'Central', parish_name: 'San José', community_number: '8', responsible_name: '', has_parish_llevan: 'No', parish_llevan: '' }], loading: mocks.loading, refetch: mocks.refresh }) }));
 beforeEach(() => { vi.clearAllMocks(); mocks.loading = false; }); afterEach(cleanup);
-it.each([{ Page: Catechesis, title: 'Catequesis por Parroquia', value: 'Juan y Ana' }, { Page: Leaders, title: 'Responsables de Comunidades', value: 'Juan' }, { Page: Priests, title: 'Presbíteros', value: 'Padre José' }, { Page: Teams, title: 'Equipos de Catequistas', value: 'Juan y Ana' }])('integra columnas, agrupaciones y actualización: $title', ({ Page, title, value }) => {
+it.each([{ Page: Catechesis, title: 'Catequesis por Parroquia', value: 'Juan y Ana' }, { Page: Leaders, title: 'Responsables de Comunidades', value: 'Juan' }, { Page: Priests, title: 'Presbíteros', value: 'Padre José' }, { Page: Teams, title: 'Equipos de Catequistas', value: 'Juan y Ana' }])('integra columnas, agrupaciones y actualización: $title', async ({ Page, title, value }) => {
   render(<Page />); expect(screen.getByRole('heading', { name: title })).toBeVisible();
   if (screen.queryByText('Limpiar', { selector: 'button' })) fireEvent.click(screen.getByText('Limpiar', { selector: 'button' }));
   expect(screen.getByText(value)).toBeVisible(); fireEvent.click(screen.getByRole('button', { name: 'Actualizar' })); expect(mocks.refresh).toHaveBeenCalledOnce();
-  const group = screen.queryByRole('option', { name: '+ Agregar agrupación' });
+  const group = screen.queryByRole('combobox', { name: 'Agregar agrupación' });
   if (group) {
-    const select = group.parentElement!; const option = within(select).getAllByRole('option')[1] as HTMLOptionElement;
-    fireEvent.change(select, { target: { value: option.value } }); expect(screen.getByText('Limpiar', { selector: 'button' })).toBeVisible();
+    await chooseOption(group, /.+/); expect(screen.getByText('Limpiar', { selector: 'button' })).toBeVisible();
     fireEvent.click(screen.getByText('Limpiar', { selector: 'button' })); expect(screen.getByText(value)).toBeVisible();
   }
 });

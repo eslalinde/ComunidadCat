@@ -144,9 +144,9 @@ npm run electron:build    # Production Electron installer (Windows)
 ## CI/CD
 
 - **ci.yml**: Quality, coverage, build, database and smoke checks on PRs/pushes to dev and main.
-- **Vercel Git integration**: Automatic previews for PR branches and dev; main is deployed manually from Vercel. See docs/deployment.md.
-- **electron-release.yml**: Build and publish Electron releases
-- **supabase-migrations.yml**: Integration after successful dev CI; production requires manual dispatch on main.
+- **Vercel Git integration**: Automatic previews for PR branches and dev; Production Release stages main and promotes the same Vercel build after approval. See docs/deployment.md.
+- **electron-release.yml**: Build signed Cloud and Standalone artifacts for the production release draft
+- **supabase-migrations.yml**: Integration after successful dev CI; production inspection supports manual dispatch; Production Release applies migrations after approval.
 - **security.yml**: CodeQL security scanning
 
 ## Testing
@@ -171,3 +171,9 @@ npm run electron:build    # Production Electron installer (Windows)
 - Supabase keys (anon, service_role) must stay in environment variables.
 - RLS policies enforce data-level security. All tables must have RLS enabled.
 - Auth flows use Supabase Auth with email confirmation.
+- Signup is open and new users get an unscoped `viewer` profile: never grant data to "any authenticated user" for tables with personal data. Role and scope columns in `profiles` are protected by a trigger; change them only through `set_user_role`.
+- The `anon` role has no privileges on `public`. Write policies `TO authenticated` (never the implicit `public`), use `(select auth.uid())`, and give UPDATE policies an explicit `WITH CHECK`.
+- Supabase no longer exposes new tables to the Data API automatically: each new table needs explicit `GRANT`s to `authenticated` (never `anon`) plus RLS.
+- New functions in `public` get `EXECUTE` for `PUBLIC` by default: `revoke execute ... from public, anon`, grant only to `authenticated`, set `search_path`, and check permissions inside every `SECURITY DEFINER` function.
+- Validate any user-supplied redirect with `getSafeRedirectPath` from `@/lib/routes`.
+- Run `npx supabase db advisors --local --type security` before committing a migration.

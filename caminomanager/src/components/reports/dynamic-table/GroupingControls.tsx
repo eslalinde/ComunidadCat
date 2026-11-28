@@ -1,16 +1,25 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 import { Column } from "@tanstack/react-table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { X, Layers } from "lucide-react";
 import { DynamicColumnMeta } from "./types";
 import { toSentenceCase } from "@/lib/text-format";
 
-interface GroupingControlsProps<TData> {
-  allColumns: Column<TData, unknown>[];
+interface GroupingControlsProps<TData extends RowData> {
+  allColumns: Column<AppTableFeatures, TData, unknown>[];
   grouping: string[];
   onGroupingChange: (grouping: string[]) => void;
 }
 
-export function GroupingControls<TData>({
+export function GroupingControls<TData extends RowData>({
   allColumns,
   grouping,
   onGroupingChange,
@@ -36,7 +45,7 @@ export function GroupingControls<TData>({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1 text-sm text-gray-600">
+      <div className="flex items-center gap-1 text-sm text-muted-foreground">
         <Layers className="h-4 w-4" />
         <span>Agrupar:</span>
       </div>
@@ -54,42 +63,43 @@ export function GroupingControls<TData>({
           >
             {label}
             <button
+              type="button"
               onClick={() => removeGrouping(columnId)}
-              className="ml-0.5 rounded-full hover:bg-blue-200 p-1.5"
+              className="ml-0.5 rounded-full hover:bg-blue-200 p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Quitar agrupación por ${label}`}
             >
-              <X className="h-3.5 w-3.5" />
+              <X aria-hidden="true" className="h-3.5 w-3.5" />
             </button>
           </span>
         );
       })}
 
       {availableColumns.length > 0 && (
-        <select
-          value=""
-          onChange={(e) => {
-            if (e.target.value) addGrouping(e.target.value);
-          }}
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-        >
-          <option value="">+ Agregar agrupación</option>
-          {availableColumns.map((col) => {
-            const header = col.columnDef.header;
-            const label = toSentenceCase(
-              typeof header === "string" ? header : col.id,
-            );
-            return (
-              <option key={col.id} value={col.id}>
-                {label}
-              </option>
-            );
-          })}
-        </select>
+        // Always empty: choosing a column adds it as a chip and resets the picker.
+        <Select value="" onValueChange={(value) => value && addGrouping(value)}>
+          <SelectTrigger aria-label="Agregar agrupación" className="h-7 w-auto gap-1 px-2 text-xs">
+            <SelectValue placeholder="+ Agregar agrupación" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableColumns.map((col) => {
+              const header = col.columnDef.header;
+              const label = toSentenceCase(
+                typeof header === "string" ? header : col.id,
+              );
+              return (
+                <SelectItem key={col.id} value={col.id}>
+                  {label}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
       )}
 
       {grouping.length > 0 && (
         <button
           onClick={() => onGroupingChange([])}
-          className="text-xs text-gray-500 hover:text-gray-700 underline"
+          className="text-xs text-muted-foreground hover:text-foreground underline"
         >
           Limpiar
         </button>

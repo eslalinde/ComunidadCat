@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, session, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import serve from 'electron-serve';
-import { autoUpdater } from 'electron-updater';
+import { SignedWindowsUpdater } from './SignedWindowsUpdater';
+import { getUpdatePublisher } from './updatePublisher';
 
 const isProd = app.isPackaged;
 const isSmokeTest = process.env.ELECTRON_SMOKE_TEST === '1';
@@ -17,9 +18,23 @@ const appPackageJson = JSON.parse(
 );
 const isStandalone: boolean = appPackageJson.standalone === true || appPackageJson.standalone === 'true';
 
+// Links that belong to the OS (browser, dialer, mail, WhatsApp) instead of
+// an Electron window. App-internal URLs (app://) keep their default handling.
+const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'tel:', 'mailto:']);
+const OS_HANDLED_PROTOCOLS = new Set(['tel:', 'mailto:']);
+
+function protocolOf(url: string): string | null {
+  try {
+    return new URL(url).protocol;
+  } catch {
+    return null;
+  }
+}
+
 const loadURL = serve({ directory: path.join(__dirname, '..', 'out') });
 
 let mainWindow: BrowserWindow | null = null;
+let updater: SignedWindowsUpdater | undefined;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -37,6 +52,23 @@ function createWindow() {
   });
 
   Menu.setApplicationMenu(null);
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const protocol = protocolOf(url);
+    if (protocol && EXTERNAL_PROTOCOLS.has(protocol)) {
+      void shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const protocol = protocolOf(url);
+    if (protocol && OS_HANDLED_PROTOCOLS.has(protocol)) {
+      event.preventDefault();
+      void shell.openExternal(url);
+    }
+  });
 
   loadURL(mainWindow);
 
@@ -93,7 +125,16 @@ app.whenReady().then(async () => {
   });
 
   // Auto-updates (prod only, disabled for standalone builds)
-  if (isProd && !isStandalone) {
+  if (isProd && !isStandalone && process.platform === 'win32') {
+    let publisher: string | undefined;
+    try {
+      publisher = getUpdatePublisher(fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8'));
+    } catch {
+      // An unsigned or incomplete local package cannot enable updates.
+    }
+    if (!publisher) return;
+    const autoUpdater = new SignedWindowsUpdater(publisher, path.join(process.resourcesPath, 'Verify-UpdateSignature.ps1'));
+    updater = autoUpdater;
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.checkForUpdatesAndNotify();
@@ -118,7 +159,7 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('install-update', () => {
-  autoUpdater.quitAndInstall();
+  updater?.quitAndInstall();
 });
 
 // Window control handlers

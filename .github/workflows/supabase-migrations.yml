@@ -6,17 +6,12 @@ on:
     types: [completed]
     branches: [dev]
   workflow_dispatch:
-    inputs:
-      confirm_production:
-        description: Aplicar las migraciones de main a producción (desmarcado solo comprueba)
-        required: true
-        type: boolean
-        default: false
   pull_request:
     branches: [dev, main]
     types: [opened, synchronize, reopened, labeled, edited]
     paths:
       - "supabase/migrations/**"
+      - ".github/workflows/vercel-production.yml"
       - ".github/workflows/supabase-migrations.yml"
       - ".github/actions/supabase-migrate/**"
       - ".github/scripts/*supabase*"
@@ -43,7 +38,7 @@ jobs:
       - run: node --test .github/scripts/validate-supabase-env.test.mjs
 
   migrate-production:
-    name: Production migration plan / apply
+    name: Inspect production migrations
     needs: validate
     if: >-
       github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -64,7 +59,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/supabase-migrate
         with:
-          apply: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production }}
+          apply: 'false'
 
   migrate-integration:
     name: Integration migration plan / apply
@@ -123,13 +118,23 @@ jobs:
     # the protected environments and their existing deployment approvals.
     env:
       EXPECTED_SUPABASE_PROJECT_ID: ${{ matrix.expected_project }}
-      SUPABASE_PROJECT_ID: ${{ secrets[matrix.project_secret] }}
-      SUPABASE_DB_PASSWORD: ${{ secrets[matrix.password_secret] }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets[matrix.token_secret] }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/supabase-migrate
+      - if: matrix.target == 'integration'
+        uses: ./.github/actions/supabase-migrate
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.INTEGRATION_SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.INTEGRATION_SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.INTEGRATION_SUPABASE_ACCESS_TOKEN }}
+        with:
+          apply: 'false'
+      - if: matrix.target == 'production'
+        uses: ./.github/actions/supabase-migrate
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PRODUCTION_SUPABASE_ACCESS_TOKEN }}
         with:
           apply: 'false'

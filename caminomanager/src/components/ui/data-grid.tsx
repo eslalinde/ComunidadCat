@@ -1,8 +1,10 @@
 "use client"
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 
 import * as React from "react"
 import {
-  flexRender,
+  FlexRender,
   type Cell,
   type Column,
   type Row,
@@ -28,23 +30,23 @@ import {
 import { cn } from "@/lib/utils"
 import { toSentenceCase } from "@/lib/text-format"
 
-type DataGridProps<TData> = {
-  table: TanStackTable<TData>
+type DataGridProps<TData extends RowData> = {
+  table: TanStackTable<AppTableFeatures, TData>
   emptyMessage?: string
   loading?: boolean
   loadingMessage?: string
   className?: string
-  renderColumnFilter?: (column: Column<TData, unknown>) => React.ReactNode
-  getHeaderClassName?: (column: Column<TData, unknown>) => string | undefined
-  getHeaderStyle?: (column: Column<TData, unknown>) => React.CSSProperties | undefined
-  getRowClassName?: (row: Row<TData>) => string | undefined
-  getCellClassName?: (cell: Cell<TData, unknown>) => string | undefined
-  getCellStyle?: (cell: Cell<TData, unknown>) => React.CSSProperties | undefined
-  onRowClick?: (row: Row<TData>) => void
+  renderColumnFilter?: (column: Column<AppTableFeatures, TData, unknown>) => React.ReactNode
+  getHeaderClassName?: (column: Column<AppTableFeatures, TData, unknown>) => string | undefined
+  getHeaderStyle?: (column: Column<AppTableFeatures, TData, unknown>) => React.CSSProperties | undefined
+  getRowClassName?: (row: Row<AppTableFeatures, TData>) => string | undefined
+  getCellClassName?: (cell: Cell<AppTableFeatures, TData, unknown>) => string | undefined
+  getCellStyle?: (cell: Cell<AppTableFeatures, TData, unknown>) => React.CSSProperties | undefined
+  onRowClick?: (row: Row<AppTableFeatures, TData>) => void
   footer?: React.ReactNode
 }
 
-function DataGrid<TData>({
+function DataGrid<TData extends RowData>({
   table,
   emptyMessage = "No hay registros",
   loading = false,
@@ -80,10 +82,7 @@ function DataGrid<TData>({
                 return (
                   <TableHead
                     key={header.id}
-                    className={cn(
-                      "normal-case tracking-normal",
-                      getHeaderClassName?.(header.column)
-                    )}
+                    className={getHeaderClassName?.(header.column)}
                     style={getHeaderStyle?.(header.column)}
                     aria-sort={
                       sorted === "asc"
@@ -98,13 +97,13 @@ function DataGrid<TData>({
                         {header.column.getCanSort() ? (
                           <button
                             type="button"
-                            className="flex min-h-9 items-center gap-2 text-left"
+                            className={cn(
+                              "-mx-1 flex w-fit min-h-9 items-center [.text-center_&]:mx-auto [.text-right_&]:ml-auto [.text-right_&]:mr-0 gap-1.5 rounded px-1 text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                              sorted && "text-foreground"
+                            )}
                             onClick={header.column.getToggleSortingHandler()}
                           >
-                            {flexRender(
-                              displayHeader,
-                              header.getContext()
-                            )}
+                            {typeof displayHeader === "string" ? displayHeader : <FlexRender header={header} />}
                             {sorted === "asc" ? (
                               <ArrowUp className="size-3.5" />
                             ) : sorted === "desc" ? (
@@ -114,10 +113,7 @@ function DataGrid<TData>({
                             )}
                           </button>
                         ) : (
-                          flexRender(
-                            displayHeader,
-                            header.getContext()
-                          )
+                          typeof displayHeader === "string" ? displayHeader : <FlexRender header={header} />
                         )}
                         {renderColumnFilter?.(header.column)}
                       </div>
@@ -174,19 +170,13 @@ function DataGrid<TData>({
                         ) : (
                           <ChevronRight className="size-4" />
                         )}
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        <FlexRender cell={cell} />
                         <span className="text-xs font-normal text-muted-foreground">
                           ({row.subRows.length})
                         </span>
                       </button>
-                    ) : cell.getIsAggregated() ? (
-                      flexRender(
-                        cell.column.columnDef.aggregatedCell ??
-                          cell.column.columnDef.cell,
-                        cell.getContext()
-                      )
-                    ) : cell.getIsPlaceholder() ? null : (
-                      flexRender(cell.column.columnDef.cell, cell.getContext())
+                    ) : (
+                      <FlexRender cell={cell} />
                     )}
                   </TableCell>
                 ))}

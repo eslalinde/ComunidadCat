@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { InputHTMLAttributes } from "react";
 import type { FormField } from "@/types/database";
 
 /**
@@ -174,4 +175,23 @@ export function prepareFormData(
   }
 
   return prepared;
+}
+
+/**
+ * Mobile-friendly input attributes so touch devices show the right keyboard
+ * and can autofill contact data.
+ */
+export function getInputAttributes(
+  field: Pick<FormField, "type">
+): Pick<InputHTMLAttributes<HTMLInputElement>, "inputMode" | "autoComplete"> {
+  switch (field.type) {
+    case "tel":
+      return { inputMode: "tel", autoComplete: "tel" };
+    case "email":
+      return { inputMode: "email", autoComplete: "email" };
+    case "number":
+      return { inputMode: "numeric" };
+    default:
+      return {};
+  }
 }

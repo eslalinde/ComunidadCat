@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   createColumnHelper,
-  getCoreRowModel,
-  getSortedRowModel,
   type SortingState,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
+import { flushSync } from "react-dom";
+import { readAuthorizedReport } from "@/lib/reportAccess";
+import { escapeCSVCell } from "@/lib/csvCell";
 import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,12 +29,10 @@ interface StepWay {
 }
 
 interface CommunityRow {
-  id: number;
   number: string;
   parish_id: number;
   parish_name: string;
   step_way_id: number | null;
-  step_way_name: string | null;
 }
 
 interface MatrixRow {
@@ -42,140 +42,207 @@ interface MatrixRow {
   total: number;
 }
 
-const matrixColumnHelper = createColumnHelper<MatrixRow>();
+const matrixColumnHelper = createColumnHelper<AppTableFeatures, MatrixRow>();
 
 const toOrdinal = (num: string) => `${num}ª`;
 
+async function fetchMatrixData() {
+  const supabase = createClient();
+
+  const [commRes, stepsRes] = await Promise.all([
+    supabase
+      .from("communities")
+      .select(
+        `
+        number,
+        parish_id,
+        step_way_id,
+        parish:parishes(name)
+      `
+      )
+      .order("number"),
+    supabase
+      .from("step_ways")
+      .select("id, name, order_num")
+      .order("order_num", { ascending: true }),
+  ]);
+
+  if (commRes.error) throw commRes.error;
+  if (stepsRes.error) throw stepsRes.error;
+
+  const rows: CommunityRow[] = (commRes.data || []).map((community) => {
+    // The parish foreign key is a to-one PostgREST relationship.
+    const parish = community.parish as unknown as { name: string } | null;
+    return {
+      number: community.number,
+      parish_id: community.parish_id,
+      parish_name: parish?.name || "Sin Parroquia",
+      step_way_id: community.step_way_id,
+    };
+  });
+
+  return buildMatrix(rows, stepsRes.data || []);
+}
+
+function buildMatrix(communities: CommunityRow[], stepWays: StepWay[]) {
+  // Unique parishes sorted alphabetically
+  const parishMap = new Map<number, string>();
+  communities.forEach((c) => {
+    if (c.parish_id && !parishMap.has(c.parish_id)) {
+      parishMap.set(c.parish_id, c.parish_name);
+    }
+  });
+  const parishes = Array.from(parishMap.entries())
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es-CO"));
+
+  // matrix[parishId][stepWayId] = community numbers[]
+  const matrix: Record<number, Record<number, string[]>> = {};
+  parishes.forEach((p) => {
+    matrix[p.id] = {};
+    stepWays.forEach((s) => {
+      matrix[p.id][s.id] = [];
+    });
+  });
+
+  communities.forEach((c) => {
+    if (c.parish_id && c.step_way_id && matrix[c.parish_id]?.[c.step_way_id]) {
+      matrix[c.parish_id][c.step_way_id].push(c.number);
+    }
+  });
+
+  // Sort community numbers inside each cell numerically
+  Object.values(matrix).forEach((stepMap) => {
+    Object.values(stepMap).forEach((arr) => {
+      arr.sort((a, b) => {
+        const na = parseInt(a, 10);
+        const nb = parseInt(b, 10);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return a.localeCompare(b, "es-CO");
+      });
+    });
+  });
+
+  // Totals
+  const totalsByStep: Record<number, number> = {};
+  stepWays.forEach((s) => {
+    totalsByStep[s.id] = 0;
+    parishes.forEach((p) => {
+      totalsByStep[s.id] += matrix[p.id][s.id].length;
+    });
+  });
+
+  const totalsByParish: Record<number, number> = {};
+  parishes.forEach((p) => {
+    totalsByParish[p.id] = 0;
+    stepWays.forEach((s) => {
+      totalsByParish[p.id] += matrix[p.id][s.id].length;
+    });
+  });
+
+  const grandTotal = Object.values(totalsByParish).reduce(
+    (sum, v) => sum + v,
+    0
+  );
+
+  return { parishes, matrix, totalsByStep, totalsByParish, grandTotal, stepWays };
+}
+
+const emptyMatrix = buildMatrix([], []);
+
+function downloadMatrix({ parishes, matrix, totalsByStep, totalsByParish, grandTotal, stepWays }: ReturnType<typeof buildMatrix>) {
+  const headers = [
+    "Parroquia",
+    ...stepWays.map((s) => s.name),
+    "Total",
+  ];
+  const rows = parishes.map((parish) => [
+    parish.name,
+    ...stepWays.map((s) => {
+      const nums = matrix[parish.id][s.id];
+      return nums.length > 0 ? nums.map(toOrdinal).join(", ") : "";
+    }),
+    String(totalsByParish[parish.id]),
+  ]);
+  // Totals row
+  rows.push([
+    "Total por Paso",
+    ...stepWays.map((s) => String(totalsByStep[s.id])),
+    String(grandTotal),
+  ]);
+
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => escapeCSVCell(cell, true)).join(","))
+    .join("\n");
+
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "estado_pasos.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ReporteEstadoPasos() {
-  const [communities, setCommunities] = useState<CommunityRow[]>([]);
-  const [stepWays, setStepWays] = useState<StepWay[]>([]);
+  const [snapshot, setSnapshot] = useState(emptyMatrix);
+  const { parishes, matrix, totalsByStep, totalsByParish, grandTotal, stepWays } = snapshot;
   const [loading, setLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
+  const [preparing, setPreparing] = useState<"csv" | "print" | null>(null);
+  const [printReady, setPrintReady] = useState(false);
+  const [error, setError] = useState("");
+  const requestId = useRef(0);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "parishName", desc: false },
   ]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const supabase = createClient();
-
-      const [commRes, stepsRes] = await Promise.all([
-        supabase
-          .from("communities")
-          .select(
-            `
-            id,
-            number,
-            parish_id,
-            step_way_id,
-            parish:parishes(name),
-            step_way:step_ways(name)
-          `
-          )
-          .order("number"),
-        supabase
-          .from("step_ways")
-          .select("id, name, order_num")
-          .order("order_num", { ascending: true }),
-      ]);
-
-      if (commRes.error) {
-        console.error("Error fetching communities:", commRes.error);
-        return;
+  const loadData = useCallback((output?: "csv" | "print") => {
+    const request = requestId.current + 1;
+    requestId.current = request;
+    return readAuthorizedReport(fetchMatrixData).then((fresh) => {
+      if (request !== requestId.current) return;
+      if (output === "print" && fresh.parishes.length > 0) {
+        flushSync(() => {
+          setSnapshot(fresh);
+          setLoading(false);
+          setPrintReady(true);
+        });
+        try {
+          window.print();
+        } finally {
+          flushSync(() => setPrintReady(false));
+        }
+      } else {
+        setSnapshot(fresh);
+        if (output === "csv" && fresh.parishes.length > 0) downloadMatrix(fresh);
       }
-      if (stepsRes.error) {
-        console.error("Error fetching step_ways:", stepsRes.error);
-        return;
+    }).catch(() => {
+      if (request === requestId.current) {
+        setSnapshot(emptyMatrix);
+        setError("No se pudo cargar el reporte con los permisos actuales.");
       }
-
-      const rows: CommunityRow[] = (commRes.data || []).map((c: any) => ({
-        id: c.id,
-        number: c.number,
-        parish_id: c.parish_id,
-        parish_name: (c.parish as any)?.name || "Sin Parroquia",
-        step_way_id: c.step_way_id,
-        step_way_name: (c.step_way as any)?.name || null,
-      }));
-
-      setCommunities(rows);
-      setStepWays(stepsRes.data || []);
-    } catch (err) {
-      console.error("Error in fetchData:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
+    }).finally(() => {
+      if (request === requestId.current) {
+        setLoading(false);
+        setPreparing(null);
+      }
+    });
   }, []);
 
-  // Build the matrix data
-  const { parishes, matrix, totalsByStep, totalsByParish, grandTotal } =
-    useMemo(() => {
-      // Unique parishes sorted alphabetically
-      const parishMap = new Map<number, string>();
-      communities.forEach((c) => {
-        if (c.parish_id && !parishMap.has(c.parish_id)) {
-          parishMap.set(c.parish_id, c.parish_name);
-        }
-      });
-      const parishes = Array.from(parishMap.entries())
-        .map(([id, name]) => ({ id, name }))
-        .sort((a, b) => a.name.localeCompare(b.name, "es-CO"));
+  function refresh(output?: "csv" | "print") {
+    setError("");
+    setPreparing(output ?? null);
+    setLoading(true);
+    void loadData(output);
+  }
 
-      // matrix[parishId][stepWayId] = community numbers[]
-      const matrix: Record<number, Record<number, string[]>> = {};
-      parishes.forEach((p) => {
-        matrix[p.id] = {};
-        stepWays.forEach((s) => {
-          matrix[p.id][s.id] = [];
-        });
-      });
-
-      communities.forEach((c) => {
-        if (c.parish_id && c.step_way_id && matrix[c.parish_id]?.[c.step_way_id]) {
-          matrix[c.parish_id][c.step_way_id].push(c.number);
-        }
-      });
-
-      // Sort community numbers inside each cell numerically
-      Object.values(matrix).forEach((stepMap) => {
-        Object.values(stepMap).forEach((arr) => {
-          arr.sort((a, b) => {
-            const na = parseInt(a, 10);
-            const nb = parseInt(b, 10);
-            if (!isNaN(na) && !isNaN(nb)) return na - nb;
-            return a.localeCompare(b, "es-CO");
-          });
-        });
-      });
-
-      // Totals
-      const totalsByStep: Record<number, number> = {};
-      stepWays.forEach((s) => {
-        totalsByStep[s.id] = 0;
-        parishes.forEach((p) => {
-          totalsByStep[s.id] += matrix[p.id][s.id].length;
-        });
-      });
-
-      const totalsByParish: Record<number, number> = {};
-      parishes.forEach((p) => {
-        totalsByParish[p.id] = 0;
-        stepWays.forEach((s) => {
-          totalsByParish[p.id] += matrix[p.id][s.id].length;
-        });
-      });
-
-      const grandTotal = Object.values(totalsByParish).reduce(
-        (sum, v) => sum + v,
-        0
-      );
-
-      return { parishes, matrix, totalsByStep, totalsByParish, grandTotal };
-    }, [communities, stepWays]);
+  useEffect(() => {
+    void loadData();
+    return () => { ++requestId.current; };
+  }, [loadData]);
 
   const matrixRows = useMemo<MatrixRow[]>(
     () =>
@@ -189,7 +256,7 @@ export default function ReporteEstadoPasos() {
   );
 
   const matrixColumns = useMemo(
-    () => [
+    () => matrixColumnHelper.columns([
       matrixColumnHelper.accessor("parishName", {
         header: "Parroquia",
       }),
@@ -206,73 +273,25 @@ export default function ReporteEstadoPasos() {
       matrixColumnHelper.accessor("total", {
         header: "Total",
       }),
-    ],
+    ]),
     [stepWays]
   );
 
-  const matrixTable = useReactTable({
+  const matrixTable = useTable({
+    features: appTableFeatures,
+    manualPagination: true,
     data: matrixRows,
     columns: matrixColumns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
-  const handleExportCSV = () => {
-    setIsExporting(true);
-    try {
-      const headers = [
-        "Parroquia",
-        ...stepWays.map((s) => s.name),
-        "Total",
-      ];
-      const rows = parishes.map((parish) => [
-        parish.name,
-        ...stepWays.map((s) => {
-          const nums = matrix[parish.id][s.id];
-          return nums.length > 0 ? nums.map(toOrdinal).join(", ") : "";
-        }),
-        String(totalsByParish[parish.id]),
-      ]);
-      // Totals row
-      rows.push([
-        "Total por Paso",
-        ...stepWays.map((s) => String(totalsByStep[s.id])),
-        String(grandTotal),
-      ]);
-
-      const csvContent = [headers, ...rows]
-        .map((row) =>
-          row
-            .map((cell) => {
-              const escaped = cell.replace(/"/g, '""');
-              return `"${escaped}"`;
-            })
-            .join(",")
-        )
-        .join("\n");
-
-      const BOM = "\uFEFF";
-      const blob = new Blob([BOM + csvContent], {
-        type: "text/csv;charset=utf-8;",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "estado_pasos.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
-    <div className="space-y-6">
+    <div className={printReady ? "space-y-6" : "space-y-6 print:hidden"}>
+      {error && <p role="alert">{error}</p>}
       {/* Header */}
-      <div className="flex items-center justify-between print:hidden">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <div className="flex items-start gap-3">
           <Link href={routes.reportes}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -280,30 +299,30 @@ export default function ReporteEstadoPasos() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Estado de Comunidades
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Matriz de comunidades distribuidas por parroquia y etapa del camino
             </p>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchData} disabled={loading}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => refresh()} disabled={loading}>
             <RefreshCw
               className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
             Actualizar
           </Button>
           <Button
-            onClick={handleExportCSV}
-            disabled={loading || isExporting || parishes.length === 0}
+            onClick={() => refresh("csv")}
+            disabled={loading || parishes.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
-            {isExporting ? "Exportando..." : "Exportar CSV"}
+            {preparing === "csv" ? "Exportando..." : "Exportar CSV"}
           </Button>
-          <Button variant="outline" onClick={() => window.print()}>
+          <Button variant="outline" onClick={() => refresh("print")} disabled={loading || parishes.length === 0}>
             <Printer className="w-4 h-4 mr-2" />
             Imprimir
           </Button>
@@ -315,7 +334,7 @@ export default function ReporteEstadoPasos() {
         <h1 className="text-xl font-bold text-center">
           Estado de Pasos por Parroquia
         </h1>
-        <p className="text-sm text-center text-gray-600">
+        <p className="text-sm text-center text-muted-foreground">
           Generado el {new Date().toLocaleDateString("es-CO")}
         </p>
       </div>
@@ -330,27 +349,27 @@ export default function ReporteEstadoPasos() {
           className="[&_table]:min-w-max print:overflow-visible print:border-0 print:[&_table]:min-w-0 print:[&_table]:text-xs"
           getHeaderClassName={(column) =>
             column.id === "parishName"
-              ? "sticky left-0 z-10 min-w-[180px] bg-gray-100 text-gray-900 print:min-w-0 print:bg-gray-200"
+              ? "sticky left-0 z-10 min-w-[180px] bg-muted text-foreground print:min-w-0 print:bg-gray-200"
               : column.id === "total"
-                ? "min-w-[80px] bg-blue-50 text-center text-gray-900 print:min-w-0 print:bg-blue-100"
-                : "min-w-[96px] text-center text-gray-900 print:min-w-0"
+                ? "min-w-[80px] bg-blue-50 text-center text-foreground print:min-w-0 print:bg-blue-100"
+                : "min-w-[96px] text-center text-foreground print:min-w-0"
           }
           getCellClassName={(cell) =>
             cell.column.id === "parishName"
-              ? "sticky left-0 z-10 bg-inherit font-medium text-gray-900"
+              ? "sticky left-0 z-10 bg-inherit font-medium text-foreground"
               : cell.column.id === "total"
                 ? "bg-blue-50 text-center font-semibold text-blue-800 print:bg-blue-100"
-                : "text-center text-gray-700"
+                : "text-center text-foreground"
           }
           footer={
             <TableFooter>
-              <TableRow className="bg-gray-100 font-bold print:bg-gray-200">
+              <TableRow className="bg-muted font-bold print:bg-gray-200">
                 {matrixTable.getVisibleLeafColumns().map((column) => {
                   if (column.id === "parishName") {
                     return (
                       <TableCell
                         key={column.id}
-                        className="sticky left-0 z-10 bg-gray-100 font-bold text-gray-900 print:bg-gray-200"
+                        className="sticky left-0 z-10 bg-muted font-bold text-foreground print:bg-gray-200"
                       >
                         Total por Paso
                       </TableCell>
@@ -381,7 +400,7 @@ export default function ReporteEstadoPasos() {
         />
 
         {!loading && parishes.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 text-center print:hidden">
+          <div className="mt-4 text-sm text-muted-foreground text-center print:hidden">
             {parishes.length} parroquias &middot; {grandTotal} comunidades
           </div>
         )}

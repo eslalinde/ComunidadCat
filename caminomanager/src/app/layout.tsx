@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter, Roboto, Montserrat } from "next/font/google";
 import "./globals.css";
 import React from "react";
-import { QueryProvider } from "./QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UpdateNotification } from "@/components/electron/UpdateNotification";
 import { Toaster } from "@/components/ui/sonner";
@@ -54,8 +53,6 @@ export const viewport: Viewport = {
   themeColor: "#1e3a5f",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -69,15 +66,13 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${montserrat.variable} antialiased`}>
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-            <UpdateNotification />
-            <Toaster richColors position="top-right" />
-            <ServiceWorkerRegistration />
-          </AuthProvider>
-        </QueryProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${montserrat.variable} font-sans antialiased`}>
+        <AuthProvider>
+          {children}
+          <UpdateNotification />
+          <Toaster />
+          <ServiceWorkerRegistration />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,12 +1,9 @@
 "use client"
+import { type AppTableFeatures, appTableFeatures } from "@/lib/tableFeatures";
 
 import * as React from "react"
 import {
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table"
@@ -62,7 +59,7 @@ const cityRows: City[] = [
   { name: "Quito", department: "Pichincha", country: "Ecuador" },
 ]
 
-const cityColumns: ColumnDef<City>[] = [
+const cityColumns: ColumnDef<AppTableFeatures, City>[] = [
   { accessorKey: "name", header: "Ciudad" },
   { accessorKey: "department", header: "Departamento" },
   { accessorKey: "country", header: "País" },
@@ -76,27 +73,21 @@ export function ReuiLab() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  // TanStack Table devuelve una instancia mutable por diseño; el laboratorio
-  // necesita conservar ese contrato para compararlo con el DataGrid candidato.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data: cityRows,
     columns: cityColumns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 4 } },
+    initialState: { pagination: { pageIndex: 0, pageSize: 4 } },
   })
 
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-6xl gap-8 bg-background p-4 text-foreground sm:p-8">
       <header className="space-y-2">
         <p className="text-sm font-medium text-primary">Fase 2 · laboratorio aislado</p>
-        <h1 className="text-3xl font-bold tracking-tight">Evaluación ReUI</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Evaluación ReUI</h1>
         <p className="max-w-3xl text-muted-foreground">
           Prototipos sin conexión a Supabase para validar interacción, accesibilidad,
           responsive y compatibilidad con la fachada actual.
@@ -208,7 +199,7 @@ export function ReuiLab() {
             <DataGrid table={table} emptyMessage="No hay ciudades que coincidan" />
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+                Página {table.state.pagination.pageIndex + 1} de {table.getPageCount()}
               </p>
               <div className="flex gap-2">
                 <Button

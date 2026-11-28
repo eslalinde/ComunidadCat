@@ -109,13 +109,13 @@ describe('MarriageModal', () => {
     const queries = [1, 2, 3].map((id, i) => createTableMock({ people: { data: { id }, error: ['husband', 'wife', 'link'][i] === scenario ? { message: 'denied' } : null } }));
     db.from.mockImplementationOnce(queries[0].from).mockImplementationOnce(queries[1].from).mockImplementationOnce(queries[2].from);
     render(<MarriageModal open onClose={close} onSuccess={select} />);
-    fireEvent.change(screen.getByLabelText('Nombre del Esposo *'), { target: { value: 'Juan' } });
-    fireEvent.change(screen.getByLabelText('Nombre de la Esposa *'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText(/Nombre del Esposo/), { target: { value: 'Juan' } });
+    fireEvent.change(screen.getByLabelText(/Nombre de la Esposa/), { target: { value: 'Ana' } });
     fireEvent.change(screen.getAllByLabelText('Email')[0], { target: { value: 'juan@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear Matrimonio' }));
     if (scenario === 'ok') {
       await waitFor(() => expect(select).toHaveBeenCalledWith(1, 2)); expect(close).toHaveBeenCalledOnce();
-      expect(queries[1].calls).toContainEqual({ table: 'people', method: 'insert', args: [expect.objectContaining({ spouse_id: 1, gender_id: 2, phone: null })] });
+      expect(queries[1].calls).toContainEqual({ table: 'people', method: 'insert', args: [expect.objectContaining({ spouse_id: 1, gender_id: 2 })] });
       expect(queries[2].calls).toContainEqual({ table: 'people', method: 'update', args: [{ spouse_id: 2 }] });
     } else { await screen.findByText('Error al crear el matrimonio'); expect(select).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled(); }
     expect(db.from).toHaveBeenCalledTimes(scenario === 'husband' ? 1 : scenario === 'wife' ? 2 : 3);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EditPersonModal } from './EditPersonModal';
 import { EntityTable } from './EntityTable';
 import { EntityModal } from './EntityModal';
 import { DynamicEntityModal } from './DynamicEntityModal';
@@ -144,19 +145,51 @@ export function EntityPage<T extends BaseEntity>({
     (field.name === 'country_id' || field.name === 'state_id' || field.name === 'city_id' || field.name === 'zone_id' || field.name === 'diocese_id' || field.name === 'parish_id' || field.name === 'spouse_id' || field.name === 'step_way_id')
   );
 
+  const pluralName = config.pluralName ?? `${config.displayName}s`;
+
   return (
-    <div className="w-full bg-white rounded-lg border shadow-sm p-3 sm:p-6">
+    <div className={`w-full space-y-4 ${hideDefaultAddButton ? "" : "max-md:pb-16"}`}>
+      {/* Page header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{pluralName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {loading && count === 0
+              ? 'Cargando registros…'
+              : `${count} ${count === 1 ? 'registro' : 'registros'}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {extraActions}
+          {!hideDefaultAddButton && (
+            <Button
+              onClick={handleAddNew}
+              // Mobile: extended floating action button above the bottom nav,
+              // always within thumb reach while scrolling long lists.
+              className="max-md:fixed max-md:right-4 max-md:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] max-md:z-30 max-md:h-12 max-md:rounded-full max-md:px-5 max-md:shadow-lg md:w-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Agregar {config.displayName.toLowerCase()}
+            </Button>
+          )}
+        </div>
+      </div>
+
+    <div className="w-full rounded-xl border bg-card shadow-xs p-3 sm:p-5">
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
 
-      {/* Search and Add Button */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+      {/* Search */}
+      <div className="mb-4">
         <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder={
               config.displayName === 'Comunidad'
@@ -174,24 +207,11 @@ export function EntityPage<T extends BaseEntity>({
             <button
               type="button"
               onClick={() => { setSearch(''); setPage(1); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
               aria-label="Limpiar búsqueda"
             >
-              <X className="w-4 h-4 text-gray-400" />
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {extraActions}
-          {!hideDefaultAddButton && (
-            <Button
-              variant="outline"
-              onClick={handleAddNew}
-              className="w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4" />
-              Agregar {config.displayName.toLowerCase()}
-            </Button>
           )}
         </div>
       </div>
@@ -206,7 +226,7 @@ export function EntityPage<T extends BaseEntity>({
         onEdit={handleEdit}
         onDelete={handleDelete}
         onRowClick={onRowClick}
-        emptyMessage={`No hay ${config.displayName.toLowerCase()}s`}
+        emptyMessage={`No hay ${pluralName.toLowerCase()}`}
         hideDeleteInTable={hideDeleteInTable}
       />
 
@@ -214,7 +234,6 @@ export function EntityPage<T extends BaseEntity>({
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3">
         <span className="text-sm text-muted-foreground">
           Página {page} de {totalPages || 1}
-          {count > 0 && ` — ${count} registros`}
         </span>
         <Pagination className="mx-0 w-auto">
           <PaginationContent>
@@ -269,7 +288,9 @@ export function EntityPage<T extends BaseEntity>({
       </div>
 
       {/* Modal */}
-      {needsDynamicModal ? (
+      {config.tableName === 'people' && editing?.id ? (
+        <EditPersonModal personIds={[editing.id]} onClose={handleCloseModal} />
+      ) : needsDynamicModal ? (
         <DynamicEntityModal
           key={editing ? `edit-${editing.id}` : 'create'}
           open={modalOpen}
@@ -293,6 +314,7 @@ export function EntityPage<T extends BaseEntity>({
           loading={loading}
         />
       )}
+    </div>
     </div>
   );
 }

@@ -84,7 +84,7 @@ function SelectPersonForTeamModalContent({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Agregar Persona Existente</DialogTitle>
           <DialogDescription>
@@ -102,13 +102,13 @@ function SelectPersonForTeamModalContent({
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               Cargando personas disponibles...
             </div>
           ) : error ? (
             <div className="text-center py-8 text-red-500">{error}</div>
           ) : filteredPeople.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               {searchTerm
                 ? 'No se encontraron personas con ese nombre'
                 : 'No hay personas disponibles'}
@@ -121,12 +121,12 @@ function SelectPersonForTeamModalContent({
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     selectedPersonId === person.id
                       ? 'bg-blue-50 border-blue-500'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-muted/50'
                   }`}
                   onClick={() => setSelectedPersonId(person.id!)}
                 >
                   <div className="font-medium">{person.person_name}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {person.mobile && `Celular: ${person.mobile}`}
                     {person.email && ` · Email: ${person.email}`}
                   </div>

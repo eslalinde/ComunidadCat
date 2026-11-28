@@ -145,9 +145,9 @@ Referencias: [Personal Access Tokens](https://supabase.com/docs/guides/platform/
 | PR con `run-migrations` | Ninguno por esa etiqueta | No; ya no se admite escritura desde PR |
 | CI exitoso de un push a dev del propio repo | Integración, SHA exacto validado | Sí, después del dry-run y respetando el environment |
 | CI fallido, de un PR, de otra rama o de otro repo | Ninguno | No |
-| Manual desde main, `confirm_production` desmarcado | Producción | No; también respeta las protecciones del environment |
-| Manual desde main, `confirm_production` marcado | Producción | Sí, con aprobación del environment cuando corresponda |
-| Push/merge a main | Ninguno | No |
+| Supabase Migrations manual desde main | Producción | Solo inspección y dry-run |
+| Push/merge a main | Producción | Production Release prepara el plan SQL |
+| Aprobación de Publish approved release | Producción | Aplica las pendientes del SHA revisado |
 
 Después de configurar los dos tokens, quitar y volver a añadir
 `check-migrations` al PR #172. Revisar ambos jobs de inspección. Estos usan secretos
@@ -157,7 +157,7 @@ que escriben. No se modifican las protecciones de `integration`/`production`.
 El PR apunta a `dev`. Su merge inicia CI y, si pasa, el workflow vigente puede
 aplicar pendientes en integración. En la comprobación actual no hay pendientes,
 pero debe revisarse cualquier SQL que llegue entretanto a dev. Producción sigue
-requiriendo promoción de dev a main y ejecución manual explícita. El acceso a
+requiriendo promoción de dev a main y aprobación del release. El acceso a
 producción quedó verificado; su inicialización es una operación posterior al PR.
 
 Las comprobaciones sin aplicación incluyen un inventario con `psql`, disponible
@@ -176,3 +176,44 @@ Las 21 pruebas del validador pasaron localmente y en la comprobación remota
 [41759849441](https://github.com/eslalinde/ComunidadCat/actions/runs/41759849441),
 que también completó la inspección y el dry-run de ambos proyectos con sus PAT
 separados. Repetir la revisión si cambia el esquema o llegan nuevas migraciones.
+
+## Carga inicial del catálogo de producción
+
+Una vez aplicadas las migraciones, ejecutar el archivo completo
+[`supabase/seed.production.sql`](../supabase/seed.production.sql) en el editor SQL
+del proyecto de producción. Es un paso manual independiente del workflow de migraciones.
+El archivo `supabase/seed.sql` se reserva para desarrollo y pruebas con comunidades de ejemplo.
+
+En una base recién migrada, la carga deja Colombia, 32 departamentos, 32 ciudades,
+11 pasos del Camino y 20 parroquias vinculadas a la Arquidiócesis de Medellín.
+Las migraciones ya aportan las 14 arquidiócesis y las demás jurisdicciones del catálogo.
+Los campos de contacto y zona de las parroquias quedan disponibles para completar
+con datos confirmados. La carga se puede repetir y conserva las filas preexistentes.
+
+Para comprobar el resultado de la carga inicial, ejecutar con el mismo rol del editor SQL.
+Los conteos esperados son 32, 11, 20, 14 y 0, en ese orden.
+
+```sql
+select
+  (select count(*) from public.cities) as ciudades,
+  (select count(*) from public.step_ways) as pasos,
+  (select count(*) from public.parishes p
+   join public.cities c on c.id = p.city_id
+   join public.dioceses d on d.id = p.diocese_id
+   where c.name = 'Medellín' and d.name = 'Arquidiócesis de Medellín') as parroquias_medellin,
+  (select count(*) from public.dioceses where type = 'arquidiocesis') as arquidiocesis,
+  (select count(*) from public.communities) as comunidades;
+```
+
+## Activación de teléfonos cifrados
+
+La función `person-contacts` utiliza AES-256-GCM y valida la sesión con Supabase Auth. Su secreto `PERSON_CONTACT_KEY_V1` contiene 32 bytes aleatorios en Base64 estándar. Usa una clave propia por entorno y conserva una copia en el gestor de secretos que se usa para recuperación. Para rotar una clave que ya tenga contactos, conserva la versión anterior durante el recifrado. Sustituir el valor de V1 impediría recuperar esos contactos.
+
+En desarrollo local, guarda la clave de ese entorno en `supabase/functions/.env` como `PERSON_CONTACT_KEY_V1`. Con la base local en marcha, ejecuta `npx supabase functions serve` desde la raíz. Si Docker en Windows rechaza el montaje de la unidad F:, ejecuta el comando con la CLI Linux desde WSL, en el mismo repositorio y conectado al mismo Docker. Los teléfonos preexistentes requieren también el recifrado del paso 3.
+
+1. Configurar el secreto en **Edge Functions → Secrets** del proyecto de destino. Desplegar `supabase/functions/person-contacts` junto con su configuración de autenticación de `supabase/config.toml`.
+2. Coordinar la migración `20261119234600_encrypted_person_contacts` con la nueva versión de la aplicación. Desde la migración, las consultas anteriores devuelven ambos campos vacíos y las versiones antiguas que envíen números directamente recibirán un error.
+3. Si hay números anteriores, la migración los recoge en `contact_private.legacy`, restringida al servidor. Completar el recifrado inmediato llamando por HTTPS a la función con el cuerpo `{"action":"migrate"}` y la clave secreta de servidor denominada `default` del mismo proyecto en el encabezado `apikey`. Repetir hasta obtener `{"processed":0}`. Cada lote procesa hasta 100 personas. La función comprueba el descifrado antes de retirar cada original y permite reanudar tras un fallo. Durante el proceso, una lectura de un contacto pendiente devuelve un error temporal.
+4. Verificar que `select count(*) from contact_private.legacy` da cero, que ambos campos públicos están vacíos y que se recupera un contacto ficticio con un usuario autorizado. Los respaldos históricos anteriores a la activación conservan los datos según su retención original.
+
+El contrato SQL de permisos está en `supabase/tests/database/person_contacts.test.sql`. La comprobación de cifrado y del manejador HTTP se ejecuta desde la raíz con `node --experimental-strip-types --test supabase/tests/functions/person-contacts.test.mjs`. El informe global de presbíteros omite teléfonos. La impresión con teléfonos se solicita desde una comunidad.

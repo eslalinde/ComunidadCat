@@ -18,10 +18,15 @@ function TooltipProvider({
   )
 }
 
+/** Self-contained: works with or without an app-level TooltipProvider. */
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  return (
+    <TooltipProvider delayDuration={300}>
+      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+    </TooltipProvider>
+  )
 }
 
 function TooltipTrigger({
@@ -54,4 +59,38 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+type HintProps = {
+  /** Visible tooltip text (Spanish UI copy). */
+  label: string
+  /** The trigger: usually an icon-only button. */
+  children: React.ReactElement
+  side?: React.ComponentProps<typeof TooltipPrimitive.Content>["side"]
+  /**
+   * true (default): the label also becomes the child's accessible name, for
+   * icon-only controls (a child's own aria-label still wins).
+   * false: the control keeps its visible text as name; the tooltip only adds
+   * a description (Radix links it via aria-describedby while open).
+   */
+  asLabel?: boolean
+}
+
+/**
+ * Explains a control on hover and keyboard focus, replacing `title` (which
+ * never shows on touch or focus and is read inconsistently by screen readers).
+ * Non-interactive children (e.g. a Badge) need tabIndex={0} to be reachable;
+ * a disabled button needs a focusable wrapper for the hint to open.
+ */
+function Hint({ label, children, side = "top", asLabel = true }: HintProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild aria-label={asLabel ? label : undefined}>
+        {children}
+      </TooltipTrigger>
+      <TooltipContent side={side} sideOffset={4}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, Hint }

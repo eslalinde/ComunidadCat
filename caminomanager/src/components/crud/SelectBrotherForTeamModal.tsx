@@ -96,7 +96,7 @@ export function SelectBrotherForTeamModal({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Agregar Hermanos al Equipo</DialogTitle>
           <DialogDescription>
@@ -119,7 +119,7 @@ export function SelectBrotherForTeamModal({
           )}
 
           {filteredBrothers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               {searchTerm
                 ? 'No se encontraron hermanos con ese nombre'
                 : 'Todos los hermanos ya están en este equipo'}
@@ -133,7 +133,7 @@ export function SelectBrotherForTeamModal({
                     key={brother.id}
                     className={cn(
                       'flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
-                      checked ? 'bg-blue-50 border-blue-500' : 'hover:bg-gray-50'
+                      checked ? 'bg-blue-50 border-blue-500' : 'hover:bg-muted/50'
                     )}
                   >
                     <Checkbox
@@ -151,7 +151,7 @@ export function SelectBrotherForTeamModal({
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {brother.carisma && `${brother.carisma}`}
                         {brother.celular && ` · Celular: ${brother.celular}`}
                       </div>

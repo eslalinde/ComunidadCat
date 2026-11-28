@@ -51,8 +51,8 @@ export function CarismaBadge({
   if (!carisma) return null;
 
   const colors = CARISMA_BADGE_COLORS[carisma] || {
-    bg: "bg-gray-100",
-    text: "text-gray-800",
+    bg: "bg-muted",
+    text: "text-foreground",
   };
   const Icon = CARISMA_ICONS[carisma];
 

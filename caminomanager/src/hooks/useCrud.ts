@@ -1,3 +1,4 @@
+import { preparePerson } from '@/lib/personContacts';
 import { useState, useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
@@ -278,7 +279,7 @@ export function useCrud<T extends BaseEntity>({
     mutationFn: async (newData) => {
       const { data: result, error } = await supabase
         .from(tableName)
-        .insert<Omit<T, 'id' | 'created_at' | 'updated_at'>>([newData])
+        .insert<Record<string, unknown>>([tableName === 'people' ? await preparePerson(supabase, newData) : newData])
         .select()
         .single();
 
@@ -321,7 +322,7 @@ export function useCrud<T extends BaseEntity>({
     mutationFn: async ({ id, data }) => {
       const { data: result, error } = await supabase
         .from(tableName)
-        .update<Record<string, unknown>>({ ...data })
+        .update<Record<string, unknown>>(tableName === 'people' ? await preparePerson(supabase, data, id) : { ...data })
         .eq('id', id)
         .select()
         .single();
@@ -442,4 +443,3 @@ export function useCrud<T extends BaseEntity>({
     clearError
   };
 }
-

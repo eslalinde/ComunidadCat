@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WindowControls } from '@/components/electron/WindowControls';
 import { UpdateNotification } from '@/components/electron/UpdateNotification';
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
-import { useAppVersion } from '@/hooks/useAppVersion';
+import { isNewerRelease, releaseNotesUrl, useAppVersion } from '@/hooks/useAppVersion';
 let maximized: (value: boolean) => void; let downloaded: () => void;
 const unsubscribe = vi.fn();
 function bridge(): NonNullable<Window['electronAPI']> { return { getAppVersion: vi.fn().mockResolvedValue('1.0.0'), onUpdateAvailable: vi.fn(() => unsubscribe), onUpdateDownloaded: vi.fn((callback) => { downloaded = callback; return unsubscribe; }), installUpdate: vi.fn().mockResolvedValue(undefined), windowMinimize: vi.fn().mockResolvedValue(undefined), windowMaximize: vi.fn().mockResolvedValue(undefined), windowClose: vi.fn().mockResolvedValue(undefined), windowIsMaximized: vi.fn().mockResolvedValue(false), onMaximizedChange: vi.fn((callback) => { maximized = callback; return unsubscribe; }) }; }
@@ -21,9 +21,16 @@ it.each(['v99.0.0', '0.0.0', '0.0.0-alpha', '0.0.0-0', '0.0', '0.0.0--', 'failed
   const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
   if (tag === 'offline') fetchMock.mockRejectedValue(new Error()); else fetchMock.mockResolvedValue({ ok: tag !== 'failed', json: async () => tag === 'empty' ? {} : { tag_name: tag } });
   const { result } = renderHook(() => useAppVersion());
-  expect(result.current.showDownload).toBe(true);
+  expect(result.current.showDownload).toBe(result.current.currentVersion !== '1.0.0');
   if (['failed', 'offline', 'empty'].includes(tag)) { await act(async () => { await Promise.resolve(); }); expect(result.current.latestVersion).toBeNull(); }
-  else { await waitFor(() => expect(result.current.latestVersion).toBe(tag)); expect(result.current.hasUpdate).toBe(tag === 'v99.0.0' || tag === '0.0.0-alpha'); }
+  else { await waitFor(() => expect(result.current.latestVersion).toBe(tag)); expect(result.current.hasUpdate).toBe(tag === 'v99.0.0'); }
+});
+it('vincula las notas de la versión instalada aunque GitHub esté desconectado', () => {
+  window.electronAPI = bridge();
+  const { result } = renderHook(() => useAppVersion());
+  expect(releaseNotesUrl).toBe(`https://github.com/eslalinde/ComunidadCat/releases/tag/${result.current.currentVersion === '1.0.0' ? 'web-v' : 'v'}${result.current.currentVersion}`);
+  expect(isNewerRelease('v1.0.0', '1.0.0-beta.2')).toBe(true);
+  expect(isNewerRelease('v1.0.0-beta.2', '1.0.0')).toBe(false);
 });
 it('no consulta versiones ni registra service worker en escritorio', () => { window.electronAPI = bridge(); const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock); const { result } = renderHook(() => useAppVersion()); render(<ServiceWorkerRegistration />); expect(result.current.isElectron).toBe(true); expect(result.current.showDownload).toBe(false); expect(fetchMock).not.toHaveBeenCalled(); });
 it('registra service worker y detecta una versión activada', async () => {
@@ -32,5 +39,15 @@ it('registra service worker y detecta una versión activada', async () => {
   const register = vi.fn().mockResolvedValue(registration); vi.stubGlobal('navigator', { serviceWorker: { register, controller: {} } }); const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   render(<ServiceWorkerRegistration />); await waitFor(() => expect(register).toHaveBeenCalledWith('/sw.js')); await act(async () => { await Promise.resolve(); });
   registration.dispatchEvent(new Event('updatefound')); worker.dispatchEvent(new Event('statechange')); expect(log).not.toHaveBeenCalled(); worker.state = 'activated'; worker.dispatchEvent(new Event('statechange')); expect(log).toHaveBeenCalledWith('New version of ComunidadCat available.'); registration.installing = null; registration.dispatchEvent(new Event('updatefound'));
+});
+it('en desarrollo no registra el service worker y elimina el existente con su caché', async () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  const unregister = vi.fn().mockResolvedValue(true); const register = vi.fn();
+  vi.stubGlobal('navigator', { serviceWorker: { register, getRegistrations: vi.fn().mockResolvedValue([{ unregister }]) } });
+  const del = vi.fn().mockResolvedValue(true); vi.stubGlobal('caches', { keys: vi.fn().mockResolvedValue(['comunidadcat-v1']), delete: del });
+  render(<ServiceWorkerRegistration />);
+  await waitFor(() => expect(del).toHaveBeenCalledWith('comunidadcat-v1'));
+  expect(unregister).toHaveBeenCalled(); expect(register).not.toHaveBeenCalled();
+  vi.unstubAllEnvs();
 });
 it('absorbe fallo de registro del service worker', async () => { vi.stubGlobal('navigator', { serviceWorker: { register: vi.fn().mockRejectedValue(new Error('offline')) } }); const error = vi.spyOn(console, 'error').mockImplementation(() => {}); render(<ServiceWorkerRegistration />); await waitFor(() => expect(error).toHaveBeenCalledWith('SW registration failed:', expect.any(Error))); });

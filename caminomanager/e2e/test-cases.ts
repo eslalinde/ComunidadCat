@@ -367,7 +367,7 @@ const handwritten: TestCase[] = [
       'Inspeccionar el encabezado y las tarjetas principales.',
     ],
     expected:
-      'Aparecen Editar, Imprimir y el menú "Más" con Fusionar, Usuarios con acceso, Historial de cambios y Eliminar; las tarjetas de Bitácora (con botón Agregar), Hermanos (con Agregar Existente) y los equipos están visibles.',
+      'Aparecen Editar, Imprimir y el menú "Más" con Fusionar, Usuarios con acceso, Historial de cambios y Eliminar; las tarjetas de Bitácora (con botón Agregar registro), Hermanos (con Agregar hermanos) y los equipos están visibles.',
   },
   {
     id: 'TC-COMMUNITY-DETAIL-CONTRIBUTOR',
@@ -379,7 +379,7 @@ const handwritten: TestCase[] = [
       'Navegar a /comunidades/detalle?id=1.',
     ],
     expected:
-      'Ve Editar, Imprimir y el menú "Más" con Fusionar, Usuarios con acceso e Historial de cambios, además de Bitácora con Agregar y Agregar Existente en Hermanos. El menú NO incluye "Eliminar" (sólo admin/zone_leader pueden borrar la comunidad).',
+      'Ve Editar, Imprimir y el menú "Más" con Fusionar, Usuarios con acceso e Historial de cambios, además de Bitácora con Agregar registro y Agregar hermanos en Hermanos. El menú NO incluye "Eliminar" (sólo admin/zone_leader pueden borrar la comunidad).',
   },
   {
     id: 'TC-COMMUNITY-DETAIL-ZONE_LEADER',
@@ -415,7 +415,7 @@ const handwritten: TestCase[] = [
       'Esperar la redirección automática al detalle.',
     ],
     expected:
-      'NO ve Editar, Fusionar, Usuarios, Historial, Eliminar ni la tarjeta de Bitácora. SÍ ve Imprimir (lista de hermanos) y el botón "Agregar Existente" en la lista de hermanos.',
+      'NO ve Editar, Fusionar, Usuarios, Historial, Eliminar ni la tarjeta de Bitácora. SÍ ve Imprimir (lista de hermanos) y el botón "Agregar hermanos" en la lista de hermanos.',
   },
   {
     id: 'TC-COMMUNITY-DETAIL-VIEWER_ZONE',
@@ -503,7 +503,7 @@ const handwritten: TestCase[] = [
     steps: [
       'Iniciar sesión como Administrador.',
       'Abrir el detalle de la comunidad scratch.',
-      'Pulsar "Agregar" en la tarjeta Bitácora, escribir una nota y Guardar.',
+      'Pulsar "Agregar registro" en la tarjeta Bitácora, escribir una nota y Guardar.',
     ],
     expected:
       'La nota aparece en la lista compacta de la bitácora y existe una fila en community_step_log con esa nota para la comunidad scratch.',

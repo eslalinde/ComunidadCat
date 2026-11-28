@@ -26,8 +26,8 @@ it.each([false, true])('otorga acceso sólo a usuarios disponibles, error=%s', (
 it.each([false, true])('revoca sólo concesiones explícitas con confirmación, error=%s', (fails) => {
   mocks.accessUsers.push({ ...granted, user_id: 'profile', full_name: 'Responsable', source: 'profile' }); setup(); expect(screen.getAllByText('Asignado')).toHaveLength(2);
   // The grant row owns the only destructive control; profile access has none.
-  const grantRow = screen.getByText('Asignado', { selector: 'p' }).closest('.bg-gray-50') as HTMLElement;
-  expect(within(screen.getByText('Responsable').closest('.bg-gray-50') as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
+  const grantRow = screen.getByText('Asignado', { selector: 'p' }).closest('.bg-muted\\/50') as HTMLElement;
+  expect(within(screen.getByText('Responsable').closest('.bg-muted\\/50') as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
   fireEvent.click(within(grantRow).getByRole('button')); fireEvent.click(screen.getByText('Cancelar')); expect(mocks.revokeAccess).not.toHaveBeenCalled();
   fireEvent.click(within(grantRow).getByRole('button')); fireEvent.click(screen.getByText('Revocar')); expect(mocks.revokeAccess).toHaveBeenCalledWith('assigned', expect.any(Object));
   act(() => fails ? mocks.revokeAccess.mock.calls[0][1].onError(new Error('Sin permiso')) : mocks.revokeAccess.mock.calls[0][1].onSuccess());

@@ -1,67 +1,48 @@
-# CI/CD: dev, main y Vercel
+# Ciclo de publicación de ComunidadCat
 
-## Flujo
+La web, las ediciones Cloud y Standalone de Windows y las notas de GitHub comparten la versión de `caminomanager/package.json` y el commit aprobado de `main`. La primera versión estable prevista es **1.0.0**.
 
-- Las ramas de trabajo nacen de `dev`; sus PR apuntan a `dev`.
-- GitHub ejecuta CI, CodeQL y regresión web en PR y push a `dev` y `main`.
-- Vercel Git genera Preview para ramas de trabajo y para cada push/merge a `dev`. El enlace del PR sirve para revisar el cambio; el alias de rama `dev` sirve para revisar la integración acumulada.
-- Para preparar producción, abrir PR desde `dev` hacia `main`. El check `Release Source` rechaza otro origen.
-- `caminomanager/vercel.json` desactiva despliegues Git automáticos de `main`. Las otras ramas conservan los previews automáticos. No hay workflow de publicación web en GitHub ni token de Vercel en Actions.
-- El preview puede estar disponible antes de que termine CI o las migraciones. Revisarlo cuando CI, Web Regression y Migrate Integration hayan terminado correctamente. Un preview de PR con SQL nuevo usa el esquema de integración actual; los contratos SQL se prueban aisladamente en CI antes del merge.
+## Desarrollo e integración
 
-## Configuración del proyecto Vercel
+1. Crear la rama de trabajo desde `dev` y dirigir el PR a `dev`. Vercel Git genera previews para los PR y para la integración acumulada. Usar el Supabase de integración en Preview y el productivo en Production.
+2. Revisar el preview después de CI, Web Regression y la migración de integración. Las migraciones de un PR se prueban en una base desechable. Un push a `dev` aplica el SHA de integración que pasó CI. La etiqueta `check-migrations` permite inspeccionar ambos proyectos.
+3. Elegir la versión de la entrega. Usar PATCH para correcciones compatibles, MINOR para funcionalidad compatible y MAJOR para cambios incompatibles. Actualizar paquete y lockfile juntos desde `caminomanager` con `npm version X.Y.Z --no-git-tag-version`. La etiqueta estable la crea el proceso de publicación.
+4. Promover el conjunto de cambios mediante un PR `dev → main`. Conservar las protecciones de ramas, los checks requeridos, CodeQL y la regla `Release Source`. Revisar especialmente cualquier migración que afecte a clientes Windows de versiones anteriores.
 
-Proyecto: `comunidad-cat`, repositorio `eslalinde/ComunidadCat`.
+## Preparación automática
 
-- Root Directory: `caminomanager` (el vercel.json está dentro de esta carpeta).
-- Production Branch: `main`, incluso cuando la rama predeterminada de GitHub sea `dev`.
-- Preview deployments habilitados, integración Git conectada.
-- Ignored Build Step: `if [ "$VERCEL_ENV" = "production" ]; then exit 0; else exit 1; fi`. Cancela builds productivos automáticos incluso antes de que vercel.json llegue a main.
-- Auto-assign Custom Production Domains desactivado: toda publicación productiva requiere promoción manual.
-- Variables Production: credenciales públicas del Supabase productivo y URL pública de producción.
-- Variables Preview: credenciales públicas del Supabase de integración. No reutilizar las productivas.
-- Mantener la protección de previews. Configurar los redirects de Auth para las URLs de cada ambiente.
+Un push a `main` inicia **Production Release**. El workflow comprueba la versión estable, las etiquetas remotas y los resultados de CI, Web Regression y Security para ese mismo SHA. A continuación prepara en paralelo:
 
-La configuración versionada entra en vigor al llegar a cada rama remota. El Ignored Build Step del proyecto bloquea builds productivos mientras se incorpora vercel.json a main.
+- **Windows** compila y verifica ambos instaladores con Authenticode. El borrador incluye Cloud, su blockmap, `latest.yml`, el instalador Standalone y su ZIP. La versión, el nombre, el tamaño y SHA-512 del instalador Cloud deben coincidir con el manifiesto del actualizador.
+- **Supabase** comprueba el proyecto, el historial y el plan SQL con un dry-run. En Actions, abrir el job `migration-plan` para revisar las migraciones pendientes.
+- **Vercel** prepara un build con las variables Production y `--skip-domain`. Su URL aparece en el resumen de `stage-web`. El dominio de los usuarios sigue sirviendo la entrega anterior durante la revisión.
 
-Referencia: [configuración Git de Vercel](https://vercel.com/docs/project-configuration/git-configuration).
+El job `draft` prepara las notas desde los PR y sube las cinco descargas. Guarda las huellas SHA-256 en la misma ejecución. El responsable abre el enlace al borrador del resumen, edita las notas en español para explicar los cambios para los usuarios y revisa web, archivos y SQL. Para el primer arranque, coordinar también el catálogo inicial y la función de contactos según la [guía de Supabase](supabase-deployment.md).
 
-## Publicar producción manualmente
+## Aprobación y comprobación
 
-1. Completar CI y revisión del PR `dev → main`, y hacer merge.
-2. Si hay migraciones, ejecutar `Supabase Migrations` desde Actions, seleccionando `main` y marcando `confirm_production`. Este paso modifica la base de datos y es independiente de Vercel; usar migraciones compatibles con la versión que sigue publicada.
-3. En Vercel, abrir el proyecto → Deployments → Create Deployment. Seleccionar `main` (o su SHA revisado) y el entorno Production.
-4. Si Vercel cancela el build por Ignored Build Step, usar Redeploy y desmarcar **Use project's Ignore Build Step** para esa ejecución manual. Verificar el SHA de main y el entorno Production.
-5. Revisar el build productivo y usar **Promote to Production** manualmente para asignar los dominios. No promover el preview de dev como sustituto de la entrega de main.
+1. Revisar la URL preparada y confirmar que el SHA corresponde a la entrega. Verificar compatibilidad del esquema con la aplicación que está en uso y la disponibilidad de un respaldo si las migraciones lo requieren.
+2. Aprobar **Publish approved release** en el environment `production`. La automatización comprueba de nuevo el SHA actual, el proyecto Vercel y el contenido exacto de las cinco descargas. Aplica las migraciones, publica el release con etiqueta `vX.Y.Z` y promueve ese mismo build de Vercel.
+3. Actions verifica que el dominio corresponda al despliegue aprobado y comprueba la página de acceso, las notas y la descarga Cloud. El resumen registra SHA, versión y enlaces. Con una cuenta autorizada, iniciar sesión, consultar una comunidad conocida y abrir **Novedades de esta versión** en el menú de usuario. En Windows, comprobar la edición instalada y la firma del instalador. Quienes partan de una instalación sin editor configurado deben instalar manualmente la primera versión firmada y validar el editor por un canal de confianza.
 
-El override manual está documentado en [Ignored Build Step](https://vercel.com/docs/project-configuration/project-settings#ignored-build-step).
+## Configuración de los destinos
 
-Referencia: [crear despliegues desde Git](https://vercel.com/docs/git).
+- En GitHub, restringir `production` a `main` y mantener al menos un revisor obligatorio. Mantener los permisos de escritura de contenido limitados a los jobs de borrador y publicación.
+- En Vercel, proyecto `comunidad-cat`, raíz `caminomanager`, rama productiva `main`. `caminomanager/vercel.json` desactiva la publicación Git de `main`. Mantener los previews protegidos y configurar URL, redirects y credenciales públicas de Supabase por entorno. En Actions, configurar el secreto `VERCEL_TOKEN` y las variables `VERCEL_TEAM_ID` y `VERCEL_PROJECT_ID`.
+- Para Windows, configurar en Actions los secretos `WINDOWS_SIGNING_PFX` (PFX en base64), `WINDOWS_SIGNING_PASSWORD`, `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_DEFAULT_KEY`. La variable `WINDOWS_PUBLISHER_DN` contiene el `SignerCertificate.Subject` completo del editor. El job de preparación los lee en el ámbito del repositorio o de la organización.
+- Para Supabase, configurar `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD` e `INTEGRATION_SUPABASE_ACCESS_TOKEN` para integración. Para producción, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD` y `PRODUCTION_SUPABASE_ACCESS_TOKEN`. Usar un token distinto por proyecto y mantener alineadas las variables de repositorio y del environment. El workflow independiente **Supabase Migrations** permite inspeccionar producción manualmente.
 
-## Migraciones
+Las protecciones de `dev` y `main` incluyen PR obligatorio y bloqueo de borrados y force pushes. Los checks requeridos son Release Source, Lint, Type Check, Test, Build, Database Integration, Playwright Smoke, Dependency Audit y Chromium desktop and mobile. CI también corre para PR de documentación. Dependabot apunta a `dev`.
 
-`Supabase Migrations` escucha la finalización exitosa de CI para pushes a `dev` y aplica exactamente ese SHA al backend de integración. No aplica SQL de PR contra bases compartidas. La etiqueta `check-migrations` permite consultar el historial y realizar un dry-run en ambos entornos usando secretos de repositorio; los jobs de escritura conservan los environments protegidos. La concurrencia evita dos ejecuciones simultáneas sobre el mismo ambiente.
+## Fallos y recuperación
 
-Secretos de GitHub requeridos:
+- **Antes de aprobar.** Consultar el primer job fallido y reintentar los jobs fallidos sobre ese SHA tras corregir la configuración. Si cambia el código, llevar el cambio por `dev → main` y revisar el nuevo candidato. Si un borrador abandonado reserva la versión, el responsable comprueba su SHA y retira explícitamente ese borrador antes de preparar el nuevo. Las etiquetas publicadas conservan su commit.
+- **Tras aplicar migraciones.** Revisar el historial remoto antes de reintentar. El CLI aplica las pendientes. El seed, los secretos de Vault y las Edge Functions tienen su propio procedimiento. Si cambió la compatibilidad con clientes antiguos, coordinar una migración correctiva y verificar los datos.
+- **Release público con promoción web pendiente.** Usar **Re-run failed jobs** en la ejecución original. Se comprueban el release y sus huellas antes de reanudar la promoción. Las descargas publicadas conservan sus bytes y sus firmas.
+- **Incidencia después de publicar.** Si el esquema lo permite, restaurar en Vercel el despliegue productivo anterior y verificar el acceso. Registrar el incidente y sacar una nueva versión de parche para corregir los clientes ya distribuidos.
 
-- Integración: `INTEGRATION_SUPABASE_PROJECT_ID`, `INTEGRATION_SUPABASE_DB_PASSWORD`.
-- Producción: `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`.
-- Token de integración: `INTEGRATION_SUPABASE_ACCESS_TOKEN`.
-- Token de producción: `PRODUCTION_SUPABASE_ACCESS_TOKEN`.
+[Notas de GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes) · [Promoción de despliegues de Vercel](https://vercel.com/docs/deployments/promoting-a-deployment)
 
-Usar un PAT distinto por proyecto. El workflow entrega el seleccionado al CLI
-como `SUPABASE_ACCESS_TOKEN`, sin recurrir al antiguo secreto compartido. Los
-checks de PR usan estos secretos de repositorio; revisar también posibles valores
-con el mismo nombre en los environments protegidos, que tienen precedencia.
+## Proveedor anterior
 
-Los jobs usan los environments `integration` y `production`. Restringir production a `main` y configurar un revisor para las migraciones productivas. No se ejecutan migraciones productivas al hacer merge. El workflow comprueba que cada ID coincida con su destino confirmado.
-
-## Protecciones y validación
-
-Ambas ramas deben requerir PR, impedir borrados y force pushes y conservar CodeQL. Checks requeridos configurados: `Release Source`, `Lint`, `Type Check`, `Test`, `Build`, `Database Integration`, `Playwright Smoke`, `Dependency Audit` y `Chromium desktop and mobile`.
-
-CI no tiene filtros de paths: los checks requeridos se ejecutan también para PR de documentación. Los PR externos no reciben secretos de despliegue. Dependabot apunta a `dev`. Electron mantiene su entrega independiente al publicar un release de GitHub.
-
-## Limpieza del proveedor anterior
-
-No hay workflow de Azure activo ni secretos de Azure registrados en el repositorio al momento de esta revisión. El despliegue web usa Vercel. Los backups standalone son locales por defecto, con rclone opcional para el proveedor que se configure; ya no asumen Azure. La limpieza del repositorio no elimina recursos ni backups de cuentas cloud.
+La web usa Vercel. Los backups standalone son locales por defecto y admiten rclone para el proveedor configurado. Los recursos y backups históricos de Azure se administran por separado.

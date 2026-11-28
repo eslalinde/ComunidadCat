@@ -1,3 +1,4 @@
+import { readAuthorizedReport } from "@/lib/reportAccess";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
@@ -8,8 +9,6 @@ export interface PriestRow {
   diocese: string;
   city_name: string;
   communities_count: number;
-  phone: string;
-  mobile: string;
   email: string;
 }
 
@@ -25,7 +24,7 @@ async function fetchPriests(): Promise<PriestRow[]> {
         id,
         is_parish_priest,
         parish_id,
-        person:people(person_name, phone, mobile, email),
+        person:people(person_name, email),
         parish:parishes(
           name,
           diocese:dioceses(name),
@@ -62,8 +61,6 @@ async function fetchPriests(): Promise<PriestRow[]> {
       communities_count: priest.parish_id
         ? commCountByParish[priest.parish_id] || 0
         : 0,
-      phone: person?.phone || "-",
-      mobile: person?.mobile || "-",
       email: person?.email || "-",
     };
   });
@@ -74,13 +71,14 @@ async function fetchPriests(): Promise<PriestRow[]> {
 export function usePriestsReport() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["report", "priests"],
-    queryFn: fetchPriests,
+    queryFn: () => readAuthorizedReport(fetchPriests),
   });
 
   return {
-    data: data ?? [],
+    data: error ? [] : data ?? [],
     loading: isLoading,
     error,
     refetch,
+    loadExportRows: fetchPriests,
   };
 }

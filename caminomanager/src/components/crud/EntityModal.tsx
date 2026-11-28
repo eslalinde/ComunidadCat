@@ -12,10 +12,19 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
+  FormRoot,
+  RequiredMark,
+} from "@/components/ui/form";
 import { BaseEntity, FormField as FormFieldType } from '@/types/database';
-import { X } from 'lucide-react';
-import { buildZodSchema, buildDefaultValues, prepareFormData } from '@/lib/form-schema';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { buildZodSchema, buildDefaultValues, prepareFormData, getInputAttributes } from '@/lib/form-schema';
 
 interface EntityModalProps<T extends BaseEntity> {
   open: boolean;
@@ -40,6 +49,8 @@ export function EntityModal<T extends BaseEntity>({
 
   const form = useForm({
     resolver: zodResolver(schema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: buildDefaultValues(fields, initial as Record<string, unknown> | null),
   });
 
@@ -58,25 +69,16 @@ export function EntityModal<T extends BaseEntity>({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-[calc(100%-2rem)] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Cerrar"
-        >
-          <X className="w-5 h-5 text-gray-400" />
-        </button>
-
-        <h2 className="text-xl font-bold mb-5 pr-8">{title}</h2>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Los campos marcados con * son obligatorios.</DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {fields.map(field => (
               <FormField
                 key={field.name}
@@ -86,7 +88,7 @@ export function EntityModal<T extends BaseEntity>({
                   <FormItem>
                     <FormLabel>
                       {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                      {field.required && <RequiredMark />}
                     </FormLabel>
                     <FormControl>
                       {field.type === 'textarea' ? (
@@ -131,6 +133,7 @@ export function EntityModal<T extends BaseEntity>({
                       ) : (
                         <Input
                           type={field.type}
+                          {...getInputAttributes(field)}
                           value={(rhfField.value as string) || ''}
                           onChange={rhfField.onChange}
                           onBlur={rhfField.onBlur}
@@ -148,7 +151,7 @@ export function EntityModal<T extends BaseEntity>({
               />
             ))}
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end mt-6 pt-4 border-t border-gray-100">
+            <DialogFooter className="mt-6 gap-3 border-t border-border pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -160,10 +163,10 @@ export function EntityModal<T extends BaseEntity>({
               <Button type="submit" disabled={loading}>
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
-            </div>
-          </form>
+            </DialogFooter>
+          </FormRoot>
         </Form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

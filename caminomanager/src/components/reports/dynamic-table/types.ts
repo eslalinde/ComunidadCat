@@ -1,7 +1,9 @@
+import { type AppTableFeatures } from "@/lib/tableFeatures";
+import type { RowData } from "@tanstack/react-table";
 import {
   ColumnDef,
   SortingState,
-  VisibilityState,
+  ColumnVisibilityState,
 } from "@tanstack/react-table";
 
 export interface DynamicColumnMeta {
@@ -12,23 +14,24 @@ export interface DynamicColumnMeta {
   align?: "left" | "center" | "right";
 }
 
-export interface DynamicReportConfig<TData> {
+export interface DynamicReportConfig<TData extends RowData> {
   title: string;
   description: string;
-  columns: ColumnDef<TData, any>[];
+  columns: ColumnDef<AppTableFeatures, TData>[];
   exportFileName?: string;
   defaultGrouping?: string[];
   defaultSorting?: SortingState;
   globalFilterPlaceholder?: string;
   dataGrid?: {
     pageSize?: number;
-    defaultColumnVisibility?: VisibilityState;
+    defaultColumnVisibility?: ColumnVisibilityState;
   };
 }
 
-export interface DynamicReportTableProps<TData> {
+export interface DynamicReportTableProps<TData extends RowData> {
   config: DynamicReportConfig<TData>;
   data: TData[];
   loading: boolean;
   onRefresh: () => void;
+  loadExportRows: () => Promise<TData[]>;
 }

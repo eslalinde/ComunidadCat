@@ -1,4 +1,5 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   DynamicReportTable,
@@ -7,9 +8,9 @@ import {
 } from "@/components/reports/dynamic-table";
 import { usePriestsReport, PriestRow } from "@/hooks/usePriestsReport";
 
-const columnHelper = createColumnHelper<PriestRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, PriestRow>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("priest_name", {
     header: "Nombre del Presbítero",
     cell: (info) => info.getValue(),
@@ -26,7 +27,7 @@ const columns = [
           className={`px-2 py-1 rounded-full text-xs font-medium ${
             value === "Sí"
               ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
+              : "bg-muted text-foreground"
           }`}
         >
           {value}
@@ -71,20 +72,6 @@ const columns = [
       aggregationLabel: "Total",
     } satisfies DynamicColumnMeta,
   }),
-  columnHelper.accessor("phone", {
-    header: "Teléfono",
-    cell: (info) => info.getValue(),
-    meta: {
-      filterType: "text",
-    } satisfies DynamicColumnMeta,
-  }),
-  columnHelper.accessor("mobile", {
-    header: "Móvil",
-    cell: (info) => info.getValue(),
-    meta: {
-      filterType: "text",
-    } satisfies DynamicColumnMeta,
-  }),
   columnHelper.accessor("email", {
     header: "Email",
     cell: (info) => <span className="text-sm">{info.getValue()}</span>,
@@ -92,7 +79,7 @@ const columns = [
       filterType: "text",
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const reportConfig: DynamicReportConfig<PriestRow> = {
   title: "Presbíteros",
@@ -108,13 +95,14 @@ const reportConfig: DynamicReportConfig<PriestRow> = {
 };
 
 export default function PriestsReport() {
-  const { data, loading, refetch } = usePriestsReport();
+  const { data, loading, refetch, loadExportRows } = usePriestsReport();
 
   return (
     <DynamicReportTable
       config={reportConfig}
       data={data}
       loading={loading}
+      loadExportRows={loadExportRows}
       onRefresh={() => refetch()}
     />
   );

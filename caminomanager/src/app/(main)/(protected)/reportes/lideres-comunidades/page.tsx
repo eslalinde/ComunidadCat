@@ -1,4 +1,5 @@
 "use client";
+import { type AppTableFeatures } from "@/lib/tableFeatures";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   DynamicReportTable,
@@ -10,9 +11,9 @@ import {
   CommunityLeaderRow,
 } from "@/hooks/useCommunityLeadersReport";
 
-const columnHelper = createColumnHelper<CommunityLeaderRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, CommunityLeaderRow>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("diocese_name", {
     header: "Arquidiócesis/Diócesis",
     cell: (info) => info.getValue(),
@@ -134,7 +135,7 @@ const columns = [
       aggregationLabel: "Total",
     } satisfies DynamicColumnMeta,
   }),
-];
+]);
 
 const reportConfig: DynamicReportConfig<CommunityLeaderRow> = {
   title: "Responsables de Comunidades",
@@ -150,13 +151,14 @@ const reportConfig: DynamicReportConfig<CommunityLeaderRow> = {
 };
 
 export default function CommunityLeadersReportPage() {
-  const { data, loading, refetch } = useCommunityLeadersReport();
+  const { data, loading, refetch, loadExportRows } = useCommunityLeadersReport();
 
   return (
     <DynamicReportTable
       config={reportConfig}
       data={data}
       loading={loading}
+      loadExportRows={loadExportRows}
       onRefresh={() => refetch()}
     />
   );

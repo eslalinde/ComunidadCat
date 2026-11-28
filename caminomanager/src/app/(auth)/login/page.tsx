@@ -4,10 +4,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
+  FormRoot,
   FormField,
   FormItem,
   FormLabel,
@@ -16,11 +20,16 @@ import {
 } from "@/components/ui/form";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { getSafeRedirectPath } from "@/lib/routes";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { Spinner } from "@/components/ui/spinner";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "El correo es requerido").email("Email inválido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  email: z
+    .string()
+    .min(1, "Escribe tu correo electrónico")
+    .email("Revisa el formato del correo (ej. nombre@dominio.com)"),
+  password: z.string().min(1, "Escribe tu contraseña"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,6 +46,8 @@ function LoginForm() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    // Validate once the user leaves a field, then re-check as they type.
+    mode: "onTouched",
     defaultValues: { email: "", password: "" },
   });
 
@@ -48,7 +59,7 @@ function LoginForm() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const redirectTo = searchParams.get('redirectTo') || '/';
+          const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
           router.replace(redirectTo);
           return;
         }
@@ -65,7 +76,7 @@ function LoginForm() {
     setError(null);
 
     try {
-      const redirectTo = searchParams.get('redirectTo') || '/';
+      const redirectTo = getSafeRedirectPath(searchParams.get('redirectTo'));
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: values.email,
@@ -94,8 +105,8 @@ function LoginForm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <Spinner className="mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -107,26 +118,28 @@ function LoginForm() {
         {/* Logo y nombre de la app */}
         <div className="flex flex-col items-center mb-8">
           <BrandLogo size="lg" className="mb-2" />
-          <p className="text-gray-500 text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
+          <p className="text-muted-foreground text-sm mt-1">Gestión de comunidades del Camino Neocatecumenal</p>
         </div>
 
         {/* Card de login */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Iniciar sesión</h2>
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-8">
+          <h2 className="text-xl font-semibold text-foreground mb-6 text-center">Iniciar sesión</h2>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormRoot onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Correo electrónico
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="email"
+                        autoComplete="email"
+                        inputMode="email"
                         placeholder="tucorreo@ejemplo.com"
                         {...field}
                       />
@@ -140,43 +153,44 @@ function LoginForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-foreground">
                       Contraseña
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                      />
+                      <PasswordInput autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {error && (
-                <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
-                  {error}
-                </div>
-              )}
+              {error && <FormAlert tone="error">{error}</FormAlert>}
               <Button
                 type="submit"
                 className="w-full"
                 size="lg"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Ingresando..." : "Ingresar"}
+                {form.formState.isSubmitting && (
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                )}
+                {form.formState.isSubmitting ? "Ingresando…" : "Ingresar"}
               </Button>
-            </form>
+            </FormRoot>
           </Form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
+          <div className="mt-6 pt-6 border-t border-border text-center text-sm text-muted-foreground">
             ¿No tienes una cuenta?{" "}
-            <Link href="/signup" className="text-[#1B3A6F] hover:text-[#15305C] font-medium">
+            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
               Crear cuenta
             </Link>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/publico" className="font-medium text-primary hover:underline">
+            Conoce ComunidadCat →
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -188,8 +202,8 @@ export default function LoginPage() {
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6F] mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando...</p>
+            <Spinner className="mx-auto mb-4" />
+            <p className="text-muted-foreground">Cargando...</p>
           </div>
         </div>
       }

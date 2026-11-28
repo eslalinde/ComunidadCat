@@ -13,6 +13,7 @@ import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { formatLocalDate, todayLocalISO } from '@/lib/dates';
+import { Hint } from '@/components/ui/tooltip';
 
 interface CommunityStepLogCompactProps {
   communityId: number;
@@ -39,7 +40,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
   const getDotColor = (outcome?: boolean) => {
     if (outcome === true) return 'bg-green-500';
     if (outcome === false) return 'bg-amber-400';
-    return 'bg-gray-300';
+    return 'bg-muted-foreground/40';
   };
 
   const handleAddEntry = async (data: any) => {
@@ -174,12 +175,12 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-lg">Bitácora</CardTitle>
+          <CardTitle>Bitácora</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-16 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -190,29 +191,24 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Bitácora</CardTitle>
-          <div className="flex items-center gap-2 print-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>Bitácora</CardTitle>
+          <div className="flex flex-wrap items-center gap-2 print-hidden">
             {!readOnly && (
-              <Button
-                variant="outline"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Agregar
+              <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Agregar registro
               </Button>
             )}
             {count > itemsPerPage && (
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-4 w-4" />
                     Ver todos ({count})
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80dvh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <FileText className="w-5 h-5" />
@@ -226,32 +222,33 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                         <div className="flex flex-col items-center">
                           <div className={`w-3 h-3 rounded-full mt-1.5 shrink-0 ${getDotColor(entry.outcome)}`} />
                           {index < stepLogs.length - 1 && (
-                            <div className="w-px flex-1 bg-gray-200 mt-1" />
+                            <div className="w-px flex-1 bg-border mt-1" />
                           )}
                         </div>
                         {/* Contenido */}
                         <div className="flex-1 min-w-0 pb-1">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-gray-900 leading-tight">
+                              <p className="text-sm font-semibold text-foreground leading-tight">
                                 {entry.step_way?.name || 'Sin paso'}
                               </p>
-                              <p className="text-xs text-gray-500 mt-0.5">{formatDate(entry.date_of_step)}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{formatDate(entry.date_of_step)}</p>
                               {entry.notes && (
-                                <p className="text-sm text-gray-500 mt-1 whitespace-pre-wrap">{entry.notes}</p>
+                                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{entry.notes}</p>
                               )}
                             </div>
                             {!readOnly && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                                onClick={() => handleDeleteClick(entry)}
-                                disabled={entryToDelete?.id === entry.id}
-                                title="Eliminar evento"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <Hint label="Eliminar evento">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 -mt-1"
+                                  onClick={() => handleDeleteClick(entry)}
+                                  disabled={entryToDelete?.id === entry.id}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </Hint>
                             )}
                           </div>
                         </div>
@@ -269,9 +266,14 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         {/* Vista normal (pantalla) - timeline vertical */}
         <div className="print-hidden">
           {displayedLogs.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
-              <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No hay entradas en el log</p>
+            <div className="text-center py-6 text-muted-foreground">
+              <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-sm">La bitácora está vacía</p>
+              {!readOnly && (
+                <p className="text-xs mt-1">
+                  Agrega un registro al cerrar una etapa para actualizar la etapa de la comunidad.
+                </p>
+              )}
             </div>
           ) : (
             <div className="relative">
@@ -281,32 +283,33 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
                   <div className="flex flex-col items-center">
                     <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${getDotColor(entry.outcome)}`} />
                     {index < displayedLogs.length - 1 && (
-                      <div className="w-px flex-1 bg-gray-200 mt-1" />
+                      <div className="w-px flex-1 bg-border mt-1" />
                     )}
                   </div>
                   {/* Contenido */}
                   <div className="flex-1 min-w-0 pb-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 leading-tight">
+                        <p className="text-sm font-semibold text-foreground leading-tight">
                           {entry.step_way?.name || 'Sin paso'}
                         </p>
-                        <p className="text-xs text-gray-500 mt-0.5">{formatDate(entry.date_of_step)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formatDate(entry.date_of_step)}</p>
                         {entry.notes && (
-                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{entry.notes}</p>
+                          <p className="text-xs text-muted-foreground/70 mt-0.5 line-clamp-1">{entry.notes}</p>
                         )}
                       </div>
                       {!readOnly && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 -mt-1"
-                          onClick={() => handleDeleteClick(entry)}
-                          disabled={entryToDelete?.id === entry.id}
-                          title="Eliminar evento"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <Hint label="Eliminar evento">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="md:opacity-0 md:group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 -mt-1"
+                            onClick={() => handleDeleteClick(entry)}
+                            disabled={entryToDelete?.id === entry.id}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Hint>
                       )}
                     </div>
                   </div>
@@ -319,7 +322,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         {/* Vista de impresión - muestra TODOS los registros en tabla compacta */}
         <div className="hidden print:block">
           {stepLogs.length === 0 ? (
-            <p className="text-sm text-gray-500">No hay entradas en la bitácora</p>
+            <p className="text-sm text-muted-foreground">No hay entradas en la bitácora</p>
           ) : (
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -332,7 +335,7 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
               </thead>
               <tbody>
                 {stepLogs.map((entry) => (
-                  <tr key={entry.id} className="border-b border-gray-200">
+                  <tr key={entry.id} className="border-b border-border">
                     <td className="py-1 px-2 whitespace-nowrap">{formatDate(entry.date_of_step)}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{entry.step_way?.name || '-'}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{entry.outcome === true ? 'Cerrada' : entry.outcome === false ? 'Abierta' : '-'}</td>
@@ -368,9 +371,10 @@ export function CommunityStepLogCompact({ communityId, communityNumber, stepLogs
         onConfirm={handleDeleteConfirm}
         title="¿Eliminar evento de bitácora?"
         itemName={entryToDelete?.step_way?.name || 'Evento de bitácora'}
-        description={`¿Estás seguro de que deseas eliminar este registro de la Comunidad ${communityNumber}?`}
+        description={`Se eliminará de la bitácora de la Comunidad ${communityNumber}. Esta acción no se puede deshacer.`}
+        requireTypedConfirmation={false}
+        previewTitle="Detalles"
         preview={[
-          `Paso: ${entryToDelete?.step_way?.name || 'Sin paso'}`,
           `Fecha: ${formatLocalDate(entryToDelete?.date_of_step)}`,
           ...(entryToDelete?.notes ? [`Notas: ${entryToDelete.notes}`] : []),
         ]}

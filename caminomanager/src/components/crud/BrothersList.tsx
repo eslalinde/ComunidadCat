@@ -1,3 +1,5 @@
+import { BrotherContact } from './BrotherContact';
+import { preparePerson } from '@/lib/personContacts';
 import { Fragment, useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -5,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { MergedBrother } from '@/hooks/useCommunityData';
 import { Belongs, Person } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Plus, ChevronDown, ChevronRight, Heart, User, FileUp, Pencil } from 'lucide-react';
+import { UserMinus, UserPlus, Plus, ChevronDown, ChevronRight, User, Users, FileUp, Pencil, MoreVertical } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { friendlyError } from '@/lib/supabaseErrors';
 import { SelectBrotherModal } from './SelectBrotherModal';
@@ -18,8 +21,10 @@ import { CarismaBadge } from '@/components/ui/carisma-badge';
 import { DropdownMenu } from 'radix-ui';
 import { BulkUploadWizard } from '@/components/bulk-upload/BulkUploadWizard';
 import { EditPersonModal } from './EditPersonModal';
+import { Hint } from '@/components/ui/tooltip';
 
 interface BrothersListProps {
+  canAssignTeam?: boolean;
   brothers: MergedBrother[];
   loading?: boolean;
   communityId: number;
@@ -36,7 +41,8 @@ interface CarismaGroup {
   brothers: MergedBrother[];
 }
 
-export function BrothersList({ brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
+export function BrothersList({ canAssignTeam = false, brothers, loading, communityId, communityNumber, teamMembers, onDelete, onAdd, onPersonUpdated }: BrothersListProps) {
+  const isMobile = useIsMobile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -134,14 +140,14 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
         if (error) throw error;
       }
 
-      toast.success('Hermano eliminado de la comunidad');
+      toast.success('Hermano quitado de la comunidad');
       // Refresh the community data
       if (onDelete) {
         onDelete();
       }
     } catch (error) {
       console.error('Error deleting brother:', error);
-      toast.error('Error al eliminar el hermano');
+      toast.error('Error al quitar el hermano de la comunidad');
     } finally {
       setDeletingId(null);
       setBrotherToDelete(null);
@@ -197,7 +203,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
       // First, create the person
       const { data: newPerson, error: personError } = await supabase
         .from('people')
-        .insert(data)
+        .insert(await preparePerson(supabase, data))
         .select()
         .single();
 
@@ -213,6 +219,8 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
       if (brotherError) throw brotherError;
 
+      // Close the form so the same person cannot be submitted twice.
+      setIsCreateModalOpen(false);
       toast.success('Hermano agregado a la comunidad');
       // Refresh the community data
       if (onAdd) {
@@ -227,6 +235,117 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
     }
   };
 
+  // A marriage is one row but two people; count people so this matches the community info card.
+  const registeredPeople = brothers.reduce((total, brother) => total + brother.personIds.length, 0);
+  const menuItemClass =
+    'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm outline-none hover:bg-accent focus:bg-accent';
+
+  // Phones: grouped list with stacked rows and one labelled actions menu per
+  // brother, so nothing scrolls sideways and the page scrolls as one.
+  const renderMobileBrothers = () => (
+    <div className="-mx-1">
+      {groupedBrothers.map((group) => {
+        const isCollapsed = collapsedGroups.has(group.carisma);
+        const groupLabel = group.carisma || 'Sin carisma';
+        return (
+          <section key={`group-${group.carisma}`} className="border-b last:border-b-0">
+            <button
+              type="button"
+              className="flex min-h-11 w-full items-center gap-1.5 rounded-md bg-muted/50 px-2 py-2 text-left touch-manipulation active:bg-muted"
+              onClick={() => toggleGroup(group.carisma)}
+              aria-expanded={!isCollapsed}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
+              )}
+              <CarismaBadge carisma={groupLabel} size="md" />
+              <span className="text-xs text-muted-foreground">({group.brothers.length})</span>
+            </button>
+            {!isCollapsed && (
+              <ul className="divide-y">
+                {group.brothers.map((brother) => {
+                  const isInTeam = isBrotherInTeam(brother);
+                  const isDeleting = deletingId === brother.id;
+                  return (
+                    <li key={brother.id} className="flex items-start gap-2 py-2.5 pl-3 pr-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          {isNew(brother.createdAt) && (
+                            <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          )}
+                          <span className="text-base font-medium leading-snug break-words">{brother.name}</span>
+                        </div>
+                        {brother.isItinerante && (
+                          <div className="mt-1 flex">
+                            <CarismaBadge carisma="Itinerante" size="sm" />
+                          </div>
+                        )}
+                        <div className="mt-0.5 -ml-3 text-sm">
+                          <BrotherContact personIds={brother.personIds} communityId={communityId} />
+                        </div>
+                      </div>
+                      {onDelete && (
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-11 shrink-0 print-hidden"
+                              aria-label={`Acciones para ${brother.name}`}
+                              disabled={isDeleting}
+                            >
+                              <MoreVertical className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content
+                              align="end"
+                              sideOffset={4}
+                              className="min-w-56 max-w-[calc(100vw-2rem)] rounded-lg bg-popover text-popover-foreground p-1 shadow-lg border z-50"
+                            >
+                              <DropdownMenu.Item
+                                className={`${menuItemClass} min-h-11 text-base`}
+                                onSelect={() => setEditPersonIds(brother.personIds)}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                                Editar datos
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                              <DropdownMenu.Item
+                                className={`${menuItemClass} min-h-11 text-base text-destructive data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60`}
+                                disabled={isInTeam}
+                                onSelect={() => handleRequestDelete(brother)}
+                              >
+                                <UserMinus className="h-4 w-4" />
+                                <span className="flex flex-col">
+                                  Quitar de la comunidad
+                                  {isInTeam && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Pertenece a un equipo de la comunidad
+                                    </span>
+                                  )}
+                                </span>
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+
   if (loading) {
     return (
       <Card className="h-full">
@@ -236,7 +355,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
         <CardContent>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-4 bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -250,86 +369,82 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
         <CardHeader className="flex-shrink-0">
           <div className="flex flex-wrap justify-between items-start gap-2">
             <div>
-              <CardTitle className="text-lg">Hermanos de la Comunidad</CardTitle>
-              <p className="text-sm text-gray-600">
-                Total: {brothers.length} {brothers.length === 1 ? 'hermano' : 'hermanos'}
+              <CardTitle>Hermanos de la Comunidad</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {registeredPeople} {registeredPeople === 1 ? 'persona registrada' : 'personas registradas'}
               </p>
             </div>
             {onAdd && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsBulkUploadOpen(true)}
-                  className="flex items-center gap-2"
-                  title="Carga masiva desde archivo CSV"
-                >
-                  <FileUp className="h-4 w-4" />
-                  <span className="hidden sm:inline">Carga Masiva</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsSelectModalOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agregar Existente</span>
-                </Button>
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="hidden sm:inline">Agregar Nuevo</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Portal>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <Button size="sm" className="flex items-center gap-2 print-hidden">
+                    <Plus className="h-4 w-4" />
+                    Agregar hermanos
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
                   <DropdownMenu.Content
                     align="end"
                     sideOffset={4}
-                    className="min-w-[180px] rounded-lg bg-white p-1 shadow-lg border border-gray-200 z-50"
+                    className="min-w-[240px] rounded-lg bg-popover text-popover-foreground p-1 shadow-lg border z-50"
                   >
-                    <DropdownMenu.Item
-                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                      onSelect={() => setIsCreateModalOpen(true)}
-                    >
-                      <User className="h-4 w-4" />
-                      Hermano individual
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsCreateModalOpen(true)}>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      Nuevo hermano
                     </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer hover:bg-amber-50 text-sm outline-none"
-                      onSelect={() => setIsMarriageModalOpen(true)}
-                    >
-                      <Heart className="h-4 w-4" />
-                      Matrimonio
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsMarriageModalOpen(true)}>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      Nuevo matrimonio
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsSelectModalOpen(true)}>
+                      <UserPlus className="h-4 w-4 text-muted-foreground" />
+                      Persona ya registrada
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                    <DropdownMenu.Item className={menuItemClass} onSelect={() => setIsBulkUploadOpen(true)}>
+                      <FileUp className="h-4 w-4 text-muted-foreground" />
+                      Carga masiva (CSV)
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
-                </DropdownMenu.Root>
-              </div>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
             )}
           </div>
         </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
+        {isMobile && brothers.length > 0 ? renderMobileBrothers() : (
         <div className="h-full overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Celular</TableHead>
+                <TableHead>Teléfonos</TableHead>
                 {onDelete && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {brothers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-gray-500 py-8">
-                    No hay hermanos registrados
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8 whitespace-normal">
+                    <p>No hay hermanos registrados</p>
+                    {onAdd && (
+                      <>
+                        <p className="text-sm mt-1">
+                          Agrégalos uno a uno o importa una lista desde un archivo CSV.
+                        </p>
+                        <div className="mt-4 flex flex-wrap justify-center gap-2 print-hidden">
+                          <Button variant="outline" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+                            <User className="h-4 w-4" />
+                            Nuevo hermano
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setIsBulkUploadOpen(true)}>
+                            <FileUp className="h-4 w-4" />
+                            Carga masiva (CSV)
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -339,18 +454,18 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                     <Fragment key={`group-${group.carisma}`}>
                       {/* Group header row */}
                       <TableRow
-                        className="bg-gray-50 hover:bg-gray-100 cursor-pointer select-none"
+                        className="bg-muted/50 hover:bg-muted cursor-pointer select-none"
                         onClick={() => toggleGroup(group.carisma)}
                       >
                         <TableCell colSpan={3} className="py-2">
                           <div className="flex items-center gap-1.5">
                             {isCollapsed ? (
-                              <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <ChevronDown className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
                             )}
                             <CarismaBadge carisma={group.carisma || 'Sin carisma'} size="md" />
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               ({group.brothers.length})
                             </span>
                           </div>
@@ -366,7 +481,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                             <TableCell className="font-medium pl-8 py-1.5">
                               <div className="flex items-center gap-1.5">
                                 {isNew(brother.createdAt) && (
-                                  <span className="relative flex h-2 w-2 flex-shrink-0" title="Agregado recientemente">
+                                  <span className="relative flex h-2 w-2 flex-shrink-0" role="img" aria-label="Agregado recientemente" title="Agregado recientemente">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                                   </span>
@@ -384,31 +499,51 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="py-1.5">{brother.celular || '-'}</TableCell>
+                            <TableCell className="py-1.5"><BrotherContact personIds={brother.personIds} communityId={communityId} /></TableCell>
                             {onDelete && (
                               <TableCell className="py-1.5">
                                 <div className="flex justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setEditPersonIds(brother.personIds)}
-                                    disabled={isDeleting}
-                                    title="Editar datos"
-                                    aria-label={`Editar datos de ${brother.name}`}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRequestDelete(brother)}
-                                    disabled={isInTeam || isDeleting}
-                                    title={isInTeam ? 'Este hermano está asociado a un equipo y no puede ser eliminado' : 'Eliminar hermano de la comunidad'}
-                                    aria-label={`Eliminar a ${brother.name} de la comunidad`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <Hint label="Editar datos">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditPersonIds(brother.personIds)}
+                                      disabled={isDeleting}
+                                      aria-label={`Editar datos de ${brother.name}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </Hint>
+                                  {isInTeam ? (
+                                    // Disabled buttons get no pointer/focus events, so a
+                                    // focusable wrapper carries the explanation instead.
+                                    <Hint label="No se puede quitar: pertenece a un equipo de la comunidad" asLabel={false}>
+                                      <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="pointer-events-none text-muted-foreground"
+                                          disabled
+                                          aria-label={`Quitar a ${brother.name} de la comunidad (no disponible: pertenece a un equipo)`}
+                                        >
+                                          <UserMinus className="h-4 w-4" />
+                                        </Button>
+                                      </span>
+                                    </Hint>
+                                  ) : (
+                                    <Hint label="Quitar de la comunidad">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() => handleRequestDelete(brother)}
+                                        disabled={isDeleting}
+                                        aria-label={`Quitar a ${brother.name} de la comunidad`}
+                                      >
+                                        <UserMinus className="h-4 w-4" />
+                                      </Button>
+                                    </Hint>
+                                  )}
                                 </div>
                               </TableCell>
                             )}
@@ -422,6 +557,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
     </Card>
 
@@ -435,6 +571,7 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
 
     {/* Modal para editar datos de un hermano (o de uno de los cónyuges) */}
     <EditPersonModal
+      communityId={communityId}
       personIds={editPersonIds}
       onClose={() => setEditPersonIds(null)}
       onSaved={onPersonUpdated ?? onAdd}
@@ -464,14 +601,19 @@ export function BrothersList({ brothers, loading, communityId, communityNumber, 
       open={brotherToDelete !== null}
       onClose={() => setBrotherToDelete(null)}
       onConfirm={handleDeleteConfirmed}
-      title="¿Eliminar hermano de la comunidad?"
+      title="¿Quitar de la comunidad?"
       itemName={brotherToDelete?.name}
-      description="¿Estás seguro de que deseas eliminar a este hermano de la comunidad?"
+      description="La persona seguirá registrada en Personas; solo se quitará de esta comunidad."
+      requireTypedConfirmation={false}
+      confirmLabel="Quitar"
+      icon={UserMinus}
+      loadingLabel="Quitando..."
       loading={deletingId !== null}
     />
 
     {/* Wizard de carga masiva */}
     <BulkUploadWizard
+      canAssignTeam={canAssignTeam}
       open={isBulkUploadOpen}
       onClose={() => setIsBulkUploadOpen(false)}
       communityId={communityId}
