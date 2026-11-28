@@ -11,6 +11,7 @@ on:
     types: [opened, synchronize, reopened, labeled, edited]
     paths:
       - "supabase/migrations/**"
+      - ".github/workflows/vercel-production.yml"
       - ".github/workflows/supabase-migrations.yml"
       - ".github/actions/supabase-migrate/**"
       - ".github/scripts/*supabase*"

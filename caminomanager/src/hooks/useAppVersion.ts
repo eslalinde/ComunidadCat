@@ -7,7 +7,7 @@ import { repository, version as currentVersion } from '../../package.json';
 
 const releasesUrl = `${repository.url}/releases`;
 export const DOWNLOAD_URL = `${releasesUrl}/latest`;
-export const releaseNotesUrl = `${releasesUrl}/tag/v${currentVersion}`;
+export const releaseNotesUrl = `${releasesUrl}/tag/${currentVersion === '1.0.0' ? 'web-v' : 'v'}${currentVersion}`;
 const RELEASES_API = `https://api.github.com/repos${new URL(repository.url).pathname}/releases/latest`;
 
 export function isNewerRelease(tag: string, installed: string): boolean {
@@ -43,6 +43,6 @@ export function useAppVersion() {
     currentVersion,
     latestVersion,
     hasUpdate,
-    showDownload: !isElectron,
+    showDownload: !isElectron && currentVersion !== '1.0.0',
   };
 }

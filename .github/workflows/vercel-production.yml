@@ -16,6 +16,8 @@ env:
 
 jobs:
   candidate:
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     name: Verify release candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 65
@@ -26,6 +28,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - id: version
+        run: echo "version=$(node -p "require('./caminomanager/package.json').version")" >> "$GITHUB_OUTPUT"
       - run: node .github/scripts/release.mjs check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,6 +51,7 @@ jobs:
           done
 
   windows:
+    if: needs.candidate.outputs.version != '1.0.0'
     needs: candidate
     uses: ./.github/workflows/electron-release.yml
     secrets:
@@ -100,7 +105,11 @@ jobs:
           echo "Revisar el [build de producción preparado]($deployment) del commit \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
 
   draft:
-    needs: [windows, migration-plan, stage-web]
+    needs: [candidate, windows, migration-plan, stage-web]
+    if: >-
+      !cancelled() && needs.candidate.result == 'success' && needs.migration-plan.result == 'success' &&
+      needs.stage-web.result == 'success' && (needs.windows.result == 'success' ||
+      (needs.candidate.outputs.version == '1.0.0' && needs.windows.result == 'skipped'))
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -112,6 +121,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        if: needs.windows.result == 'success'
         with:
           name: signed-windows
           path: signed-windows
@@ -123,6 +133,7 @@ jobs:
   publish:
     name: Publish approved release
     needs: [draft, stage-web]
+    if: "!cancelled() && needs.draft.result == 'success' && needs.stage-web.result == 'success'"
     environment: production
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -150,6 +161,16 @@ jobs:
         run: bash .github/scripts/verify-vercel.sh "${DEPLOYMENT#https://}"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.122.0
+      - name: Prepare person-contacts in the approved production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PRODUCTION_SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: fkezcibdjgbqyraxnmha
+        run: |
+          supabase secrets list --project-ref "$PROJECT_REF" --output json | jq -e 'any(.[]; .name == "PERSON_CONTACT_KEY_V1")' >/dev/null
+          supabase functions deploy person-contacts --project-ref "$PROJECT_REF" --use-api
       - name: Apply reviewed migrations
         uses: ./.github/actions/supabase-migrate
         with:
@@ -178,8 +199,15 @@ jobs:
           bash .github/scripts/verify-vercel.sh "$PRODUCTION_HOST"
           version=$(node -p "require('./caminomanager/package.json').version")
           release="https://github.com/$GITHUB_REPOSITORY/releases"
-          for url in "https://$PRODUCTION_HOST/login" "$release/tag/v$version" \
-            "$release/download/v$version/ComunidadCat-Cloud-$version-Setup.exe"; do
+          tag="v$version"
+          urls=("https://$PRODUCTION_HOST/login")
+          if [[ "$version" == "1.0.0" ]]; then
+            tag="web-v$version"
+          else
+            urls+=("$release/download/$tag/ComunidadCat-Cloud-$version-Setup.exe")
+          fi
+          urls+=("$release/tag/$tag")
+          for url in "${urls[@]}"; do
             curl --fail --silent --show-error --head --location --retry 4 "$url" >/dev/null
           done
-          echo "Migraciones aplicadas. [Web verificada](https://$PRODUCTION_HOST/login) · [Build promovido]($DEPLOYMENT) · [Release $version]($release/tag/v$version)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Migraciones aplicadas. [Web verificada](https://$PRODUCTION_HOST/login) · [Build promovido]($DEPLOYMENT) · [Release $version]($release/tag/$tag)." >> "$GITHUB_STEP_SUMMARY"

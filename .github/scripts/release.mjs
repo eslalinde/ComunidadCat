@@ -15,7 +15,12 @@ export function releaseVersion(pkg, lock) {
   return pkg.version;
 }
 
+export function releaseTag(version) {
+  return version === '1.0.0' ? 'web-v1.0.0' : `v${version}`;
+}
+
 export function assetNames(version) {
+  if (version === '1.0.0') return [];
   const cloud = `ComunidadCat-Cloud-${version}-Setup.exe`;
   const standalone = `ComunidadCat-Standalone-${version}`;
   return [cloud, `${cloud}.blockmap`, 'latest.yml', `${standalone}-Setup.exe`, `${standalone}.zip`].sort();
@@ -33,14 +38,14 @@ export function verifyAssets(assets, hashes, version) {
 }
 
 export function checkReleaseHistory(releases, version, sha) {
-  const tag = `v${version}`;
+  const tag = releaseTag(version);
   const release = releases.find(item => item.tag_name === tag);
   if (release) {
     assert.equal(release.target_commitish, sha, 'El release pertenece a otro candidato.');
     assert.equal(release.prerelease, false);
   }
   for (const other of releases.filter(item => !item.draft && !item.prerelease)) {
-    const previous = other.tag_name.replace(/^v/, '');
+    const previous = other.tag_name.replace(/^(web-)?v/, '');
     if (stable.test(previous)) {
       const parts = version.split('.').map(BigInt);
       const old = previous.split('.').map(BigInt);
@@ -58,7 +63,7 @@ async function run(mode) {
   const api = route => JSON.parse(gh('api', `repos/${repo}/${route}`));
   const jsonFile = async path => JSON.parse(await readFile(path, 'utf8'));
   const version = releaseVersion(await jsonFile('caminomanager/package.json'), await jsonFile('caminomanager/package-lock.json'));
-  const tag = `v${version}`;
+  const tag = releaseTag(version);
   const releaseUrl = `https://github.com/${repo}/releases/tag/${tag}`;
 
   assert.equal(api('git/ref/heads/main').object.sha, sha, 'main cambió. Preparar su nuevo SHA.');
@@ -72,7 +77,7 @@ async function run(mode) {
 
     const dir = 'signed-windows';
     const names = assetNames(version);
-    assert.deepEqual((await readdir(dir)).sort(), names);
+    if (names.length) assert.deepEqual((await readdir(dir)).sort(), names);
     const hashes = {};
     for (const name of names) {
       const hash = createHash('sha256');
@@ -81,9 +86,9 @@ async function run(mode) {
     }
     if (!release) {
       gh('release', 'create', tag, '--target', sha, '--draft', '--title', `ComunidadCat ${version}`,
-        '--generate-notes', '--notes', 'Consulta los cambios de esta versión y las descargas de Windows.');
+        '--generate-notes', '--notes', names.length === 0 ? 'Edición web. Los instaladores de Windows siguen en pausa.' : 'Consulta los cambios de esta versión y las descargas de Windows.');
     }
-    gh('release', 'upload', tag, ...names.map(name => join(dir, name)), '--clobber');
+    if (names.length) gh('release', 'upload', tag, ...names.map(name => join(dir, name)), '--clobber');
     const draft = JSON.parse(gh('release', 'view', tag, '--json', 'databaseId,isDraft,targetCommitish,url'));
     assert.ok(draft.isDraft && draft.targetCommitish === sha);
     verifyAssets(api(`releases/${draft.databaseId}/assets`), hashes, version);
@@ -96,10 +101,10 @@ async function run(mode) {
   assert.ok(release && String(release.id) === process.env.RELEASE_ID, 'El borrador aprobado cambió.');
   verifyAssets(api(`releases/${release.id}/assets`), JSON.parse(process.env.RELEASE_HASHES), version);
   if (mode === 'publish') {
-    if (release.draft) gh('release', 'edit', tag, '--draft=false', '--latest');
+    if (release.draft) gh('release', 'edit', tag, '--draft=false', version === '1.0.0' ? '--latest=false' : '--latest');
     assert.equal(api(`commits/${tag}`).sha, sha);
     assert.equal(api(`releases/${release.id}`).draft, false);
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, `Publicado [${tag}](${releaseUrl}) desde \`${sha}\` con cinco archivos verificados.\n`);
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `Publicado [${tag}](${releaseUrl}) desde \`${sha}\` con ${assetNames(version).length} archivos verificados.\n`);
   }
 }
 

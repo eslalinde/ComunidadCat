@@ -21,14 +21,14 @@ it.each(['v99.0.0', '0.0.0', '0.0.0-alpha', '0.0.0-0', '0.0', '0.0.0--', 'failed
   const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
   if (tag === 'offline') fetchMock.mockRejectedValue(new Error()); else fetchMock.mockResolvedValue({ ok: tag !== 'failed', json: async () => tag === 'empty' ? {} : { tag_name: tag } });
   const { result } = renderHook(() => useAppVersion());
-  expect(result.current.showDownload).toBe(true);
+  expect(result.current.showDownload).toBe(result.current.currentVersion !== '1.0.0');
   if (['failed', 'offline', 'empty'].includes(tag)) { await act(async () => { await Promise.resolve(); }); expect(result.current.latestVersion).toBeNull(); }
   else { await waitFor(() => expect(result.current.latestVersion).toBe(tag)); expect(result.current.hasUpdate).toBe(tag === 'v99.0.0'); }
 });
 it('vincula las notas de la versión instalada aunque GitHub esté desconectado', () => {
   window.electronAPI = bridge();
   const { result } = renderHook(() => useAppVersion());
-  expect(releaseNotesUrl).toBe(`https://github.com/eslalinde/ComunidadCat/releases/tag/v${result.current.currentVersion}`);
+  expect(releaseNotesUrl).toBe(`https://github.com/eslalinde/ComunidadCat/releases/tag/${result.current.currentVersion === '1.0.0' ? 'web-v' : 'v'}${result.current.currentVersion}`);
   expect(isNewerRelease('v1.0.0', '1.0.0-beta.2')).toBe(true);
   expect(isNewerRelease('v1.0.0-beta.2', '1.0.0')).toBe(false);
 });
