@@ -33,13 +33,18 @@ jobs:
       - run: node .github/scripts/release.mjs check
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Wait for this commit's push checks
+      - name: Wait for this commit's CI, web regression and CodeQL
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for workflow in ci.yml web-regression.yml security.yml; do
+          codeql=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows?per_page=100" \
+            --jq '.workflows[] | select(.path == "dynamic/github-code-scanning/codeql" and .state == "active") | .id')
+          [[ "$codeql" =~ ^[0-9]+$ ]] || { echo "CodeQL activo no encontrado"; exit 1; }
+          for workflow in ci.yml web-regression.yml "$codeql"; do
+            event=push
+            if [[ "$workflow" == "$codeql" ]]; then event=dynamic; fi
             while true; do
-              result=$(gh run list --workflow "$workflow" --event push --branch main --commit "$GITHUB_SHA" \
+              result=$(gh run list --workflow "$workflow" --event "$event" --branch main --commit "$GITHUB_SHA" \
                 --limit 1 --json status,conclusion,url)
               if jq -e '.[0].status == "completed"' <<< "$result" >/dev/null; then
                 jq -e '.[0].conclusion == "success"' <<< "$result" || { echo "$result"; exit 1; }
